@@ -127,13 +127,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-gray-100 flex flex-col">
         {/* Modal Header */}
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-purple-900 text-white rounded-t-3xl">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-[#9E0D0D] text-white rounded-t-3xl">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-yellow-300" />
+            <ShieldCheck className="w-5 h-5 text-[#E05A1B]" />
             <h3 className="font-extrabold text-base">Finalizar Compra - Ropa en Línea</h3>
           </div>
           {step !== 4 && (
-            <button onClick={onClose} className="p-1.5 hover:bg-purple-800 rounded-full text-purple-200 hover:text-white">
+            <button onClick={onClose} className="p-1.5 hover:bg-red-900 rounded-full text-red-200 hover:text-white">
               <X className="w-5 h-5" />
             </button>
           )}
@@ -142,11 +142,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
         {/* Step Progress Bar */}
         {step !== 4 && (
           <div className="bg-gray-50 border-b border-gray-200 p-3 px-6 flex items-center justify-between text-xs font-bold text-gray-500">
-            <span className={step === 1 ? 'text-purple-700' : 'text-gray-400'}>1. Domicilio</span>
+            <span className={step === 1 ? 'text-[#9E0D0D]' : 'text-gray-400'}>1. Domicilio</span>
             <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-            <span className={step === 2 ? 'text-purple-700' : 'text-gray-400'}>2. Envío</span>
+            <span className={step === 2 ? 'text-[#9E0D0D]' : 'text-gray-400'}>2. Envío</span>
             <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-            <span className={step === 3 ? 'text-purple-700' : 'text-gray-400'}>3. Pago</span>
+            <span className={step === 3 ? 'text-[#9E0D0D]' : 'text-gray-400'}>3. Pago</span>
           </div>
         )}
 
@@ -157,12 +157,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-extrabold text-gray-900 text-sm flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-purple-700" />
+                  <MapPin className="w-4 h-4 text-[#9E0D0D]" />
                   Selecciona la Dirección de Entrega
                 </h4>
                 <button
                   onClick={() => setShowAddAddress(!showAddAddress)}
-                  className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1"
+                  className="text-xs font-bold text-[#9E0D0D] hover:text-red-900 flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Nueva Dirección
@@ -221,7 +221,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                     />
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <button type="submit" className="bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                    <button type="submit" className="bg-[#9E0D0D] text-white text-xs font-bold px-4 py-2 rounded-xl">
                       Guardar Dirección
                     </button>
                     <button
@@ -241,15 +241,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                       onClick={() => setSelectedAddress(addr)}
                       className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
                         selectedAddress?.id === addr.id
-                          ? 'border-purple-600 bg-purple-50/50 shadow-xs'
-                          : 'border-gray-200 bg-white hover:border-purple-200'
+                          ? 'border-[#9E0D0D] bg-red-50/50 shadow-xs'
+                          : 'border-gray-200 bg-white hover:border-red-200'
                       }`}
                     >
                       <input
                         type="radio"
                         checked={selectedAddress?.id === addr.id}
                         onChange={() => setSelectedAddress(addr)}
-                        className="mt-1 accent-purple-600"
+                        className="mt-1 accent-[#9E0D0D]"
                       />
                       <div className="text-xs space-y-0.5">
                         <p className="font-bold text-gray-900">{addr.recipientName}</p>
@@ -279,30 +279,37 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                     Selecciona tu Método de Envío y Paquetería
                   </h4>
                   <p className="text-[11px] text-gray-500">
-                    Cotización en tiempo real para el C.P. <strong className="text-gray-900">{selectedAddress?.postalCode || '01000'}</strong> ({selectedAddress?.city || 'CDMX'})
+                    Cotización en tiempo real para el C.P. <strong className="text-gray-900">{selectedAddress?.postalCode || '01000'}</strong> ({selectedAddress?.city || 'Ciudad de México'})
                   </p>
                 </div>
 
                 <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <Sparkles className="w-3 h-3 text-emerald-600" />
-                  <span>Conectado a envios.com</span>
+                  <span>API envios.com Activada</span>
                 </div>
               </div>
 
-              {/* API Token Info Notice */}
-              <div className="bg-red-950 text-white p-3 rounded-2xl text-[11px] flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-2">
+              {/* API Connection Indicator */}
+              <div className="bg-slate-900 text-white p-3 rounded-2xl text-[11px] flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
                   <div className="p-1.5 bg-[#9E0D0D] rounded-lg">
-                    <Zap className="w-3.5 h-3.5 text-[#E05A1B]" />
+                    <Zap className="w-4 h-4 text-[#E05A1B]" />
                   </div>
                   <div>
-                    <p className="font-extrabold text-xs">API Envíos.com Conectada</p>
-                    <p className="text-[10px] text-red-200 font-mono">Token: 9661a48692fa52693...700bb7b8</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-extrabold text-xs text-white">Conexión Segura con Envíos.com</p>
+                      <span className="bg-emerald-500/20 text-emerald-300 font-extrabold text-[9px] px-1.5 py-0.2 rounded border border-emerald-500/30">
+                        CONECTADO
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-300">
+                      Token API Envíos.com: <code className="text-yellow-300 font-mono">9661a48692fa52693...700bb7b8</code>
+                    </p>
                   </div>
                 </div>
-                <span className="text-[9px] font-mono bg-white/10 px-2 py-0.5 rounded text-red-200">
-                  v2.1 REST
+                <span className="text-[9px] font-mono bg-white/10 px-2.5 py-1 rounded-lg text-slate-200 border border-white/10 hidden sm:inline">
+                  v2.1 REST API
                 </span>
               </div>
 
@@ -371,10 +378,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                     );
                   })}
 
-                  {/* Option to select default store carriers as fallback */}
+                  {/* Option to select default store carriers as fallback if API return is empty */}
                   {enviosRates.length === 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs font-bold text-gray-700">Opciones de envío locales:</p>
+                      <p className="text-xs font-bold text-gray-700">Opciones de envío disponibles:</p>
                       {shippingConfig.carriers
                         .filter(c => c.active)
                         .map(carrier => (
@@ -422,7 +429,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
           {step === 3 && (
             <div className="space-y-4">
               <h4 className="font-extrabold text-gray-900 text-sm flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-purple-700" />
+                <CreditCard className="w-4 h-4 text-[#9E0D0D]" />
                 Selecciona la Forma de Pago
               </h4>
 
@@ -437,15 +444,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                     onClick={() => setPaymentMethod(pm.name)}
                     className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
                       paymentMethod === pm.name
-                        ? 'border-purple-600 bg-purple-50/50 shadow-xs'
-                        : 'border-gray-200 bg-white hover:border-purple-200'
+                        ? 'border-[#9E0D0D] bg-red-50/50 shadow-xs'
+                        : 'border-gray-200 bg-white hover:border-red-200'
                     }`}
                   >
                     <input
                       type="radio"
                       checked={paymentMethod === pm.name}
                       onChange={() => setPaymentMethod(pm.name)}
-                      className="accent-purple-600"
+                      className="accent-[#9E0D0D]"
                     />
                     <div className="text-xs">
                       <p className="font-bold text-gray-900">{pm.name}</p>
@@ -463,10 +470,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                   <span>${subtotal.toFixed(2)} MXN</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Envío ({selectedCarrier.name}):</span>
+                  <span>Envío ({selectedEnviosRate ? `${selectedEnviosRate.carrier} (${selectedEnviosRate.service})` : selectedCarrier.name}):</span>
                   <span>{isFreeShipping ? 'GRATIS' : `$${shippingCost}.00 MXN`}</span>
                 </div>
-                <div className="flex justify-between text-sm font-black text-purple-950 pt-1 border-t border-gray-200">
+                <div className="flex justify-between text-sm font-black text-slate-900 pt-1 border-t border-gray-200">
                   <span>Total a Pagar:</span>
                   <span>${totalAmount.toFixed(2)} MXN</span>
                 </div>
@@ -482,12 +489,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
               </div>
               <h3 className="text-2xl font-black text-gray-900">¡Gracias por tu compra en Ropa en Línea!</h3>
               <p className="text-xs text-gray-600 max-w-md mx-auto">
-                Hemos enviado la confirmación y el recibo detallado de tu pedido a tu correo electrónico. Puedes consultar el rastreo en tu sección <strong className="text-purple-800">"Mis Compras"</strong>.
+                Hemos enviado la confirmación y el recibo detallado de tu pedido a tu correo electrónico. Puedes consultar el rastreo en tu sección <strong className="text-[#9E0D0D]">"Mis Compras"</strong>.
               </p>
 
               <button
                 onClick={onClose}
-                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-6 py-3 rounded-full shadow-md"
+                className="bg-[#9E0D0D] hover:bg-red-800 text-white text-xs font-bold px-6 py-3 rounded-full shadow-md"
               >
                 Volver a la Tienda
               </button>
@@ -513,14 +520,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
             {step < 3 ? (
               <button
                 onClick={() => setStep((step + 1) as any)}
-                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold px-6 py-3 rounded-xl shadow-md"
+                className="bg-[#9E0D0D] hover:bg-red-800 text-white text-xs font-extrabold px-6 py-3 rounded-xl shadow-md"
               >
                 Continuar
               </button>
             ) : (
               <button
                 onClick={handleFinalizeOrder}
-                className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-extrabold px-8 py-3.5 rounded-xl shadow-lg transition-all"
+                className="bg-[#E05A1B] hover:bg-orange-700 text-white text-xs font-extrabold px-8 py-3.5 rounded-xl shadow-lg transition-all"
               >
                 Confirmar y Pagar ${totalAmount.toFixed(2)} MXN
               </button>
