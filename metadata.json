@@ -1,0 +1,6 @@
+{
+  "name": "Armario Virtual",
+  "description": "Tienda en línea Armario Virtual - Tu Estilo Libre con catálogo de moda, productos a 2 columnas en móvil, carritos, pedidos y panel de administración.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
