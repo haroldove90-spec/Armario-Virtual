@@ -37,23 +37,35 @@ app.post('/api/envios/quote', async (req, res) => {
     
     let liveApiResponse = null;
 
-    // Attempt live call to Envios.com REST API
+    // Attempt live call to Envia.com / Envios.com REST API
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      const response = await fetch('https://api.envios.com/v1/quotes', {
+      const response = await fetch('https://queries.envia.com/rate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'x-api-key': apiKey
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          origin_zip: originPostalCode,
-          destination_zip: destinationPostalCode,
-          weight: weight,
-          dimensions: dimensions
+          origin: {
+            postalCode: String(originPostalCode),
+            country: 'MX'
+          },
+          destination: {
+            postalCode: String(destinationPostalCode),
+            country: 'MX'
+          },
+          packages: [
+            {
+              content: 'Productos Ropa en Línea',
+              amount: 1,
+              type: 'box',
+              dimensions: dimensions,
+              weight: weight
+            }
+          ]
         }),
         signal: controller.signal
       });
@@ -61,7 +73,21 @@ app.post('/api/envios/quote', async (req, res) => {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        liveApiResponse = await response.json();
+        const rawData = await response.json();
+        if (rawData?.data && Array.isArray(rawData.data)) {
+          liveApiResponse = {
+            rates: rawData.data.map((item: any, idx: number) => ({
+              id: `envia-${item.carrier}-${idx}`,
+              carrier: item.carrierDescription || item.carrier || 'Paquetería',
+              service: item.serviceDescription || item.service || 'Estándar',
+              estimatedDays: item.deliveryDescription || item.deliveryEstimate || '2 a 4 días hábiles',
+              cost: Math.round(item.totalPrice || item.price || 120),
+              carrierCode: (item.carrier || 'ENVIA').toUpperCase(),
+              recommended: idx === 0,
+              badge: idx === 0 ? 'MÁS POPULAR' : undefined
+            }))
+          };
+        }
       }
     } catch (_err) {
       // Remote API call bypassed or timed out, will fall back to Envios.com engine below
