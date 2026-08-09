@@ -3,20 +3,28 @@ import { useStore } from '../../context/StoreContext';
 import { AdminTab } from '../../types';
 import { MetricsModule } from './MetricsModule';
 import { ProductsModule } from './ProductsModule';
+import { CategoriesModule } from './CategoriesModule';
 import { OrdersModule } from './OrdersModule';
 import { ShippingModule } from './ShippingModule';
 import { DesignModule } from './DesignModule';
-import { BarChart3, Package, ShoppingBag, Truck, Palette, ShieldCheck, Store, ArrowLeft } from 'lucide-react';
+import { AdminProfileModule } from './AdminProfileModule';
+import { CustomersModule } from './CustomersModule';
+import { EmployeesModule } from './EmployeesModule';
+import { BarChart3, Package, Layers, ShoppingBag, Truck, Palette, UserCheck, Users, ShieldCheck, Store, User } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
-  const { adminTab, setAdminTab, setActiveRole, adminLogout } = useStore();
+  const { adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile } = useStore();
 
   const tabs = [
-    { id: 'metricas' as AdminTab, label: 'Métricas & Ventas', icon: BarChart3, description: 'Estadísticas generales y reportes' },
-    { id: 'productos' as AdminTab, label: 'Productos & Stock', icon: Package, description: 'Catálogo e inventarios' },
-    { id: 'ventas' as AdminTab, label: 'Ventas & Pedidos', icon: ShoppingBag, description: 'Administrar compras y envíos' },
-    { id: 'envio' as AdminTab, label: 'Envío & Paqueterías', icon: Truck, description: 'Tarifas y empresas de transporte' },
-    { id: 'diseno' as AdminTab, label: 'Diseño de Tienda', icon: Palette, description: 'Banners, flyers y estética' }
+    { id: 'metricas' as AdminTab, label: '📊 Métricas & Ventas', icon: BarChart3, description: 'Estadísticas generales y reportes' },
+    { id: 'productos' as AdminTab, label: '📦 Productos & Stock', icon: Package, description: 'Catálogo e inventarios' },
+    { id: 'categorias' as AdminTab, label: '🏷️ Categorías', icon: Layers, description: 'Categorías y subcategorías' },
+    { id: 'ventas' as AdminTab, label: '📋 Ventas & Pedidos', icon: ShoppingBag, description: 'Administrar compras y envíos' },
+    { id: 'envio' as AdminTab, label: '🚚 Envíos (API)', icon: Truck, description: 'Tarifas y Envíos.com' },
+    { id: 'diseno' as AdminTab, label: '🎨 Banners & Diseño', icon: Palette, description: 'Sliders y estética de tienda' },
+    { id: 'perfil' as AdminTab, label: '👤 Perfil Admin', icon: UserCheck, description: 'Datos personales y tienda' },
+    { id: 'usuarios' as AdminTab, label: '👥 Usuarios Registrados', icon: Users, description: 'Clientes y compradores' },
+    { id: 'empleados' as AdminTab, label: '👨‍💼 Empleados', icon: User, description: 'Control de usuarios y acceso' }
   ];
 
   return (
@@ -31,11 +39,13 @@ export const AdminLayout: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black bg-[#E05A1B] text-white px-2 py-0.5 rounded uppercase tracking-wider">MODO ADMINISTRADOR</span>
-                <span className="text-[10px] text-red-200 uppercase font-mono">PANEL V2.4</span>
+                <span className="text-[10px] text-red-200 uppercase font-mono">PANEL V3.0</span>
               </div>
-              <h1 className="text-2xl font-black tracking-tight uppercase mt-0.5">Panel de Control - Ropa en Línea</h1>
+              <h1 className="text-2xl font-black tracking-tight uppercase mt-0.5">
+                Panel de Control - {adminProfile?.storeName || 'Armario Virtual'}
+              </h1>
               <p className="text-xs text-red-200">
-                Gestión integral de ventas, inventario de ropa, envíos y modulación gráfica de la tienda.
+                Administrador: <strong className="text-white">{adminProfile?.name || 'Adrian Morga'}</strong> ({adminProfile?.email})
               </p>
             </div>
           </div>
@@ -50,7 +60,7 @@ export const AdminLayout: React.FC = () => {
             </button>
             <button
               onClick={() => adminLogout()}
-              className="inline-flex items-center gap-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs uppercase tracking-wider px-3 py-2.5 rounded-xl transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-1.5 bg-red-900 hover:bg-red-950 text-white font-bold text-xs uppercase tracking-wider px-3 py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-red-700"
               title="Cerrar Sesión de Administrador"
             >
               <span>Salir</span>
@@ -69,11 +79,11 @@ export const AdminLayout: React.FC = () => {
                 onClick={() => setAdminTab(tab.id)}
                 className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
                   isActive
-                    ? 'bg-slate-900 border-purple-400 text-white shadow-md'
-                    : 'bg-purple-900/60 border-purple-700 text-purple-100 hover:bg-purple-900 hover:text-white'
+                    ? 'bg-slate-900 border-red-500 text-white shadow-md'
+                    : 'bg-red-950/60 border-red-800 text-red-100 hover:bg-red-900 hover:text-white'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-pink-400' : 'text-purple-300'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#E05A1B]' : 'text-red-300'}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -85,10 +95,15 @@ export const AdminLayout: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         {adminTab === 'metricas' && <MetricsModule />}
         {adminTab === 'productos' && <ProductsModule />}
+        {adminTab === 'categorias' && <CategoriesModule />}
         {adminTab === 'ventas' && <OrdersModule />}
         {adminTab === 'envio' && <ShippingModule />}
         {adminTab === 'diseno' && <DesignModule />}
+        {adminTab === 'perfil' && <AdminProfileModule />}
+        {adminTab === 'usuarios' && <CustomersModule />}
+        {adminTab === 'empleados' && <EmployeesModule />}
       </main>
     </div>
   );
 };
+

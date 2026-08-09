@@ -43,9 +43,12 @@ export const RoleSwitcher: React.FC = () => {
             {[
               { id: 'metricas', label: '📊 Métricas' },
               { id: 'productos', label: '📦 Productos' },
+              { id: 'categorias', label: '🏷️ Categorías' },
               { id: 'ventas', label: '📋 Pedidos' },
               { id: 'envio', label: '🚚 Envíos' },
-              { id: 'diseno', label: '🎨 Diseño' }
+              { id: 'perfil', label: '👤 Perfil' },
+              { id: 'usuarios', label: '👥 Usuarios' },
+              { id: 'empleados', label: '👨‍💼 Empleados' }
             ].map(tab => (
               <button
                 key={tab.id}

@@ -1,4 +1,248 @@
-import { Product, Order, Customer, ShippingConfig, StoreDesignConfig } from '../types';
+import { Product, Order, Customer, ShippingConfig, StoreDesignConfig, CategoryItem, Employee, AdminProfile } from '../types';
+
+export const INITIAL_CATEGORIES: CategoryItem[] = [
+  {
+    id: 'cat-mujer',
+    name: 'Mujer',
+    slug: 'mujer',
+    iconName: 'User',
+    description: 'Ropa, blusas, vestidos, abrigos y calzado femenino.',
+    active: true,
+    subcategories: [
+      { id: 'sub-m-1', name: 'Abrigos y Chamarras', slug: 'Abrigos y Chamarras', active: true },
+      { id: 'sub-m-2', name: 'Vestidos y Faldas', slug: 'Vestidos', active: true },
+      { id: 'sub-m-3', name: 'Blusas y Tops', slug: 'Blusas', active: true },
+      { id: 'sub-m-4', name: 'Accesorios y Bolsos', slug: 'Accesorios y Bolsos', active: true }
+    ]
+  },
+  {
+    id: 'cat-hombre',
+    name: 'Hombre',
+    slug: 'hombre',
+    iconName: 'UserCheck',
+    description: 'Moda masculina, jeans, camisetas, camisas y trajes.',
+    active: true,
+    subcategories: [
+      { id: 'sub-h-1', name: 'Pantalones y Jeans', slug: 'Pantalones y Jeans', active: true },
+      { id: 'sub-h-2', name: 'Sacos y Trajes', slug: 'Sacos y Trajes', active: true },
+      { id: 'sub-h-3', name: 'Playera y Polos', slug: 'Playeras', active: true },
+      { id: 'sub-h-4', name: 'Sudadera y Chamarras', slug: 'Chamarras', active: true }
+    ]
+  },
+  {
+    id: 'cat-ninos',
+    name: 'Niños & Bebés',
+    slug: 'ninos',
+    iconName: 'Smile',
+    description: 'Ropa infantil cómoda, alegre e ideal para la escuela y juegos.',
+    active: true,
+    subcategories: [
+      { id: 'sub-n-1', name: 'Moda Infantil', slug: 'Moda Infantil', active: true },
+      { id: 'sub-n-2', name: 'Calzado Infantil', slug: 'Calzado Niños', active: true },
+      { id: 'sub-n-3', name: 'Pijamas y Ropa Interior', slug: 'Pijamas', active: true }
+    ]
+  },
+  {
+    id: 'cat-calzado',
+    name: 'Calzado',
+    slug: 'calzado',
+    iconName: 'Footprints',
+    description: 'Tenis urbanos, botas, zapatos formales y sandalias.',
+    active: true,
+    subcategories: [
+      { id: 'sub-z-1', name: 'Tenis Casuales', slug: 'Tenis Casuales', active: true },
+      { id: 'sub-z-2', name: 'Zapatos de Vestir', slug: 'Zapatos Vestir', active: true },
+      { id: 'sub-z-3', name: 'Botas y Botines', slug: 'Botas', active: true }
+    ]
+  },
+  {
+    id: 'cat-belleza',
+    name: 'Belleza & Cuidado',
+    slug: 'belleza',
+    iconName: 'Sparkles',
+    description: 'Cosméticos, cosmética facial, perfumes y cuidado personal.',
+    active: true,
+    subcategories: [
+      { id: 'sub-b-1', name: 'Cuidado Facial', slug: 'Cuidado Facial', active: true },
+      { id: 'sub-b-2', name: 'Perfumería', slug: 'Perfumería', active: true },
+      { id: 'sub-b-3', name: 'Maquillaje', slug: 'Maquillaje', active: true }
+    ]
+  },
+  {
+    id: 'cat-hogar',
+    name: 'Hogar & Decoración',
+    slug: 'hogar',
+    iconName: 'Home',
+    description: 'Blancos, edredones, sábanas, toallas y accesorios.',
+    active: true,
+    subcategories: [
+      { id: 'sub-hg-1', name: 'Blancos y Cama', slug: 'Blancos y Cama', active: true },
+      { id: 'sub-hg-2', name: 'Baño y Cortinas', slug: 'Baño', active: true },
+      { id: 'sub-hg-3', name: 'Decoración y Cortinas', slug: 'Decoración', active: true }
+    ]
+  },
+  {
+    id: 'cat-ofertas',
+    name: 'Gran Barata & Ofertas',
+    slug: 'ofertas',
+    iconName: 'Tag',
+    description: 'Descuentos directo de liquidación y ofertas imperdibles.',
+    active: true,
+    subcategories: [
+      { id: 'sub-o-1', name: 'Liquidación Total', slug: 'Liquidación', active: true },
+      { id: 'sub-o-2', name: 'Últimas Tallas', slug: 'Últimas Tallas', active: true }
+    ]
+  }
+];
+
+export const INITIAL_ADMIN_PROFILE: AdminProfile = {
+  name: 'Adrian Mancilla Morga',
+  email: 'softwareai569@gmail.com',
+  phone: '55 9876 5432',
+  roleTitle: 'Director General & Administrador Principal',
+  storeName: 'Armario Virtual / Ropa en Línea',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
+  createdAt: '2026-01-15'
+};
+
+export const INITIAL_EMPLOYEES: Employee[] = [
+  {
+    id: 'emp-101',
+    name: 'Roberto Gómez Bolaños',
+    email: 'roberto.gomez@armariovirtual.com',
+    username: 'roberto.gomez',
+    password: 'password123',
+    role: 'Gerente de Tienda & Almacén',
+    status: 'activo',
+    permissions: ['metricas', 'productos', 'categorias', 'ventas', 'envio'],
+    createdAt: '2026-02-10',
+    lastAccess: 'Hace 10 minutos',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80'
+  },
+  {
+    id: 'emp-102',
+    name: 'Sofía Castro Morales',
+    email: 'sofia.castro@armariovirtual.com',
+    username: 'sofia.castro',
+    password: 'password123',
+    role: 'Encargada de Inventario y Categorías',
+    status: 'activo',
+    permissions: ['productos', 'categorias'],
+    createdAt: '2026-03-01',
+    lastAccess: 'Ayer, 18:30',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&q=80'
+  },
+  {
+    id: 'emp-103',
+    name: 'Javier Hernández Balcázar',
+    email: 'javier.hernandez@armariovirtual.com',
+    username: 'javier.h',
+    password: 'password123',
+    role: 'Soporte, Pedidos y Guías de Envío',
+    status: 'suspendido',
+    permissions: ['ventas', 'envio'],
+    createdAt: '2026-04-12',
+    lastAccess: 'Hace 5 días',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80'
+  }
+];
+
+export const INITIAL_CUSTOMERS_LIST: Customer[] = [
+  {
+    id: 'cust-101',
+    name: 'María Fernanda López',
+    email: 'maria.lopez@example.com',
+    phone: '55 4321 9876',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+    favoriteStore: 'Sucursal Perisur CDMX',
+    wishlistProductIds: ['prod-1', 'prod-7'],
+    registeredAt: '2026-03-14',
+    status: 'activo',
+    totalOrders: 3,
+    totalSpent: 2450.00,
+    addresses: [
+      {
+        id: 'addr-1',
+        recipientName: 'María Fernanda López',
+        street: 'Av. Insurgentes Sur',
+        exteriorNumber: '2453',
+        interiorNumber: 'Depto 402',
+        neighborhood: 'Tlalpan Centro',
+        city: 'Ciudad de México',
+        state: 'CDMX',
+        postalCode: '14000',
+        phone: '55 4321 9876',
+        isDefault: true
+      }
+    ]
+  },
+  {
+    id: 'cust-102',
+    name: 'Carlos Eduardo Ramírez',
+    email: 'carlos.ramirez@example.com',
+    phone: '55 1122 3344',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
+    favoriteStore: 'Polanco CDMX',
+    wishlistProductIds: ['prod-3'],
+    registeredAt: '2026-05-20',
+    status: 'activo',
+    totalOrders: 2,
+    totalSpent: 1596.00,
+    addresses: [
+      {
+        id: 'addr-carlos',
+        recipientName: 'Carlos Eduardo Ramírez',
+        street: 'Calle Benito Juárez',
+        exteriorNumber: '88',
+        neighborhood: 'Polanco',
+        city: 'Miguel Hidalgo',
+        state: 'CDMX',
+        postalCode: '11560',
+        phone: '55 1122 3344'
+      }
+    ]
+  },
+  {
+    id: 'cust-103',
+    name: 'Ana Sofía Mendoza',
+    email: 'ana.mendoza@example.com',
+    phone: '81 9988 7766',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+    favoriteStore: 'Monterrey Valle',
+    wishlistProductIds: ['prod-5'],
+    registeredAt: '2026-06-10',
+    status: 'activo',
+    totalOrders: 1,
+    totalSpent: 549.00,
+    addresses: [
+      {
+        id: 'addr-ana',
+        recipientName: 'Ana Sofía Mendoza',
+        street: 'Av. Constitución',
+        exteriorNumber: '400',
+        neighborhood: 'Centro',
+        city: 'Monterrey',
+        state: 'Nuevo León',
+        postalCode: '64000',
+        phone: '81 9988 7766'
+      }
+    ]
+  },
+  {
+    id: 'cust-104',
+    name: 'Jorge Luis Morales',
+    email: 'jorge.morales@example.com',
+    phone: '33 1234 5678',
+    avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&q=80',
+    favoriteStore: 'Guadalajara Andares',
+    wishlistProductIds: [],
+    registeredAt: '2026-07-01',
+    status: 'inactivo',
+    totalOrders: 0,
+    totalSpent: 0,
+    addresses: []
+  }
+];
 
 export const INITIAL_PRODUCTS: Product[] = [
   {

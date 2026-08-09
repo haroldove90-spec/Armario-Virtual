@@ -225,20 +225,84 @@ INSERT INTO public.products (
   '2026-07-02'
 );
 
--- Configuración de Envíos
-INSERT INTO public.shipping_config (
-  id, free_shipping_threshold, default_flat_rate, express_rate, carriers
-) VALUES (
-  'default',
-  499.00,
-  79.00,
-  149.00,
-  '[
-    {"id": "carrier-1", "name": "Entrega Exprés Ropa en Línea (Propio)", "code": "REL-EXPRESS", "estimatedDays": "1 - 2 días hábiles", "cost": 79, "active": true, "iconName": "Truck", "trackingUrlTemplate": "https://ropaenlinea.com.mx/rastreo?id={TRACKING}"},
-    {"id": "carrier-2", "name": "Estafeta México", "code": "ESTAFETA", "estimatedDays": "2 - 4 días hábiles", "cost": 89, "active": true, "iconName": "PackageCheck", "trackingUrlTemplate": "https://www.estafeta.com/Rastreo?id={TRACKING}"},
-    {"id": "carrier-3", "name": "DHL Express", "code": "DHL", "estimatedDays": "24 hrs garantizadas", "cost": 149, "active": true, "iconName": "Zap", "trackingUrlTemplate": "https://www.dhl.com/mx-es/home/tracking.html?tracking-id={TRACKING}"}
-  ]'::jsonb
-) ON CONFLICT (id) DO NOTHING;
+-- 7. TABLA DE CATEGORÍAS Y SUBCATEGORÍAS (categories)
+DROP TABLE IF EXISTS public.categories CASCADE;
+CREATE TABLE public.categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  description TEXT,
+  image_url TEXT,
+  subcategories JSONB NOT NULL DEFAULT '[]'::jsonb
+);
+
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir acceso a categorias" ON public.categories FOR ALL USING (true);
+
+-- 8. TABLA DE EMPLEADOS Y CREDENCIALES (employees)
+DROP TABLE IF EXISTS public.employees CASCADE;
+CREATE TABLE public.employees (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'vendedor',
+  status TEXT NOT NULL DEFAULT 'activo',
+  created_at TEXT NOT NULL
+);
+
+ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir acceso a empleados" ON public.employees FOR ALL USING (true);
+
+-- 9. TABLA DE PERFIL DE ADMINISTRADOR (admin_profile)
+DROP TABLE IF EXISTS public.admin_profile CASCADE;
+CREATE TABLE public.admin_profile (
+  id TEXT PRIMARY KEY DEFAULT 'admin-default',
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'Administrador General',
+  store_name TEXT NOT NULL DEFAULT 'Armario Virtual',
+  rfc TEXT,
+  address TEXT
+);
+
+ALTER TABLE public.admin_profile ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir acceso a perfil admin" ON public.admin_profile FOR ALL USING (true);
+
+-- ========================================================
+-- INSERCIÓN DE DATOS INICIALES (CATEGORÍAS, EMPLEADOS, PERFIL ADMIN)
+-- ========================================================
+
+INSERT INTO public.categories (id, name, slug, description, image_url, subcategories) VALUES
+(
+  'cat-1',
+  'Moda Mujer',
+  'mujer',
+  'Ropa, vestidos, abrigos y calzado exclusivo para dama.',
+  'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
+  '[{"id": "sub-101", "name": "Vestidos"}, {"id": "sub-102", "name": "Abrigos y Chamarras"}, {"id": "sub-103", "name": "Blusas y Tops"}, {"id": "sub-104", "name": "Pantalones y Jeans"}]'::jsonb
+),
+(
+  'cat-2',
+  'Moda Hombre',
+  'hombre',
+  'Pantalones, camisas, sacos y ropa urbana para caballero.',
+  'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
+  '[{"id": "sub-201", "name": "Pantalones y Jeans"}, {"id": "sub-202", "name": "Sacos y Trajes"}, {"id": "sub-203", "name": "Camisas y Playeras"}]'::jsonb
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.employees (id, name, username, password, email, phone, role, status, created_at) VALUES
+('emp-1', 'Carlos Mendoza', 'cmendoza', 'cmendozapass2026', 'carlos.mendoza@armariovirtual.com', '55 9876 5432', 'vendedor', 'activo', '2026-01-15'),
+('emp-2', 'Laura Gómez', 'lgomez', 'lgomezpass2026', 'laura.gomez@armariovirtual.com', '55 8765 4321', 'inventario', 'activo', '2026-02-01')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.admin_profile (id, name, email, phone, role, store_name, rfc, address) VALUES
+('admin-default', 'Adrian Morga', 'adrian.morga@armariovirtual.com', '55 1234 5678', 'Super Administrador', 'Armario Virtual', 'MORA850412XYZ', 'Av. Insurgentes Sur 1602, Crédito Constructor, Benito Juárez, CDMX')
+ON CONFLICT (id) DO NOTHING;
 
 -- Diseño de Tienda
 INSERT INTO public.store_design (

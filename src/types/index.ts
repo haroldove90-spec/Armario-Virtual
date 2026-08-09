@@ -1,4 +1,22 @@
-export type Category = 'mujer' | 'hombre' | 'ninos' | 'calzado' | 'belleza' | 'hogar' | 'ofertas';
+export type Category = string;
+
+export interface SubcategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  active: boolean;
+}
+
+export interface CategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  iconName: string;
+  description: string;
+  active: boolean;
+  subcategories: SubcategoryItem[];
+}
 
 export interface Product {
   id: string;
@@ -80,6 +98,33 @@ export interface Customer {
   addresses: ShippingAddress[];
   wishlistProductIds: string[];
   registeredAt: string;
+  status?: 'activo' | 'suspendido' | 'inactivo';
+  totalOrders?: number;
+  totalSpent?: number;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  username: string;
+  password?: string;
+  role: string;
+  status: 'activo' | 'suspendido';
+  permissions: string[];
+  createdAt: string;
+  lastAccess?: string;
+  avatarUrl?: string;
+}
+
+export interface AdminProfile {
+  name: string;
+  email: string;
+  phone: string;
+  roleTitle: string;
+  storeName: string;
+  avatarUrl?: string;
+  createdAt: string;
 }
 
 export interface EnviosRate {
@@ -158,5 +203,6 @@ export interface CartItem {
 }
 
 export type ActiveRole = 'tienda' | 'cliente' | 'admin';
-export type AdminTab = 'metricas' | 'productos' | 'ventas' | 'envio' | 'diseno';
+export type AdminTab = 'metricas' | 'productos' | 'categorias' | 'ventas' | 'envio' | 'diseno' | 'perfil' | 'usuarios' | 'empleados';
 export type CustomerTab = 'compras' | 'perfil' | 'domicilios' | 'favoritos';
+

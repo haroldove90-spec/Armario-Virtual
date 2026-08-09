@@ -339,6 +339,21 @@ export const SidebarNav: React.FC = () => {
 
                     <button
                       onClick={() => {
+                        setAdminTab('categorias');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                        adminTab === 'categorias'
+                          ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      }`}
+                    >
+                      <Tag className="w-4 h-4 text-yellow-400" />
+                      <span>Gestión de Categorías</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         setAdminTab('ventas');
                         setSidebarOpen(false);
                       }}
@@ -380,6 +395,51 @@ export const SidebarNav: React.FC = () => {
                     >
                       <Palette className="w-4 h-4 text-yellow-400" />
                       <span>Diseño de Tienda</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAdminTab('perfil');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                        adminTab === 'perfil'
+                          ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      }`}
+                    >
+                      <User className="w-4 h-4 text-yellow-400" />
+                      <span>Perfil Administrador</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAdminTab('usuarios');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                        adminTab === 'usuarios'
+                          ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      }`}
+                    >
+                      <User className="w-4 h-4 text-yellow-400" />
+                      <span>Usuarios Registrados</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAdminTab('empleados');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                        adminTab === 'empleados'
+                          ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      }`}
+                    >
+                      <User className="w-4 h-4 text-yellow-400" />
+                      <span>Empleados & Credenciales</span>
                     </button>
 
                     <button

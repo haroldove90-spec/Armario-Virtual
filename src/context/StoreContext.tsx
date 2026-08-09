@@ -11,19 +11,27 @@ import {
   CustomerTab,
   Category,
   OrderStatus,
-  ShippingAddress
+  ShippingAddress,
+  CategoryItem,
+  SubcategoryItem,
+  Employee,
+  AdminProfile
 } from '../types';
 import {
   INITIAL_PRODUCTS,
   INITIAL_ORDERS,
   INITIAL_CUSTOMER,
   INITIAL_SHIPPING_CONFIG,
-  INITIAL_STORE_DESIGN
+  INITIAL_STORE_DESIGN,
+  INITIAL_CATEGORIES,
+  INITIAL_ADMIN_PROFILE,
+  INITIAL_EMPLOYEES,
+  INITIAL_CUSTOMERS_LIST
 } from '../data/initialData';
 import { supabase } from '../lib/supabase';
 
 interface StoreContextType {
-  // Role & Navigation
+  // Role & Navigation Persistence
   activeRole: ActiveRole;
   setActiveRole: (role: ActiveRole) => void;
   sidebarOpen: boolean;
@@ -44,6 +52,31 @@ interface StoreContextType {
   customerLogout: () => void;
   adminLogin: (email?: string, password?: string) => boolean;
   adminLogout: () => void;
+
+  // Admin Profile
+  adminProfile: AdminProfile;
+  updateAdminProfile: (profile: Partial<AdminProfile>) => void;
+
+  // Categories & Subcategories
+  categories: CategoryItem[];
+  addCategory: (category: Omit<CategoryItem, 'id'>) => void;
+  updateCategory: (id: string, category: Partial<CategoryItem>) => void;
+  deleteCategory: (id: string) => void;
+  addSubcategory: (categoryId: string, subcategory: Omit<SubcategoryItem, 'id'>) => void;
+  deleteSubcategory: (categoryId: string, subcategoryId: string) => void;
+
+  // Employees Management
+  employees: Employee[];
+  addEmployee: (employee: Omit<Employee, 'id'>) => void;
+  updateEmployee: (id: string, employee: Partial<Employee>) => void;
+  toggleEmployeeStatus: (id: string) => void;
+  deleteEmployee: (id: string) => void;
+
+  // Registered Customers List Management
+  customersList: Customer[];
+  addCustomerAccount: (customerData: Omit<Customer, 'id'>) => void;
+  toggleCustomerStatus: (id: string) => void;
+  deleteCustomerAccount: (id: string) => void;
 
   // Store Data
   products: Product[];
@@ -116,12 +149,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const LS_CART = 'ropaenlinea_cart_v1';
   const LS_AUTH_CUSTOMER = 'ropaenlinea_auth_customer_v1';
   const LS_AUTH_ADMIN = 'ropaenlinea_auth_admin_v1';
+  const LS_ACTIVE_ROLE = 'ropaenlinea_active_role_v1';
+  const LS_ADMIN_TAB = 'ropaenlinea_admin_tab_v1';
+  const LS_CUSTOMER_TAB = 'ropaenlinea_customer_tab_v1';
+  const LS_CATEGORIES = 'ropaenlinea_categories_v1';
+  const LS_ADMIN_PROFILE = 'ropaenlinea_admin_profile_v1';
+  const LS_EMPLOYEES = 'ropaenlinea_employees_v1';
+  const LS_CUSTOMERS_LIST = 'ropaenlinea_customers_list_v1';
 
-  // Role & UI state
-  const [activeRole, setActiveRole] = useState<ActiveRole>('tienda');
+  // Role & UI state with lazy init from localStorage
+  const [activeRole, setActiveRoleState] = useState<ActiveRole>(() => {
+    const saved = localStorage.getItem(LS_ACTIVE_ROLE);
+    return (saved as ActiveRole) || 'tienda';
+  });
+
+  const setActiveRole = (role: ActiveRole) => {
+    setActiveRoleState(role);
+    localStorage.setItem(LS_ACTIVE_ROLE, role);
+  };
+
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [adminTab, setAdminTab] = useState<AdminTab>('metricas');
-  const [customerTab, setCustomerTab] = useState<CustomerTab>('compras');
+
+  const [adminTab, setAdminTabState] = useState<AdminTab>(() => {
+    const saved = localStorage.getItem(LS_ADMIN_TAB);
+    return (saved as AdminTab) || 'metricas';
+  });
+
+  const setAdminTab = (tab: AdminTab) => {
+    setAdminTabState(tab);
+    localStorage.setItem(LS_ADMIN_TAB, tab);
+  };
+
+  const [customerTab, setCustomerTabState] = useState<CustomerTab>(() => {
+    const saved = localStorage.getItem(LS_CUSTOMER_TAB);
+    return (saved as CustomerTab) || 'compras';
+  });
+
+  const setCustomerTab = (tab: CustomerTab) => {
+    setCustomerTabState(tab);
+    localStorage.setItem(LS_CUSTOMER_TAB, tab);
+  };
+
   const [selectedCategory, setSelectedCategory] = useState<Category | 'todas'>('todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -145,7 +213,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isAdminLoggedIn]);
 
   const customerLogin = (email?: string, password?: string): boolean => {
-    // Simulated credential check or quick login
     setIsCustomerLoggedIn(true);
     showToast('🔑 Sesión de Cliente iniciada correctamente');
     return true;
@@ -157,7 +224,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const adminLogin = (email?: string, password?: string): boolean => {
-    // Simulated credential check or quick login
     setIsAdminLoggedIn(true);
     showToast('🛡️ Sesión de Administrador iniciada correctamente');
     return true;
@@ -166,6 +232,165 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const adminLogout = () => {
     setIsAdminLoggedIn(false);
     showToast('Sesión de administrador cerrada');
+  };
+
+  // Categories State
+  const [categories, setCategories] = useState<CategoryItem[]>(() => {
+    const saved = localStorage.getItem(LS_CATEGORIES);
+    return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_CATEGORIES, JSON.stringify(categories));
+  }, [categories]);
+
+  const addCategory = (catData: Omit<CategoryItem, 'id'>) => {
+    const newCat: CategoryItem = {
+      ...catData,
+      id: `cat-${Date.now()}`
+    };
+    setCategories(prev => [...prev, newCat]);
+    showToast(`🏷️ Categoría "${newCat.name}" agregada`);
+  };
+
+  const updateCategory = (id: string, catData: Partial<CategoryItem>) => {
+    setCategories(prev => prev.map(c => (c.id === id ? { ...c, ...catData } : c)));
+    showToast('Categoría actualizada');
+  };
+
+  const deleteCategory = (id: string) => {
+    setCategories(prev => prev.filter(c => c.id !== id));
+    showToast('Categoría eliminada');
+  };
+
+  const addSubcategory = (categoryId: string, subData: Omit<SubcategoryItem, 'id'>) => {
+    const newSub: SubcategoryItem = {
+      ...subData,
+      id: `sub-${Date.now()}`
+    };
+    setCategories(prev =>
+      prev.map(c => {
+        if (c.id === categoryId) {
+          return { ...c, subcategories: [...c.subcategories, newSub] };
+        }
+        return c;
+      })
+    );
+    showToast(`Subcategoría "${newSub.name}" agregada`);
+  };
+
+  const deleteSubcategory = (categoryId: string, subcategoryId: string) => {
+    setCategories(prev =>
+      prev.map(c => {
+        if (c.id === categoryId) {
+          return { ...c, subcategories: c.subcategories.filter(s => s.id !== subcategoryId) };
+        }
+        return c;
+      })
+    );
+    showToast('Subcategoría eliminada');
+  };
+
+  // Admin Profile State
+  const [adminProfile, setAdminProfile] = useState<AdminProfile>(() => {
+    const saved = localStorage.getItem(LS_ADMIN_PROFILE);
+    return saved ? JSON.parse(saved) : INITIAL_ADMIN_PROFILE;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_ADMIN_PROFILE, JSON.stringify(adminProfile));
+  }, [adminProfile]);
+
+  const updateAdminProfile = (data: Partial<AdminProfile>) => {
+    setAdminProfile(prev => ({ ...prev, ...data }));
+    showToast('👤 Perfil de administrador actualizado');
+  };
+
+  // Employees State
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    const saved = localStorage.getItem(LS_EMPLOYEES);
+    return saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_EMPLOYEES, JSON.stringify(employees));
+  }, [employees]);
+
+  const addEmployee = (empData: Omit<Employee, 'id'>) => {
+    const newEmp: Employee = {
+      ...empData,
+      id: `emp-${Date.now()}`
+    };
+    setEmployees(prev => [newEmp, ...prev]);
+    showToast(`👨‍💼 Empleado "${newEmp.name}" registrado`);
+  };
+
+  const updateEmployee = (id: string, data: Partial<Employee>) => {
+    setEmployees(prev => prev.map(e => (e.id === id ? { ...e, ...data } : e)));
+    showToast('Empleado actualizado');
+  };
+
+  const toggleEmployeeStatus = (id: string) => {
+    setEmployees(prev =>
+      prev.map(e => {
+        if (e.id === id) {
+          const nextStatus = e.status === 'activo' ? 'suspendido' : 'activo';
+          showToast(
+            nextStatus === 'suspendido'
+              ? `🚫 Acceso suspendido para ${e.name}`
+              : `✅ Acceso activado para ${e.name}`
+          );
+          return { ...e, status: nextStatus };
+        }
+        return e;
+      })
+    );
+  };
+
+  const deleteEmployee = (id: string) => {
+    setEmployees(prev => prev.filter(e => e.id !== id));
+    showToast('Empleado eliminado');
+  };
+
+  // Customers List State
+  const [customersList, setCustomersList] = useState<Customer[]>(() => {
+    const saved = localStorage.getItem(LS_CUSTOMERS_LIST);
+    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS_LIST;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_CUSTOMERS_LIST, JSON.stringify(customersList));
+  }, [customersList]);
+
+  const addCustomerAccount = (data: Omit<Customer, 'id'>) => {
+    const newCust: Customer = {
+      ...data,
+      id: `cust-${Date.now()}`
+    };
+    setCustomersList(prev => [newCust, ...prev]);
+    showToast(`👤 Cliente "${newCust.name}" registrado`);
+  };
+
+  const toggleCustomerStatus = (id: string) => {
+    setCustomersList(prev =>
+      prev.map(c => {
+        if (c.id === id) {
+          const nextStatus = (c.status || 'activo') === 'activo' ? 'suspendido' : 'activo';
+          showToast(
+            nextStatus === 'suspendido'
+              ? `🚫 Cuenta suspendida para ${c.name}`
+              : `✅ Cuenta activada para ${c.name}`
+          );
+          return { ...c, status: nextStatus };
+        }
+        return c;
+      })
+    );
+  };
+
+  const deleteCustomerAccount = (id: string) => {
+    setCustomersList(prev => prev.filter(c => c.id !== id));
+    showToast('Usuario cliente eliminado');
   };
 
   // Main state with localStorage lazy init
@@ -575,6 +800,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomer(INITIAL_CUSTOMER);
     setShippingConfig(INITIAL_SHIPPING_CONFIG);
     setStoreDesign(INITIAL_STORE_DESIGN);
+    setCategories(INITIAL_CATEGORIES);
+    setAdminProfile(INITIAL_ADMIN_PROFILE);
+    setEmployees(INITIAL_EMPLOYEES);
+    setCustomersList(INITIAL_CUSTOMERS_LIST);
     setCart([]);
     localStorage.clear();
     showToast('🔄 Datos reestablecidos a valores originales');
@@ -601,6 +830,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customerLogout,
         adminLogin,
         adminLogout,
+        adminProfile,
+        updateAdminProfile,
+        categories,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        addSubcategory,
+        deleteSubcategory,
+        employees,
+        addEmployee,
+        updateEmployee,
+        toggleEmployeeStatus,
+        deleteEmployee,
+        customersList,
+        addCustomerAccount,
+        toggleCustomerStatus,
+        deleteCustomerAccount,
         products,
         orders,
         customer,
@@ -650,3 +896,4 @@ export const useStore = () => {
   }
   return context;
 };
+
