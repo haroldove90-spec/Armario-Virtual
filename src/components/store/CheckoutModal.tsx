@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { ShippingAddress } from '../../types';
+import { ShippingAddress, EnviosRate } from '../../types';
 import {
   X,
   MapPin,
@@ -11,7 +11,11 @@ import {
   ChevronRight,
   ArrowLeft,
   Plus,
-  PackageCheck
+  PackageCheck,
+  Loader2,
+  Zap,
+  Check,
+  Sparkles
 } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -32,6 +36,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
   const [selectedCarrier, setSelectedCarrier] = useState(
     shippingConfig.carriers.find(c => c.active) || shippingConfig.carriers[0]
   );
+  
+  // Envios.com API live state
+  const [enviosRates, setEnviosRates] = useState<EnviosRate[]>([]);
+  const [loadingEnvios, setLoadingEnvios] = useState<boolean>(false);
+  const [selectedEnviosRate, setSelectedEnviosRate] = useState<EnviosRate | null>(null);
+
   const [paymentMethod, setPaymentMethod] = useState<string>('Tarjeta de Crédito / Débito (Visa, Mastercard, AMEX)');
 
   // New address form state
@@ -48,9 +58,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     phone: customer.phone
   });
 
+  // Fetch real-time quotes from Envios.com API when entering Step 2 or changing address
+  useEffect(() => {
+    if (step === 2 && selectedAddress?.postalCode) {
+      setLoadingEnvios(true);
+      fetch('/api/envios/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originPostalCode: shippingConfig.enviosOriginZip || '06600',
+          destinationPostalCode: selectedAddress.postalCode,
+          weight: 1,
+          customApiKey: shippingConfig.enviosApiKey || '9661a48692fa526939383a4598656bb525f82159e7026ebdfc30a3a1700bb7b8'
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.rates) && data.rates.length > 0) {
+            setEnviosRates(data.rates);
+            const rec = data.rates.find((r: EnviosRate) => r.recommended) || data.rates[0];
+            setSelectedEnviosRate(rec);
+          }
+        })
+        .catch(err => {
+          console.error('Error conectando con API Envios.com:', err);
+        })
+        .finally(() => {
+          setLoadingEnvios(false);
+        });
+    }
+  }, [step, selectedAddress, shippingConfig.enviosApiKey, shippingConfig.enviosOriginZip]);
+
   const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   const isFreeShipping = subtotal >= shippingConfig.freeShippingThreshold;
-  const shippingCost = isFreeShipping ? 0 : selectedCarrier.cost;
+  
+  const activeShippingCost = selectedEnviosRate
+    ? selectedEnviosRate.cost
+    : selectedCarrier.cost;
+    
+  const shippingCost = isFreeShipping ? 0 : activeShippingCost;
   const totalAmount = subtotal + shippingCost;
 
   const handleCreateAddress = (e: React.FormEvent) => {
@@ -63,10 +109,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
   const handleFinalizeOrder = () => {
     if (!selectedAddress) return;
+    const providerName = selectedEnviosRate
+      ? `${selectedEnviosRate.carrier} ${selectedEnviosRate.service} (vía envios.com)`
+      : selectedCarrier.name;
+
     const createdOrder = placeOrder(
       selectedAddress,
       paymentMethod,
-      selectedCarrier.name,
+      providerName,
       shippingCost
     );
     setStep(4);
@@ -218,46 +268,153 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
             </div>
           )}
 
-          {/* STEP 2: Carrier selection */}
+          {/* STEP 2: Carrier selection via Envios.com API */}
           {step === 2 && (
             <div className="space-y-4">
-              <h4 className="font-extrabold text-gray-900 text-sm flex items-center gap-2">
-                <Truck className="w-4 h-4 text-purple-700" />
-                Selecciona la Empresa de Envío y Paquetería
-              </h4>
+              {/* Header & API Badge */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-100">
+                <div>
+                  <h4 className="font-extrabold text-gray-900 text-sm flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-[#9E0D0D]" />
+                    Selecciona tu Método de Envío y Paquetería
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    Cotización en tiempo real para el C.P. <strong className="text-gray-900">{selectedAddress?.postalCode || '01000'}</strong> ({selectedAddress?.city || 'CDMX'})
+                  </p>
+                </div>
 
-              <div className="space-y-3">
-                {shippingConfig.carriers
-                  .filter(c => c.active)
-                  .map(carrier => (
-                    <div
-                      key={carrier.id}
-                      onClick={() => setSelectedCarrier(carrier)}
-                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
-                        selectedCarrier?.id === carrier.id
-                          ? 'border-purple-600 bg-purple-50/50 shadow-xs'
-                          : 'border-gray-200 bg-white hover:border-purple-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          checked={selectedCarrier?.id === carrier.id}
-                          onChange={() => setSelectedCarrier(carrier)}
-                          className="accent-purple-600"
-                        />
-                        <div>
-                          <p className="font-bold text-xs text-gray-900">{carrier.name}</p>
-                          <p className="text-[11px] text-gray-500">Tiempo estimado: {carrier.estimatedDays}</p>
+                <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <Sparkles className="w-3 h-3 text-emerald-600" />
+                  <span>Conectado a envios.com</span>
+                </div>
+              </div>
+
+              {/* API Token Info Notice */}
+              <div className="bg-red-950 text-white p-3 rounded-2xl text-[11px] flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-[#9E0D0D] rounded-lg">
+                    <Zap className="w-3.5 h-3.5 text-[#E05A1B]" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-xs">API Envíos.com Conectada</p>
+                    <p className="text-[10px] text-red-200 font-mono">Token: 9661a48692fa52693...700bb7b8</p>
+                  </div>
+                </div>
+                <span className="text-[9px] font-mono bg-white/10 px-2 py-0.5 rounded text-red-200">
+                  v2.1 REST
+                </span>
+              </div>
+
+              {/* Loading State */}
+              {loadingEnvios ? (
+                <div className="py-8 text-center space-y-3 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                  <Loader2 className="w-8 h-8 text-[#9E0D0D] animate-spin mx-auto" />
+                  <p className="text-xs font-bold text-gray-700">Cotizando tarifas en tiempo real con la API de envios.com...</p>
+                  <p className="text-[10px] text-gray-400">Consultando FedEx, Estafeta, DHL Express, Paquetexpress, Redpack y 99minutos</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                  {enviosRates.map(rate => {
+                    const isSelected = selectedEnviosRate?.id === rate.id;
+                    return (
+                      <div
+                        key={rate.id}
+                        onClick={() => setSelectedEnviosRate(rate)}
+                        className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                          isSelected
+                            ? 'border-[#9E0D0D] bg-red-50/60 shadow-xs ring-1 ring-red-200'
+                            : 'border-gray-200 bg-white hover:border-red-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            checked={isSelected}
+                            onChange={() => setSelectedEnviosRate(rate)}
+                            className="accent-[#9E0D0D] w-4 h-4"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-gray-900">{rate.carrier}</span>
+                              <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                                {rate.service}
+                              </span>
+                              {rate.badge && (
+                                <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase ${
+                                  rate.recommended ? 'bg-[#E05A1B] text-white' : 'bg-slate-800 text-slate-100'
+                                }`}>
+                                  {rate.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1">
+                              <Truck className="w-3 h-3 text-gray-400 inline" />
+                              Entrega estimada: <strong>{rate.estimatedDays}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className={`text-sm font-black font-mono block ${isSelected ? 'text-[#9E0D0D]' : 'text-gray-900'}`}>
+                            {isFreeShipping ? (
+                              <span className="text-emerald-600 font-extrabold">¡GRATIS!</span>
+                            ) : (
+                              `$${rate.cost}.00 MXN`
+                            )}
+                          </span>
+                          <span className="text-[9px] text-gray-400 block font-sans">
+                            vía envios.com
+                          </span>
                         </div>
                       </div>
+                    );
+                  })}
 
-                      <span className="text-xs font-extrabold text-purple-900">
-                        {isFreeShipping ? '¡GRATIS!' : `$${carrier.cost}.00 MXN`}
-                      </span>
+                  {/* Option to select default store carriers as fallback */}
+                  {enviosRates.length === 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-gray-700">Opciones de envío locales:</p>
+                      {shippingConfig.carriers
+                        .filter(c => c.active)
+                        .map(carrier => (
+                          <div
+                            key={carrier.id}
+                            onClick={() => {
+                              setSelectedEnviosRate(null);
+                              setSelectedCarrier(carrier);
+                            }}
+                            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                              !selectedEnviosRate && selectedCarrier?.id === carrier.id
+                                ? 'border-[#9E0D0D] bg-red-50/50 shadow-xs'
+                                : 'border-gray-200 bg-white hover:border-red-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="radio"
+                                checked={!selectedEnviosRate && selectedCarrier?.id === carrier.id}
+                                onChange={() => {
+                                  setSelectedEnviosRate(null);
+                                  setSelectedCarrier(carrier);
+                                }}
+                                className="accent-[#9E0D0D]"
+                              />
+                              <div>
+                                <p className="font-bold text-xs text-gray-900">{carrier.name}</p>
+                                <p className="text-[11px] text-gray-500">Tiempo estimado: {carrier.estimatedDays}</p>
+                              </div>
+                            </div>
+
+                            <span className="text-xs font-extrabold text-[#9E0D0D]">
+                              {isFreeShipping ? '¡GRATIS!' : `$${carrier.cost}.00 MXN`}
+                            </span>
+                          </div>
+                        ))}
                     </div>
-                  ))}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

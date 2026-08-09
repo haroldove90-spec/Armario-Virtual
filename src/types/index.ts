@@ -82,6 +82,17 @@ export interface Customer {
   registeredAt: string;
 }
 
+export interface EnviosRate {
+  id: string;
+  carrier: string;
+  service: string;
+  estimatedDays: string;
+  cost: number;
+  carrierCode: string;
+  recommended?: boolean;
+  badge?: string;
+}
+
 export interface ShippingCarrier {
   id: string;
   name: string;
@@ -98,6 +109,9 @@ export interface ShippingConfig {
   defaultFlatRate: number;
   expressRate: number;
   carriers: ShippingCarrier[];
+  enviosApiKey?: string;
+  enviosOriginZip?: string;
+  useLiveEnviosApi?: boolean;
 }
 
 export interface HeroSlider {

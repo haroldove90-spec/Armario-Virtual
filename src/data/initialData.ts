@@ -194,6 +194,9 @@ export const INITIAL_SHIPPING_CONFIG: ShippingConfig = {
   freeShippingThreshold: 499,
   defaultFlatRate: 79,
   expressRate: 149,
+  enviosApiKey: '9661a48692fa526939383a4598656bb525f82159e7026ebdfc30a3a1700bb7b8',
+  enviosOriginZip: '06600',
+  useLiveEnviosApi: true,
   carriers: [
     {
       id: 'carrier-1',
