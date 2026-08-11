@@ -30,7 +30,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-[9999] flex justify-end bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
       <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between relative border-l border-gray-200">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-purple-50/50">

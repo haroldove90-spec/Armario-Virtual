@@ -65,13 +65,13 @@ export const SidebarNav: React.FC = () => {
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 transition-opacity"
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[9990] transition-opacity"
         />
       )}
 
       {/* Left Sidebar Drawer / Fixed Panel */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-72 bg-slate-900 text-slate-100 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out font-sans ${
+        className={`fixed top-0 left-0 bottom-0 z-[9999] w-80 max-w-[85vw] bg-slate-900 text-slate-100 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out font-sans ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
