@@ -34,6 +34,8 @@ export const SidebarNav: React.FC = () => {
     setCustomerTab,
     selectedCategory,
     setSelectedCategory,
+    setSearchQuery,
+    categories,
     isCustomerLoggedIn,
     isAdminLoggedIn,
     customerLogout,
@@ -188,25 +190,67 @@ export const SidebarNav: React.FC = () => {
             {activeRole === 'tienda' && (
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">
-                  Categorías de Tienda
+                  Categorías de Tienda ({categories.length})
                 </p>
                 <div className="space-y-1">
-                  {categoriesList.map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => {
-                        setSelectedCategory(cat.id);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
-                        selectedCategory === cat.id
-                          ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
-                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
-                      }`}
-                    >
-                      {cat.icon}
-                      <span>{cat.label}</span>
-                    </button>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('todas');
+                      if (setSearchQuery) setSearchQuery('');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-bold transition-colors ${
+                      selectedCategory === 'todas'
+                        ? 'bg-red-900/60 text-white font-extrabold border-l-2 border-[#E05A1B]'
+                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Tag className="w-4 h-4 text-[#E05A1B]" />
+                    <span>Todas las Categorías</span>
+                  </button>
+
+                  {categories.map(cat => (
+                    <div key={cat.id} className="space-y-1">
+                      <button
+                        onClick={() => {
+                          setSelectedCategory(cat.slug);
+                          if (setSearchQuery) setSearchQuery('');
+                          setSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-semibold transition-colors ${
+                          selectedCategory === cat.slug
+                            ? 'bg-red-900/60 text-white font-extrabold border-l-2 border-[#E05A1B]'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-3.5 h-3.5 text-red-400" />
+                          <span>{cat.name}</span>
+                        </div>
+                        {cat.subcategories && cat.subcategories.length > 0 && (
+                          <span className="text-[10px] text-slate-500 font-mono">({cat.subcategories.length})</span>
+                        )}
+                      </button>
+
+                      {/* Nested subcategories in mobile sidebar */}
+                      {cat.subcategories && cat.subcategories.length > 0 && (
+                        <div className="pl-6 space-y-0.5 border-l border-slate-800 ml-3">
+                          {cat.subcategories.map(sub => (
+                            <button
+                              key={sub.id}
+                              onClick={() => {
+                                setSelectedCategory(cat.slug);
+                                if (setSearchQuery) setSearchQuery(sub.name);
+                                setSidebarOpen(false);
+                              }}
+                              className="w-full text-left py-1 px-2 text-[11px] text-slate-400 hover:text-amber-300 transition-colors block truncate"
+                            >
+                              • {sub.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

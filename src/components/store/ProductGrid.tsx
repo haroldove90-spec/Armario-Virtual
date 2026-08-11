@@ -6,20 +6,31 @@ import { ProductQuickView } from './ProductQuickView';
 import { SlidersHorizontal, ArrowUpDown, Sparkles, FilterX } from 'lucide-react';
 
 export const ProductGrid: React.FC = () => {
-  const { products, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery } = useStore();
+  const { products, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery, categories } = useStore();
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [sortBy, setSortBy] = useState<'destacados' | 'precio-asc' | 'precio-desc' | 'descuento'>('destacados');
   const [priceFilter, setPriceFilter] = useState<number>(2000);
 
+  const activeCategoryObj = useMemo(() => {
+    return categories.find(c => c.slug === selectedCategory || c.id === selectedCategory || c.name.toLowerCase() === selectedCategory.toLowerCase());
+  }, [categories, selectedCategory]);
+
   const filteredProducts = useMemo(() => {
     return products
       .filter(p => {
-        const matchesCategory = selectedCategory === 'todas' || p.category === selectedCategory;
+        const matchesCategory =
+          selectedCategory === 'todas' ||
+          p.category === selectedCategory ||
+          p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+          (activeCategoryObj && (p.category === activeCategoryObj.slug || p.category.toLowerCase() === activeCategoryObj.name.toLowerCase()));
+        
         const matchesSearch =
           !searchQuery ||
           p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
+          p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.category.toLowerCase().includes(searchQuery.toLowerCase());
+          
         const matchesPrice = p.price <= priceFilter;
         const matchesStock = p.stock > 0;
 
@@ -31,17 +42,14 @@ export const ProductGrid: React.FC = () => {
         if (sortBy === 'descuento') return (b.discountPercentage || 0) - (a.discountPercentage || 0);
         return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
       });
-  }, [products, selectedCategory, searchQuery, priceFilter, sortBy]);
+  }, [products, selectedCategory, searchQuery, priceFilter, sortBy, activeCategoryObj]);
 
-  const categoryLabels: Record<string, string> = {
-    todas: 'Catálogo General de Ropa',
-    ofertas: 'Gran Barata & Ofertas Exclusivas ⚡',
-    mujer: 'Colección Moda Mujer',
-    hombre: 'Colección Moda Hombre',
-    ninos: 'Moda Infantil y Bebés',
-    calzado: 'Calzado & Tenis',
-    hogar: 'Artículos para el Hogar y Blancos'
-  };
+  const categoryTitle = useMemo(() => {
+    if (selectedCategory === 'todas') return 'Catálogo General de Ropa';
+    if (selectedCategory === 'ofertas') return 'Gran Barata & Ofertas Exclusivas ⚡';
+    if (activeCategoryObj) return `Colección ${activeCategoryObj.name}`;
+    return `Categoría: ${selectedCategory}`;
+  }, [selectedCategory, activeCategoryObj]);
 
   return (
     <section className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 font-sans">
@@ -53,7 +61,7 @@ export const ProductGrid: React.FC = () => {
             <span>Catálogo Tienda en Línea</span>
           </div>
           <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">
-            {categoryLabels[selectedCategory] || 'Productos Destacados'}
+            {categoryTitle}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5 font-medium">
             Mostrando {filteredProducts.length} productos disponibles en inventario

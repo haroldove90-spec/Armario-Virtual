@@ -244,22 +244,76 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(LS_CATEGORIES, JSON.stringify(categories));
   }, [categories]);
 
+  // Load categories from Supabase if table exists
+  useEffect(() => {
+    async function loadCategoriesFromSupabase() {
+      try {
+        const { data: dbCategories, error } = await supabase.from('categories').select('*');
+        if (!error && dbCategories && dbCategories.length > 0) {
+          const mapped: CategoryItem[] = dbCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            description: c.description || '',
+            iconName: c.icon_name || 'Tag',
+            active: true,
+            subcategories: typeof c.subcategories === 'string' ? JSON.parse(c.subcategories) : (Array.isArray(c.subcategories) ? c.subcategories : [])
+          }));
+          setCategories(mapped);
+        }
+      } catch (e) {
+        console.log('Supabase categories read skipped, using local data');
+      }
+    }
+    loadCategoriesFromSupabase();
+  }, []);
+
+  const syncCategoryToSupabase = async (cat: CategoryItem) => {
+    try {
+      await supabase.from('categories').upsert({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        description: cat.description,
+        icon_name: cat.iconName || 'Tag',
+        subcategories: cat.subcategories
+      });
+    } catch (e) {
+      console.log('Supabase category upsert error:', e);
+    }
+  };
+
+  const deleteCategoryFromSupabase = async (id: string) => {
+    try {
+      await supabase.from('categories').delete().eq('id', id);
+    } catch (e) {
+      console.log('Supabase category delete error:', e);
+    }
+  };
+
   const addCategory = (catData: Omit<CategoryItem, 'id'>) => {
     const newCat: CategoryItem = {
       ...catData,
       id: `cat-${Date.now()}`
     };
     setCategories(prev => [...prev, newCat]);
+    syncCategoryToSupabase(newCat);
     showToast(`🏷️ Categoría "${newCat.name}" agregada`);
   };
 
   const updateCategory = (id: string, catData: Partial<CategoryItem>) => {
-    setCategories(prev => prev.map(c => (c.id === id ? { ...c, ...catData } : c)));
+    setCategories(prev => {
+      const updated = prev.map(c => (c.id === id ? { ...c, ...catData } : c));
+      const target = updated.find(c => c.id === id);
+      if (target) syncCategoryToSupabase(target);
+      return updated;
+    });
     showToast('Categoría actualizada');
   };
 
   const deleteCategory = (id: string) => {
     setCategories(prev => prev.filter(c => c.id !== id));
+    deleteCategoryFromSupabase(id);
     showToast('Categoría eliminada');
   };
 
@@ -268,26 +322,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...subData,
       id: `sub-${Date.now()}`
     };
-    setCategories(prev =>
-      prev.map(c => {
+    setCategories(prev => {
+      const updated = prev.map(c => {
         if (c.id === categoryId) {
           return { ...c, subcategories: [...c.subcategories, newSub] };
         }
         return c;
-      })
-    );
+      });
+      const target = updated.find(c => c.id === categoryId);
+      if (target) syncCategoryToSupabase(target);
+      return updated;
+    });
     showToast(`Subcategoría "${newSub.name}" agregada`);
   };
 
   const deleteSubcategory = (categoryId: string, subcategoryId: string) => {
-    setCategories(prev =>
-      prev.map(c => {
+    setCategories(prev => {
+      const updated = prev.map(c => {
         if (c.id === categoryId) {
           return { ...c, subcategories: c.subcategories.filter(s => s.id !== subcategoryId) };
         }
         return c;
-      })
-    );
+      });
+      const target = updated.find(c => c.id === categoryId);
+      if (target) syncCategoryToSupabase(target);
+      return updated;
+    });
     showToast('Subcategoría eliminada');
   };
 
