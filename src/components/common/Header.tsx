@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Category } from '../../types';
 import {
@@ -41,6 +41,21 @@ export const Header: React.FC = () => {
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [showLiveSearch, setShowLiveSearch] = useState(false);
+
+  const closeCategoriesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleCategoriesMouseEnter = () => {
+    if (closeCategoriesTimeoutRef.current) {
+      clearTimeout(closeCategoriesTimeoutRef.current);
+    }
+    setCategoriesDropdownOpen(true);
+  };
+
+  const handleCategoriesMouseLeave = () => {
+    closeCategoriesTimeoutRef.current = setTimeout(() => {
+      setCategoriesDropdownOpen(false);
+    }, 300);
+  };
 
   const normalize = (str: string) =>
     (str || '')
@@ -384,17 +399,20 @@ export const Header: React.FC = () => {
           {/* Main Dropdown Button for "Todas las Categorías" */}
           <div
             className="relative shrink-0 z-[110]"
-            onMouseEnter={() => setCategoriesDropdownOpen(true)}
-            onMouseLeave={() => setCategoriesDropdownOpen(false)}
+            onMouseEnter={handleCategoriesMouseEnter}
+            onMouseLeave={handleCategoriesMouseLeave}
           >
             <button
               onClick={() => {
+                if (closeCategoriesTimeoutRef.current) {
+                  clearTimeout(closeCategoriesTimeoutRef.current);
+                }
                 setSelectedCategory('todas');
                 setSearchQuery('');
                 setActiveRole('tienda');
                 setCategoriesDropdownOpen(!categoriesDropdownOpen);
               }}
-              className={`py-1.5 px-3.5 rounded-xl flex items-center gap-2 transition-all ${
+              className={`py-1.5 px-3.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
                 selectedCategory === 'todas'
                   ? 'bg-[#9E0D0D] text-white font-extrabold shadow-md'
                   : 'bg-slate-100 text-slate-800 hover:bg-red-50 hover:text-[#9E0D0D]'
@@ -408,7 +426,9 @@ export const Header: React.FC = () => {
             {/* Unencapsulated Wide Mega Menu Across Screen */}
             {categoriesDropdownOpen && (
               <div
-                className="absolute left-0 top-full mt-2 w-[92vw] max-w-6xl bg-white/98 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-slate-200/90 p-6 z-[999] animate-fadeIn font-sans cursor-default"
+                className="absolute left-0 top-full mt-1 w-[92vw] max-w-6xl bg-white/98 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-slate-200/90 p-6 z-[999] animate-fadeIn font-sans cursor-default before:absolute before:-top-4 before:left-0 before:right-0 before:h-4 before:content-['']"
+                onMouseEnter={handleCategoriesMouseEnter}
+                onMouseLeave={handleCategoriesMouseLeave}
                 onClick={e => e.stopPropagation()}
               >
                 {/* Mega Menu Top Info Bar */}
