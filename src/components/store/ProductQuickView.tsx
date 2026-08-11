@@ -37,6 +37,21 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
   const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
   const originalPriceVal = isOfferActive ? (product.originalPrice || product.price) : product.originalPrice;
 
+  // Variant specific stock calculation
+  const getSelectedVariantStock = (): number => {
+    if (product.variantStock && product.variantStock.length > 0) {
+      const match = product.variantStock.find(
+        v =>
+          (!v.size || v.size === selectedSize) &&
+          (!v.color || v.color === selectedColor)
+      );
+      if (match) return match.stock;
+    }
+    return product.stock;
+  };
+
+  const activeVariantStock = getSelectedVariantStock();
+
   const handleEstimateDelivery = (e: React.FormEvent) => {
     e.preventDefault();
     if (postalCode.length === 5) {
@@ -47,7 +62,7 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
   };
 
   const handleAddToCart = () => {
-    if (product.stock <= 0) return;
+    if (activeVariantStock <= 0) return;
     addToCart(product, selectedSize, selectedColor, quantity);
     onClose();
   };
@@ -254,8 +269,9 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
                 </button>
                 <span className="px-4 py-1.5 text-xs font-black text-gray-900">{quantity}</span>
                 <button
-                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  onClick={() => setQuantity(Math.min(activeVariantStock, quantity + 1))}
                   className="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold"
+                  disabled={quantity >= activeVariantStock}
                 >
                   +
                 </button>
@@ -263,14 +279,18 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
 
               <span
                 className={`text-xs font-bold ${
-                  product.stock <= 0
+                  activeVariantStock <= 0
                     ? 'text-red-600'
-                    : product.stock <= 5
-                    ? 'text-amber-600'
+                    : activeVariantStock <= 3
+                    ? 'text-amber-600 font-black'
                     : 'text-emerald-700'
                 }`}
               >
-                {product.stock <= 0 ? '¡Agotado!' : `(${product.stock} disponibles en stock)`}
+                {activeVariantStock <= 0
+                  ? '¡Agotado en esta combinación!'
+                  : activeVariantStock <= 3
+                  ? `(⚡ ¡Solo ${activeVariantStock} disponible${activeVariantStock > 1 ? 's' : ''}!)`
+                  : `(${activeVariantStock} pzas disponibles en stock)`}
               </span>
             </div>
 
@@ -309,15 +329,15 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
           <div className="flex items-center gap-3">
             <button
               onClick={handleAddToCart}
-              disabled={product.stock <= 0}
+              disabled={activeVariantStock <= 0}
               className={`flex-1 font-black text-sm py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${
-                product.stock > 0
+                activeVariantStock > 0
                   ? 'bg-[#9E0D0D] hover:bg-red-900 text-white active:scale-95'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
               <ShoppingBag className="w-5 h-5" />
-              <span>{product.stock > 0 ? 'Agregar a la Bolsa' : 'Producto Agotado'}</span>
+              <span>{activeVariantStock > 0 ? 'Agregar a la Bolsa' : 'Variante Agotada'}</span>
             </button>
 
             <button

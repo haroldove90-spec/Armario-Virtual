@@ -13,7 +13,8 @@ import { EmployeesModule } from './EmployeesModule';
 import { BarChart3, Package, Layers, ShoppingBag, Truck, Palette, UserCheck, Users, ShieldCheck, Store, User } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
-  const { adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile } = useStore();
+  const { products, adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile } = useStore();
+  const lowStockCount = products.filter(p => p.stock <= 3).length;
 
   const tabs = [
     { id: 'metricas' as AdminTab, label: '📊 Métricas & Ventas', icon: BarChart3, description: 'Estadísticas generales y reportes' },
@@ -85,6 +86,11 @@ export const AdminLayout: React.FC = () => {
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-[#E05A1B]' : 'text-red-300'}`} />
                 <span>{tab.label}</span>
+                {tab.id === 'productos' && lowStockCount > 0 && (
+                  <span className="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full animate-pulse shadow-xs">
+                    ⚠️ {lowStockCount}
+                  </span>
+                )}
               </button>
             );
           })}

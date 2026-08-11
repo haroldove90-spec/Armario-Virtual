@@ -81,12 +81,26 @@ export const ProductsModule: React.FC = () => {
       { name: 'Negro', hex: '#1A1A1A' },
       { name: 'Rojo Carmesí', hex: '#9E0D0D' }
     ] as { name: string; hex: string }[],
+    variantStockMap: {} as Record<string, number>,
     customSizeInput: '',
     customColorName: '',
     customColorHex: '#9E0D0D',
     youtubeUrl: '',
     description: 'Prenda confeccionada con materiales de alta calidad para máxima comodidad.'
   });
+
+  const getCombinations = (sizes: string[], colors: { name: string; hex: string }[]) => {
+    if (sizes.length > 0 && colors.length > 0) {
+      return sizes.flatMap(s => colors.map(c => ({ size: s, color: c.name })));
+    }
+    if (sizes.length > 0) {
+      return sizes.map(s => ({ size: s, color: undefined }));
+    }
+    if (colors.length > 0) {
+      return colors.map(c => ({ size: undefined, color: c.name }));
+    }
+    return [];
+  };
 
   const filtered = products.filter(p => {
     const matchesSearch =
@@ -248,6 +262,27 @@ export const ProductsModule: React.FC = () => {
 
     const calculatedDiscount = origPrice > finalPrice ? Math.round(((origPrice - finalPrice) / origPrice) * 100) : 0;
 
+    // Build variant stock entries if variable product
+    let finalVariantStock: any[] = [];
+    let finalTotalStock = Number(formData.stock);
+
+    if (formData.productType === 'variable') {
+      const comb = getCombinations(finalSizes, finalColors);
+      if (comb.length > 0) {
+        finalVariantStock = comb.map((c, i) => {
+          const key = `${c.size || 'ALL'}__${c.color || 'ALL'}`;
+          const vStock = formData.variantStockMap[key] !== undefined ? Number(formData.variantStockMap[key]) : 5;
+          return {
+            id: `var-${Date.now()}-${i}`,
+            size: c.size,
+            color: c.color,
+            stock: vStock
+          };
+        });
+        finalTotalStock = finalVariantStock.reduce((sum, v) => sum + v.stock, 0);
+      }
+    }
+
     if (editingProd) {
       updateProduct(editingProd.id, {
         name: formData.name,
@@ -258,7 +293,8 @@ export const ProductsModule: React.FC = () => {
         isOffer: finalIsOffer,
         offerPrice: finalIsOffer ? offerPriceNum : undefined,
         discountPercentage: calculatedDiscount,
-        stock: Number(formData.stock),
+        stock: finalTotalStock,
+        variantStock: finalVariantStock,
         sku: formData.sku,
         images: finalImages,
         sizes: finalSizes,
@@ -278,7 +314,8 @@ export const ProductsModule: React.FC = () => {
         isOffer: finalIsOffer,
         offerPrice: finalIsOffer ? offerPriceNum : undefined,
         discountPercentage: calculatedDiscount,
-        stock: Number(formData.stock),
+        stock: finalTotalStock,
+        variantStock: finalVariantStock,
         sku: formData.sku,
         images: finalImages,
         sizes: finalSizes,
@@ -300,6 +337,21 @@ export const ProductsModule: React.FC = () => {
       imgs.push('');
     }
 
+    const vMap: Record<string, number> = {};
+    if (p.variantStock && p.variantStock.length > 0) {
+      p.variantStock.forEach(v => {
+        const key = `${v.size || 'ALL'}__${v.color || 'ALL'}`;
+        vMap[key] = v.stock;
+      });
+    } else {
+      const comb = getCombinations(p.sizes || [], p.colors?.map(c => typeof c === 'string' ? { name: c, hex: '#000' } : c) || []);
+      const perVar = comb.length > 0 ? Math.max(1, Math.floor(p.stock / comb.length)) : p.stock;
+      comb.forEach(c => {
+        const key = `${c.size || 'ALL'}__${c.color || 'ALL'}`;
+        vMap[key] = perVar;
+      });
+    }
+
     setFormData({
       productType: p.productType || (p.sizes.length > 0 || p.colors.length > 0 ? 'variable' : 'sencillo'),
       name: p.name,
@@ -315,6 +367,7 @@ export const ProductsModule: React.FC = () => {
       images: imgs.slice(0, 5),
       selectedSizes: p.sizes || [],
       selectedColors: p.colors || [],
+      variantStockMap: vMap,
       customSizeInput: '',
       customColorName: '',
       customColorHex: '#9E0D0D',
@@ -337,6 +390,8 @@ export const ProductsModule: React.FC = () => {
     }
     return null;
   };
+
+  const lowStockProducts = products.filter(p => p.stock <= 3);
 
   return (
     <div className="space-y-6">
@@ -379,6 +434,7 @@ export const ProductsModule: React.FC = () => {
                 { name: 'Negro', hex: '#1A1A1A' },
                 { name: 'Rojo Carmesí', hex: '#9E0D0D' }
               ],
+              variantStockMap: {},
               customSizeInput: '',
               customColorName: '',
               customColorHex: '#9E0D0D',
@@ -393,6 +449,44 @@ export const ProductsModule: React.FC = () => {
           <span>Registrar Nuevo Producto</span>
         </button>
       </div>
+
+      {/* Low Stock Alert Banner */}
+      {lowStockProducts.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 mt-0.5 shadow-xs">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded uppercase tracking-wider">
+                  ⚠️ NOTIFICACIÓN AL ADMIN
+                </span>
+                <span className="text-xs font-bold text-amber-900 font-mono">
+                  {lowStockProducts.length} producto{lowStockProducts.length > 1 ? 's' : ''} en stock crítico (≤ 3 prendas)
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1">
+                Atención: Los siguientes productos han alcanzado el umbral de 3 o menos unidades. Haz clic en cualquiera para actualizar su inventario:
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {lowStockProducts.map(lp => (
+                  <button
+                    key={lp.id}
+                    onClick={() => handleStartEdit(lp)}
+                    className="inline-flex items-center gap-1.5 bg-white border border-amber-300 px-2.5 py-1 rounded-lg text-xs font-bold text-amber-900 hover:bg-amber-100 transition-all shadow-2xs"
+                  >
+                    <span>{lp.name}</span>
+                    <span className={`px-1.5 py-0.2 rounded font-black text-[10px] ${lp.stock === 0 ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'}`}>
+                      {lp.stock === 0 ? 'AGOTADO' : `${lp.stock} pzas`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div className="flex flex-col md:flex-row gap-3">
@@ -968,6 +1062,66 @@ export const ProductsModule: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* 3. STOCK INDIVIDUAL POR VARIANTE (TALLA Y COLOR) */}
+                  {formData.productType === 'variable' &&
+                    (formData.selectedSizes.length > 0 || formData.selectedColors.length > 0) && (
+                      <div className="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200 space-y-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <label className="font-extrabold text-gray-900 text-xs uppercase flex items-center gap-1.5">
+                            <Package className="w-4 h-4 text-[#9E0D0D]" />
+                            3. Inventario Individual por Variante (Stock de cada Talla / Color)
+                          </label>
+                          <span className="text-xs font-black text-[#9E0D0D] bg-white border border-amber-300 px-3 py-1 rounded-xl shadow-2xs">
+                            Total Calculado: {getCombinations(formData.selectedSizes, formData.selectedColors).reduce((acc, c) => {
+                              const key = `${c.size || 'ALL'}__${c.color || 'ALL'}`;
+                              return acc + (formData.variantStockMap[key] !== undefined ? Number(formData.variantStockMap[key]) : 5);
+                            }, 0)} pzas
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-600">
+                          Define el inventario disponible de cada talla y/o color. Cuando un cliente compre una talla/color en la tienda, su inventario específico se actualizará de forma automática.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-1">
+                          {getCombinations(formData.selectedSizes, formData.selectedColors).map((c, idx) => {
+                            const key = `${c.size || 'ALL'}__${c.color || 'ALL'}`;
+                            const currentStock = formData.variantStockMap[key] !== undefined ? formData.variantStockMap[key] : 5;
+                            return (
+                              <div key={idx} className="bg-white p-2.5 rounded-xl border border-gray-200 flex items-center justify-between gap-2 shadow-2xs">
+                                <div className="text-xs">
+                                  <span className="font-bold text-gray-900 block">
+                                    {c.size && `Talla: ${c.size}`} {c.size && c.color && ' / '} {c.color && `Color: ${c.color}`}
+                                  </span>
+                                  <span className={`text-[10px] font-bold ${currentStock <= 0 ? 'text-red-600' : currentStock <= 3 ? 'text-amber-600 font-black' : 'text-emerald-700'}`}>
+                                    {currentStock <= 0 ? '❌ AGOTADO' : currentStock <= 3 ? '⚡ CRÍTICO' : '✓ En Stock'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-500 font-bold">Stock:</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={currentStock}
+                                    onChange={e => {
+                                      const val = Math.max(0, parseInt(e.target.value) || 0);
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        variantStockMap: {
+                                          ...prev.variantStockMap,
+                                          [key]: val
+                                        }
+                                      }));
+                                    }}
+                                    className="w-16 p-1.5 border rounded-lg text-xs font-black text-center bg-gray-50 focus:border-[#9E0D0D] outline-hidden"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                 </div>
               )}
 

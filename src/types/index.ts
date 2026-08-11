@@ -18,6 +18,14 @@ export interface CategoryItem {
   subcategories: SubcategoryItem[];
 }
 
+export interface ProductVariantStock {
+  id: string;
+  size?: string;
+  color?: string;
+  stock: number;
+  sku?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -34,6 +42,7 @@ export interface Product {
   sizes: string[];
   colors: { name: string; hex: string }[];
   productType?: 'sencillo' | 'variable';
+  variantStock?: ProductVariantStock[];
   description: string;
   tags: string[];
   isFeatured?: boolean;

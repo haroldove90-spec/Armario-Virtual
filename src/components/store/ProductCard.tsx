@@ -129,6 +129,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
               {product.description}
             </p>
           )}
+
+          {/* Stock badge indicator */}
+          <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold">
+            {product.stock <= 0 ? (
+              <span className="text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.2 rounded font-black">
+                Agotado
+              </span>
+            ) : product.stock <= 3 ? (
+              <span className="text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded font-black">
+                ⚡ ¡Solo {product.stock} disponible{product.stock > 1 ? 's' : ''}!
+              </span>
+            ) : (
+              <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                Stock: {product.stock} pzas
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Pricing & Stock */}

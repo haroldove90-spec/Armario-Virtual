@@ -458,6 +458,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
             sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
             colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
+            variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
             description: p.description || '',
             tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
             isFeatured: p.is_featured,
@@ -615,13 +616,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setOrders(prev => [newOrder, ...prev]);
 
-    // Update product stock
+    // Update product stock and variant stock
     setProducts(prevProducts => {
       return prevProducts.map(p => {
         const cartItem = cart.find(c => c.product.id === p.id);
         if (cartItem) {
-          const updatedStock = Math.max(0, p.stock - cartItem.quantity);
-          return { ...p, stock: updatedStock };
+          if (p.variantStock && p.variantStock.length > 0) {
+            const updatedVariants = p.variantStock.map(v => {
+              const matchSize = !v.size || v.size === cartItem.selectedSize;
+              const matchColor = !v.color || v.color === cartItem.selectedColor;
+              if (matchSize && matchColor) {
+                return { ...v, stock: Math.max(0, v.stock - cartItem.quantity) };
+              }
+              return v;
+            });
+            const newTotalStock = updatedVariants.reduce((sum, v) => sum + Number(v.stock || 0), 0);
+            return { ...p, stock: newTotalStock, variantStock: updatedVariants };
+          } else {
+            const updatedStock = Math.max(0, p.stock - cartItem.quantity);
+            return { ...p, stock: updatedStock };
+          }
         }
         return p;
       });

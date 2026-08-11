@@ -21,8 +21,9 @@ export const ProductGrid: React.FC = () => {
           p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesPrice = p.price <= priceFilter;
+        const matchesStock = p.stock > 0;
 
-        return matchesCategory && matchesSearch && matchesPrice;
+        return matchesCategory && matchesSearch && matchesPrice && matchesStock;
       })
       .sort((a, b) => {
         if (sortBy === 'precio-asc') return a.price - b.price;
