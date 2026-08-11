@@ -33,6 +33,7 @@ export interface Product {
   images: string[]; // Max 5 images (1 primary, 4 secondary)
   sizes: string[];
   colors: { name: string; hex: string }[];
+  productType?: 'sencillo' | 'variable';
   description: string;
   tags: string[];
   isFeatured?: boolean;

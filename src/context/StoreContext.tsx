@@ -447,6 +447,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const mapped: Product[] = dbProducts.map(p => ({
             id: p.id,
             name: p.name,
+            productType: p.product_type || 'variable',
             category: p.category,
             subcategory: p.subcategory,
             price: Number(p.price),

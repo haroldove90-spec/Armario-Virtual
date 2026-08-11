@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS public.products CASCADE;
 CREATE TABLE public.products (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  product_type TEXT DEFAULT 'variable',
   category TEXT NOT NULL,
   subcategory TEXT NOT NULL,
   price NUMERIC(10, 2) NOT NULL,
@@ -31,6 +32,9 @@ CREATE TABLE public.products (
   is_featured BOOLEAN DEFAULT FALSE,
   date_added TEXT NOT NULL
 );
+
+-- Si la tabla products ya existe en Supabase, ejecuta esta linea para agregar la columna product_type:
+-- ALTER TABLE public.products ADD COLUMN IF NOT EXISTS product_type TEXT DEFAULT 'variable';
 
 -- Habilitar RLS y políticas en products
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
