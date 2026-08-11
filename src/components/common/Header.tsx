@@ -31,7 +31,8 @@ export const Header: React.FC = () => {
     setActiveRole,
     setCustomerTab,
     setSidebarOpen,
-    categories
+    categories,
+    products
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -39,6 +40,42 @@ export const Header: React.FC = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [showLiveSearch, setShowLiveSearch] = useState(false);
+
+  const normalize = (str: string) =>
+    (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const liveMatches = React.useMemo(() => {
+    const raw = searchQuery.trim();
+    if (!raw) return [];
+    const norm = normalize(raw);
+    const words = norm.split(/\s+/).filter(Boolean);
+
+    return products.filter(p => {
+      const nameNorm = normalize(p.name);
+      const descNorm = normalize(p.description);
+      const catNorm = normalize(p.category);
+      const subNorm = normalize(p.subcategory);
+      const skuNorm = p.sku ? normalize(p.sku) : '';
+      const tagsNorm = p.tags ? p.tags.map(t => normalize(t)) : [];
+      const sizesNorm = p.sizes ? p.sizes.map(s => normalize(s)) : [];
+      const colorsNorm = p.colors ? p.colors.map(c => (typeof c === 'string' ? normalize(c) : normalize(c.name))) : [];
+
+      return words.every(w =>
+        nameNorm.includes(w) ||
+        descNorm.includes(w) ||
+        catNorm.includes(w) ||
+        subNorm.includes(w) ||
+        skuNorm.includes(w) ||
+        tagsNorm.some(t => t.includes(w)) ||
+        sizesNorm.some(s => s.includes(w)) ||
+        colorsNorm.some(c => c.includes(w))
+      );
+    });
+  }, [products, searchQuery]);
 
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -102,19 +139,100 @@ export const Header: React.FC = () => {
                 type="text"
                 placeholder="Buscar vestidos, chamarras, tenis, marcas..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setShowLiveSearch(true)}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setShowLiveSearch(true);
+                }}
                 className="w-full bg-slate-100 hover:bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 rounded-full py-2.5 pl-11 pr-10 border border-transparent focus:border-[#9E0D0D] focus:ring-2 focus:ring-red-100 transition-all outline-hidden"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-4" />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 text-slate-400 hover:text-slate-600"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setShowLiveSearch(false);
+                  }}
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
+
+            {/* Live Search Popup */}
+            {showLiveSearch && searchQuery.trim().length > 0 && (
+              <div
+                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[999] p-3 text-xs animate-fadeIn overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+                  <span className="font-extrabold text-slate-800 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5 text-[#E05A1B]" />
+                    Resultados ({liveMatches.length})
+                  </span>
+                  <button
+                    onClick={() => setShowLiveSearch(false)}
+                    className="text-[10px] text-slate-400 hover:text-slate-700 font-bold cursor-pointer"
+                  >
+                    Cerrar ✕
+                  </button>
+                </div>
+
+                {liveMatches.length > 0 ? (
+                  <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                    {liveMatches.slice(0, 5).map(prod => (
+                      <div
+                        key={prod.id}
+                        onClick={() => {
+                          setActiveRole('tienda');
+                          setShowLiveSearch(false);
+                          const el = document.getElementById('catalogo');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="p-2 rounded-xl hover:bg-red-50/60 transition-colors flex items-center gap-3 cursor-pointer group"
+                      >
+                        <img
+                          src={prod.images[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&q=80'}
+                          alt={prod.name}
+                          className="w-10 h-10 object-cover rounded-lg border border-slate-200 group-hover:scale-105 transition-transform shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 truncate group-hover:text-[#9E0D0D] transition-colors">
+                            {prod.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px]">
+                            <span className="bg-slate-100 px-1.5 py-0.2 rounded text-slate-600 font-medium">
+                              {prod.subcategory || prod.category}
+                            </span>
+                            <span className="font-extrabold text-[#9E0D0D] font-mono">
+                              ${prod.price} MXN
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      onClick={() => {
+                        setActiveRole('tienda');
+                        setShowLiveSearch(false);
+                        const el = document.getElementById('catalogo');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full mt-2 bg-[#9E0D0D] hover:bg-red-900 text-white font-extrabold text-xs py-2 rounded-xl text-center shadow-xs transition-all uppercase tracking-wider block cursor-pointer"
+                    >
+                      Ver los {liveMatches.length} resultados en la tienda ↓
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-slate-500">
+                    <p className="font-bold text-xs">No se encontraron productos</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Intenta buscar "vestido", "chamarra", "tenis", "bolso"</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Action Icons */}

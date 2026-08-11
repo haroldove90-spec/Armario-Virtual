@@ -3,34 +3,71 @@ import { useStore } from '../../context/StoreContext';
 import { Product } from '../../types';
 import { ProductCard } from './ProductCard';
 import { ProductQuickView } from './ProductQuickView';
-import { SlidersHorizontal, ArrowUpDown, Sparkles, FilterX } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, Sparkles, FilterX, Search } from 'lucide-react';
+
+const normalizeText = (str: string) =>
+  (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
 export const ProductGrid: React.FC = () => {
   const { products, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery, categories } = useStore();
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [sortBy, setSortBy] = useState<'destacados' | 'precio-asc' | 'precio-desc' | 'descuento'>('destacados');
-  const [priceFilter, setPriceFilter] = useState<number>(2000);
+  const [priceFilter, setPriceFilter] = useState<number>(10000);
 
   const activeCategoryObj = useMemo(() => {
-    return categories.find(c => c.slug === selectedCategory || c.id === selectedCategory || c.name.toLowerCase() === selectedCategory.toLowerCase());
+    return categories.find(c => c.slug === selectedCategory || c.id === selectedCategory || normalizeText(c.name) === normalizeText(selectedCategory));
   }, [categories, selectedCategory]);
 
+  const maxAvailablePrice = useMemo(() => {
+    if (!products || products.length === 0) return 10000;
+    return Math.max(...products.map(p => p.price || 0), 10000);
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
+    const rawQuery = searchQuery.trim();
+    const queryNorm = normalizeText(rawQuery);
+    const queryWords = queryNorm.split(/\s+/).filter(Boolean);
+
     return products
       .filter(p => {
+        // 1. Category Matching: Ignore category restriction if user is actively searching
         const matchesCategory =
+          Boolean(queryNorm) ||
           selectedCategory === 'todas' ||
           p.category === selectedCategory ||
-          p.category.toLowerCase() === selectedCategory.toLowerCase() ||
-          (activeCategoryObj && (p.category === activeCategoryObj.slug || p.category.toLowerCase() === activeCategoryObj.name.toLowerCase()));
-        
-        const matchesSearch =
-          !searchQuery ||
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category.toLowerCase().includes(searchQuery.toLowerCase());
-          
+          normalizeText(p.category) === normalizeText(selectedCategory) ||
+          (activeCategoryObj && (p.category === activeCategoryObj.slug || normalizeText(p.category) === normalizeText(activeCategoryObj.name)));
+
+        // 2. Comprehensive Search Matching across Name, Desc, Category, Subcategory, SKU, Tags, Sizes, Colors
+        let matchesSearch = true;
+        if (queryWords.length > 0) {
+          const nameNorm = normalizeText(p.name);
+          const descNorm = normalizeText(p.description);
+          const catNorm = normalizeText(p.category);
+          const subNorm = normalizeText(p.subcategory);
+          const skuNorm = p.sku ? normalizeText(p.sku) : '';
+          const tagsNorm = p.tags ? p.tags.map(t => normalizeText(t)) : [];
+          const sizesNorm = p.sizes ? p.sizes.map(s => normalizeText(s)) : [];
+          const colorsNorm = p.colors
+            ? p.colors.map(c => (typeof c === 'string' ? normalizeText(c) : normalizeText(c.name)))
+            : [];
+
+          matchesSearch = queryWords.every(word =>
+            nameNorm.includes(word) ||
+            descNorm.includes(word) ||
+            catNorm.includes(word) ||
+            subNorm.includes(word) ||
+            skuNorm.includes(word) ||
+            tagsNorm.some(t => t.includes(word)) ||
+            sizesNorm.some(s => s.includes(word)) ||
+            colorsNorm.some(c => c.includes(word))
+          );
+        }
+
+        // 3. Price & Stock Filters
         const matchesPrice = p.price <= priceFilter;
         const matchesStock = p.stock > 0;
 
@@ -45,14 +82,34 @@ export const ProductGrid: React.FC = () => {
   }, [products, selectedCategory, searchQuery, priceFilter, sortBy, activeCategoryObj]);
 
   const categoryTitle = useMemo(() => {
+    if (searchQuery.trim()) return `Resultados para: "${searchQuery.trim()}"`;
     if (selectedCategory === 'todas') return 'Catálogo General de Ropa';
     if (selectedCategory === 'ofertas') return 'Gran Barata & Ofertas Exclusivas ⚡';
     if (activeCategoryObj) return `Colección ${activeCategoryObj.name}`;
     return `Categoría: ${selectedCategory}`;
-  }, [selectedCategory, activeCategoryObj]);
+  }, [selectedCategory, searchQuery, activeCategoryObj]);
 
   return (
-    <section className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 font-sans">
+    <section id="catalogo" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 font-sans">
+      {/* Search active notice */}
+      {searchQuery.trim() && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between flex-wrap gap-2 animate-fadeIn">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#9E0D0D]">
+            <Search className="w-4 h-4 text-[#E05A1B]" />
+            <span>Buscando en todo el catálogo: "{searchQuery.trim()}"</span>
+            <span className="bg-[#9E0D0D] text-white px-2 py-0.5 rounded-full text-[10px]">
+              {filteredProducts.length} encontrados
+            </span>
+          </div>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="text-xs font-black text-slate-600 hover:text-[#9E0D0D] underline cursor-pointer"
+          >
+            Limpiar búsqueda y ver todo
+          </button>
+        </div>
+      )}
+
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-200">
         <div>
@@ -76,7 +133,7 @@ export const ProductGrid: React.FC = () => {
             <input
               type="range"
               min={200}
-              max={2000}
+              max={maxAvailablePrice}
               step={50}
               value={priceFilter}
               onChange={e => setPriceFilter(Number(e.target.value))}
@@ -101,14 +158,14 @@ export const ProductGrid: React.FC = () => {
           </div>
 
           {/* Clear Filters button if search/category active */}
-          {(selectedCategory !== 'todas' || searchQuery) && (
+          {(selectedCategory !== 'todas' || searchQuery || priceFilter < maxAvailablePrice) && (
             <button
               onClick={() => {
                 setSelectedCategory('todas');
                 setSearchQuery('');
-                setPriceFilter(2000);
+                setPriceFilter(maxAvailablePrice);
               }}
-              className="flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 px-2.5 py-1.5 rounded-xl border border-pink-200 transition-colors uppercase tracking-wider"
+              className="flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 px-2.5 py-1.5 rounded-xl border border-pink-200 transition-colors uppercase tracking-wider cursor-pointer"
             >
               <FilterX className="w-3.5 h-3.5" />
               <span>Limpiar</span>
@@ -135,9 +192,9 @@ export const ProductGrid: React.FC = () => {
             onClick={() => {
               setSelectedCategory('todas');
               setSearchQuery('');
-              setPriceFilter(2000);
+              setPriceFilter(maxAvailablePrice);
             }}
-            className="mt-4 bg-purple-600 text-white font-bold text-xs px-5 py-2.5 rounded-full hover:bg-purple-700 transition-colors"
+            className="mt-4 bg-[#9E0D0D] text-white font-bold text-xs px-5 py-2.5 rounded-full hover:bg-red-900 transition-colors shadow-xs cursor-pointer"
           >
             Ver todos los productos
           </button>
@@ -145,7 +202,9 @@ export const ProductGrid: React.FC = () => {
       )}
 
       {/* Quick View Modal */}
-      <ProductQuickView product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
+      {quickViewProduct && (
+        <ProductQuickView product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
+      )}
     </section>
   );
 };
