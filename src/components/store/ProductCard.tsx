@@ -1,7 +1,7 @@
 import React from 'react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
-import { Heart, ShoppingBag, Eye, Star, Truck, Percent } from 'lucide-react';
+import { Heart, ShoppingBag, Eye, Star, Truck, Percent, Tag, Video } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -12,20 +12,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const { addToCart, toggleWishlist, isWishlisted } = useStore();
   const wishlisted = isWishlisted(product.id);
 
+  const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
+  const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
+  const originalPriceVal = isOfferActive ? (product.originalPrice || product.price) : product.originalPrice;
+
   return (
-    <div className="group bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all duration-300 flex flex-col overflow-hidden relative font-sans">
+    <div className="group bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-red-300 transition-all duration-300 flex flex-col overflow-hidden relative font-sans">
       {/* Badges Overlay */}
       <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex flex-col gap-1 items-start max-w-[75%] pointer-events-none">
-        {product.discountPercentage && product.discountPercentage > 0 && (
-          <span className="bg-pink-500 text-white font-extrabold text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded shadow-xs flex items-center gap-0.5 uppercase tracking-wider">
+        {isOfferActive && (
+          <span className="bg-red-600 text-white font-black text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded shadow-xs flex items-center gap-0.5 uppercase tracking-wider animate-pulse">
+            <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            ¡OFERTA!
+          </span>
+        )}
+
+        {product.discountPercentage && product.discountPercentage > 0 && !isOfferActive && (
+          <span className="bg-pink-600 text-white font-extrabold text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded shadow-xs flex items-center gap-0.5 uppercase tracking-wider">
             <Percent className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             -{product.discountPercentage}%
           </span>
         )}
-        {product.price >= 499 && (
-          <span className="bg-[#9E0D0D] text-white font-bold text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded shadow-xs flex items-center gap-0.5 uppercase tracking-wider">
-            <Truck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#E05A1B]" />
-            <span className="hidden xs:inline">Envío</span> Gratis
+
+        {product.stock <= 0 ? (
+          <span className="bg-gray-900 text-white font-black text-[8px] sm:text-[9px] px-2 py-0.5 rounded uppercase">
+            AGOTADO
+          </span>
+        ) : product.stock <= 3 ? (
+          <span className="bg-amber-500 text-white font-bold text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded uppercase">
+            ¡Últimas {product.stock}!
+          </span>
+        ) : null}
+
+        {product.youtubeUrl && (
+          <span className="bg-slate-900/80 backdrop-blur-xs text-white font-bold text-[8px] px-1.5 py-0.5 rounded flex items-center gap-1">
+            <Video className="w-2.5 h-2.5 text-red-500" />
+            Video
           </span>
         )}
       </div>
@@ -64,7 +86,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           />
         )}
 
-        {/* Quick View Hover Button (Desktop / Hover) */}
+        {/* Quick View Hover Button */}
         <div className="absolute inset-x-0 bottom-2 sm:bottom-3 px-2 sm:px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 hidden sm:block">
           <button
             onClick={e => {
@@ -74,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             className="w-full bg-[#9E0D0D] hover:bg-red-900 text-white text-[10px] sm:text-xs font-bold py-1.5 sm:py-2 rounded-lg shadow-lg flex items-center justify-center gap-1.5 transition-all uppercase tracking-wider"
           >
             <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E05A1B]" />
-            Vista Rápida
+            Ver Detalles y Fotos
           </button>
         </div>
       </div>
@@ -89,7 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             </span>
             <div className="flex items-center gap-0.5 sm:gap-1 text-amber-500 font-bold shrink-0">
               <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400" />
-              <span>4.8</span>
+              <span>4.9</span>
             </div>
           </div>
 
@@ -102,7 +124,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             {product.name}
           </h3>
 
-          {/* Short Description snippet for desktop */}
           {product.description && (
             <p className="text-[10px] text-slate-500 line-clamp-1 mt-1 hidden sm:block font-normal">
               {product.description}
@@ -113,13 +134,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
         {/* Pricing & Stock */}
         <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between gap-1 sm:gap-2">
           <div className="min-w-0">
-            {product.originalPrice && (
+            {originalPriceVal && originalPriceVal > displayPrice && (
               <span className="text-[9px] sm:text-[11px] text-slate-400 line-through block font-mono leading-none mb-0.5">
-                ${product.originalPrice.toFixed(2)}
+                ${originalPriceVal.toFixed(2)}
               </span>
             )}
-            <div className="text-xs xs:text-sm sm:text-lg font-black text-[#9E0D0D] font-mono leading-none truncate">
-              ${product.price.toFixed(2)}{' '}
+            <div
+              className={`text-xs xs:text-sm sm:text-lg font-black font-mono leading-none truncate ${
+                isOfferActive ? 'text-red-700 font-extrabold' : 'text-[#9E0D0D]'
+              }`}
+            >
+              ${displayPrice.toFixed(2)}{' '}
               <span className="text-[7px] sm:text-[9px] font-sans font-bold text-slate-500 uppercase">MXN</span>
             </div>
           </div>
@@ -130,7 +155,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             className={`p-1.5 xs:p-2 sm:p-2.5 rounded-md sm:rounded-lg transition-all shadow-xs flex items-center justify-center shrink-0 ${
               product.stock > 0
                 ? 'bg-[#9E0D0D] hover:bg-red-800 text-white active:scale-95'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
             title={product.stock > 0 ? 'Agregar a la bolsa' : 'Agotado'}
           >

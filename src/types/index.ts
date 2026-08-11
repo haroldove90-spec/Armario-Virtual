@@ -26,14 +26,17 @@ export interface Product {
   price: number;
   originalPrice?: number;
   discountPercentage?: number;
+  isOffer?: boolean;
+  offerPrice?: number;
   stock: number;
   sku: string;
-  images: string[];
+  images: string[]; // Max 5 images (1 primary, 4 secondary)
   sizes: string[];
   colors: { name: string; hex: string }[];
   description: string;
   tags: string[];
   isFeatured?: boolean;
+  youtubeUrl?: string;
   dateAdded: string;
 }
 
