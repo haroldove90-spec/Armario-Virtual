@@ -68,11 +68,15 @@ export const Footer: React.FC = () => {
 
           <div className="mt-4 space-y-1.5 text-slate-400">
             <p className="flex items-center gap-2">
-              <Phone className="w-3.5 h-3.5 text-purple-400" />
+              <MapPin className="w-3.5 h-3.5 text-[#E05A1B] shrink-0" />
+              <span className="font-semibold text-slate-200">{storeDesign.storeAddress || 'Los Reyes Iztacala, Tlalnepantla'}</span>
+            </p>
+            <p className="flex items-center gap-2">
+              <Phone className="w-3.5 h-3.5 text-purple-400 shrink-0" />
               <span>Atención al Cliente: 55 5555 8800</span>
             </p>
             <p className="flex items-center gap-2">
-              <Mail className="w-3.5 h-3.5 text-purple-400" />
+              <Mail className="w-3.5 h-3.5 text-purple-400 shrink-0" />
               <span>contacto@ropaenlinea.com.mx</span>
             </p>
           </div>

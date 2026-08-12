@@ -145,7 +145,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           {product.colors && product.colors.length > 0 && (
             <div className="mt-1.5 flex items-center gap-1 overflow-x-auto py-0.5" onClick={e => e.stopPropagation()}>
               {product.colors.map(col => {
-                const colImg = col.imageUrl || (product.colorImages && product.colorImages[col.name]);
+                const rawColImg = col.imageUrl || (product.colorImages && product.colorImages[col.name]);
+                const colImg: string | undefined = Array.isArray(rawColImg) ? rawColImg[0] : (typeof rawColImg === 'string' ? rawColImg : undefined);
                 const isActive = activeColorImg === colImg || (!activeColorImg && colImg === product.images[0]);
                 return (
                   <button

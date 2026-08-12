@@ -83,7 +83,7 @@ export const ProductsModule: React.FC = () => {
       { name: 'Negro', hex: '#1A1A1A' },
       { name: 'Rojo Carmesí', hex: '#9E0D0D' }
     ] as { name: string; hex: string; imageUrl?: string }[],
-    colorImages: {} as Record<string, string>,
+    colorImages: {} as Record<string, string[]>,
     variantStockMap: {} as Record<string, number>,
     customSizeInput: '',
     customColorName: '',
@@ -111,32 +111,68 @@ export const ProductsModule: React.FC = () => {
 
   const availableSubcategories = selectedCategoryObj?.subcategories || [];
 
-  const handleColorImageUrlChange = (colorIndex: number, colorName: string, url: string) => {
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleAddPhotoToColor = (colorName: string, url: string) => {
+    if (!url || !url.trim()) return;
+    const cleanUrl = url.trim();
     setFormData(prev => {
-      const updatedColors = [...prev.selectedColors];
-      updatedColors[colorIndex] = { ...updatedColors[colorIndex], imageUrl: url };
-      const updatedMap = { ...prev.colorImages, [colorName]: url };
+      const existing = prev.colorImages[colorName] || [];
+      if (existing.includes(cleanUrl)) return prev;
+      const updatedList = [...existing, cleanUrl];
+
+      const updatedColors = prev.selectedColors.map(c => {
+        if (c.name === colorName && !c.imageUrl) {
+          return { ...c, imageUrl: cleanUrl };
+        }
+        return c;
+      });
+
       return {
         ...prev,
         selectedColors: updatedColors,
-        colorImages: updatedMap
+        colorImages: {
+          ...prev.colorImages,
+          [colorName]: updatedList
+        }
       };
     });
   };
 
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const handleRemovePhotoFromColor = (colorName: string, photoIndex: number) => {
+    setFormData(prev => {
+      const existing = prev.colorImages[colorName] || [];
+      const updatedList = existing.filter((_, idx) => idx !== photoIndex);
 
-  const handleColorImageFileChange = async (colorIndex: number, colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+      const updatedColors = prev.selectedColors.map(c => {
+        if (c.name === colorName) {
+          return { ...c, imageUrl: updatedList[0] || '' };
+        }
+        return c;
+      });
+
+      return {
+        ...prev,
+        selectedColors: updatedColors,
+        colorImages: {
+          ...prev.colorImages,
+          [colorName]: updatedList
+        }
+      };
+    });
+  };
+
+  const handleUploadColorPhotoFile = async (colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingImage(true);
     try {
       const url = await uploadImage(file);
       if (url) {
-        handleColorImageUrlChange(colorIndex, colorName, url);
+        handleAddPhotoToColor(colorName, url);
       }
     } catch (err) {
-      console.error('Error uploading color image:', err);
+      console.error('Error uploading color photo:', err);
     } finally {
       setIsUploadingImage(false);
     }
@@ -305,13 +341,27 @@ export const ProductsModule: React.FC = () => {
 
     const calculatedDiscount = origPrice > finalPrice ? Math.round(((origPrice - finalPrice) / origPrice) * 100) : 0;
 
-    const finalColorImages: Record<string, string> = { ...formData.colorImages };
+    const finalColorImages: Record<string, string[]> = {};
+    if (formData.colorImages) {
+      Object.entries(formData.colorImages).forEach(([cName, val]) => {
+        if (Array.isArray(val)) {
+          const clean = val.filter(u => typeof u === 'string' && u.trim().length > 0);
+          if (clean.length > 0) finalColorImages[cName] = clean;
+        } else if (typeof val === 'string' && (val as string).trim()) {
+          finalColorImages[cName] = [(val as string).trim()];
+        }
+      });
+    }
+
     const finalColors = formData.productType === 'sencillo'
       ? []
       : formData.selectedColors.map(c => {
-          const url = c.imageUrl || formData.colorImages[c.name] || '';
-          if (url) finalColorImages[c.name] = url;
-          return { ...c, imageUrl: url || undefined };
+          const colorPhotos = finalColorImages[c.name] || [];
+          const primaryUrl = colorPhotos[0] || c.imageUrl || '';
+          if (primaryUrl && !colorPhotos.includes(primaryUrl)) {
+            finalColorImages[c.name] = [primaryUrl, ...colorPhotos];
+          }
+          return { ...c, imageUrl: primaryUrl || undefined };
         });
 
     // Build variant stock entries if variable product
@@ -406,15 +456,27 @@ export const ProductsModule: React.FC = () => {
       });
     }
 
+    const loadedColorMap: Record<string, string[]> = {};
+    if (p.colorImages) {
+      Object.entries(p.colorImages).forEach(([cName, val]) => {
+        if (Array.isArray(val)) {
+          loadedColorMap[cName] = val.filter(u => typeof u === 'string' && u.trim().length > 0);
+        } else if (typeof val === 'string' && val.trim()) {
+          loadedColorMap[cName] = [val.trim()];
+        }
+      });
+    }
+
     const loadedColors = (p.colors || []).map(c => {
       const colObj = typeof c === 'string' ? { name: c, hex: '#000000' } : c;
-      const url = colObj.imageUrl || (p.colorImages && p.colorImages[colObj.name]) || '';
-      return { ...colObj, imageUrl: url };
-    });
-
-    const loadedColorMap: Record<string, string> = p.colorImages ? { ...p.colorImages } : {};
-    loadedColors.forEach(c => {
-      if (c.imageUrl) loadedColorMap[c.name] = c.imageUrl;
+      const existing = loadedColorMap[colObj.name] || [];
+      if (colObj.imageUrl && !existing.includes(colObj.imageUrl)) {
+        existing.unshift(colObj.imageUrl);
+      }
+      if (existing.length > 0) {
+        loadedColorMap[colObj.name] = existing;
+      }
+      return { ...colObj, imageUrl: existing[0] || colObj.imageUrl || '' };
     });
 
     setFormData({
@@ -1149,78 +1211,106 @@ export const ProductsModule: React.FC = () => {
                     )}
                   </div>
 
-                  {/* 2.1 ASIGNACIÓN DE FOTOS POR VARIANTE DE COLOR */}
+                  {/* 2.1 ASIGNACIÓN DE MÚLTIPLES FOTOS POR VARIANTE DE COLOR */}
                   {formData.selectedColors.length > 0 && (
-                    <div className="bg-purple-50/70 p-3.5 rounded-2xl border border-purple-200 space-y-3">
+                    <div className="bg-purple-50/70 p-4 rounded-2xl border border-purple-200 space-y-4">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <label className="font-extrabold text-purple-950 text-xs uppercase flex items-center gap-1.5">
                           <ImageIcon className="w-4 h-4 text-purple-700" />
-                          2.1 Asignación de Fotografías por Variante de Color
+                          2.1 Galería de Múltiples Fotografías por Variante de Color
                         </label>
                         <span className="text-[10px] text-purple-900 bg-purple-100 font-extrabold px-2.5 py-0.5 rounded-full border border-purple-200">
                           Cambio Dinámico en Tienda
                         </span>
                       </div>
                       <p className="text-[11px] text-gray-600 leading-relaxed">
-                        Asigna una foto exclusiva a cada color activado. Al seleccionar este color en la tienda, la imagen del producto cambiará automáticamente.
+                        Agrega una o varias fotografías específicas a cada color. Al elegir este color en la tienda, el cliente verá la foto principal y todas las fotos adicionales asociadas a esta variante.
                       </p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {formData.selectedColors.map((col, idx) => {
-                          const colImg = col.imageUrl || formData.colorImages[col.name] || '';
-                          const validGalleryImgs = formData.images.filter(img => img.trim().length > 0);
+                          const rawMapVal = formData.colorImages[col.name] as string[] | string | undefined;
+                          let colorPhotos: string[] = [];
+                          if (Array.isArray(rawMapVal)) {
+                            colorPhotos = rawMapVal;
+                          } else if (typeof rawMapVal === 'string' && (rawMapVal as string).trim()) {
+                            colorPhotos = [(rawMapVal as string).trim()];
+                          } else if (col.imageUrl) {
+                            colorPhotos = [col.imageUrl];
+                          }
+
+                          const validGalleryImgs = (formData.images || []).filter((img: string) => typeof img === 'string' && img.trim().length > 0);
 
                           return (
-                            <div key={idx} className="bg-white p-3 rounded-xl border border-purple-200 flex flex-col justify-between space-y-2 shadow-2xs">
-                              <div className="flex items-center justify-between">
+                            <div key={idx} className="bg-white p-3.5 rounded-xl border border-purple-200 space-y-3 shadow-2xs">
+                              {/* Color header */}
+                              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="w-4 h-4 rounded-full border border-gray-400 shadow-2xs shrink-0" style={{ backgroundColor: col.hex }} />
-                                  <span className="font-bold text-gray-900 text-xs">{col.name}</span>
+                                  <span className="font-extrabold text-gray-900 text-xs">{col.name}</span>
                                 </div>
-                                {colImg ? (
-                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
-                                    ✓ Foto Vinculada
-                                  </span>
-                                ) : (
-                                  <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">
-                                    Sin Foto Específica
-                                  </span>
-                                )}
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  colorPhotos.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {colorPhotos.length} {colorPhotos.length === 1 ? 'Foto' : 'Fotos'}
+                                </span>
                               </div>
 
-                              <div className="flex items-center gap-3 pt-1">
-                                <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shrink-0 flex items-center justify-center">
-                                  {colImg ? (
-                                    <img src={colImg} alt={col.name} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="text-[9px] text-gray-400 text-center px-1">Gral</span>
-                                  )}
+                              {/* Photo thumbnails scroll */}
+                              {colorPhotos.length > 0 ? (
+                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                                  {colorPhotos.map((pUrl, pIdx) => (
+                                    <div key={pIdx} className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden border border-purple-200 shrink-0 group">
+                                      <img src={pUrl} alt={`${col.name} ${pIdx + 1}`} className="w-full h-full object-cover" />
+                                      {pIdx === 0 && (
+                                        <span className="absolute top-0 left-0 bg-[#9E0D0D] text-white text-[8px] font-extrabold px-1 py-0.2 rounded-br">
+                                          1ª
+                                        </span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemovePhotoFromColor(col.name, pIdx)}
+                                        className="absolute top-0.5 right-0.5 bg-red-600 hover:bg-red-700 text-white p-0.5 rounded-full shadow-xs opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+                                        title="Eliminar esta foto del color"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
                                 </div>
+                              ) : (
+                                <p className="text-[10px] text-gray-400 italic">No hay fotos asignadas a este color aún.</p>
+                              )}
 
-                                <div className="flex-1 space-y-1.5 text-[10px]">
-                                  <label className="block bg-slate-800 hover:bg-slate-900 text-white font-bold py-1 px-2.5 text-center rounded cursor-pointer transition-colors shadow-2xs">
-                                    Subir Foto para {col.name}
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={e => handleColorImageFileChange(idx, col.name, e)}
-                                      className="hidden"
-                                    />
-                                  </label>
+                              {/* Upload / select controls */}
+                              <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                                <label className="flex-1 bg-purple-900 hover:bg-purple-950 text-white font-bold py-1.5 px-3 rounded-lg text-[10px] text-center cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1">
+                                  <Upload className="w-3 h-3" />
+                                  <span>+ Subir Foto</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => handleUploadColorPhotoFile(col.name, e)}
+                                    className="hidden"
+                                  />
+                                </label>
 
-                                  {validGalleryImgs.length > 0 && (
-                                    <select
-                                      value={colImg}
-                                      onChange={e => handleColorImageUrlChange(idx, col.name, e.target.value)}
-                                      className="w-full p-1 border rounded bg-gray-50 text-[10px] font-bold text-gray-800 outline-hidden focus:border-purple-600"
-                                    >
-                                      <option value="">-- O Usar Foto de Galería --</option>
-                                      {validGalleryImgs.map((img, i) => (
-                                        <option key={i} value={img}>Foto {i + 1} de Galería</option>
-                                      ))}
-                                    </select>
-                                  )}
-                                </div>
+                                {validGalleryImgs.length > 0 && (
+                                  <select
+                                    onChange={e => {
+                                      if (e.target.value) {
+                                        handleAddPhotoToColor(col.name, e.target.value);
+                                        e.target.value = '';
+                                      }
+                                    }}
+                                    className="flex-1 p-1.5 border border-gray-200 rounded-lg bg-gray-50 text-[10px] font-bold text-gray-800 outline-hidden focus:border-purple-600"
+                                  >
+                                    <option value="">+ Desde Galería Gral.</option>
+                                    {validGalleryImgs.map((img, i) => (
+                                      <option key={i} value={img}>Foto {i + 1} de Galería</option>
+                                    ))}
+                                  </select>
+                                )}
                               </div>
                             </div>
                           );

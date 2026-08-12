@@ -495,6 +495,7 @@ export const INITIAL_STORE_DESIGN: StoreDesignConfig = {
   logoText: 'ARMARIO VIRTUAL',
   logoSubtext: 'TU ESTILO LIBRE',
   logoUrl: 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg',
+  storeAddress: 'Los Reyes Iztacala, Tlalnepantla',
   announcementBarText: '⚡ ¡GRAN BARATA ARMARIO VIRTUAL! Hasta 50% de descuento en Moda y Calzado + Envío Gratis desde $499',
   announcementBarActive: true,
   primaryColor: '#9E0D0D', // Carmine Red / Rojo Carmesí (Pantone 200 C)

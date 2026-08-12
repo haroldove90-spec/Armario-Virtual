@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { uploadImage } from '../../lib/imageUploader';
-import { Palette, Image as ImageIcon, Sparkles, Plus, Trash2, Edit2, Sliders, Layout, Check, Upload, AlertCircle } from 'lucide-react';
+import { Palette, Image as ImageIcon, Sparkles, Plus, Trash2, Edit2, Sliders, Layout, Check, Upload, AlertCircle, MapPin } from 'lucide-react';
 import { Category } from '../../types';
 
 export const DesignModule: React.FC = () => {
@@ -19,6 +19,7 @@ export const DesignModule: React.FC = () => {
   const [logoText, setLogoText] = useState(storeDesign.logoText);
   const [logoSubtext, setLogoSubtext] = useState(storeDesign.logoSubtext);
   const [logoUrl, setLogoUrl] = useState(storeDesign.logoUrl || '');
+  const [storeAddress, setStoreAddress] = useState(storeDesign.storeAddress || 'Los Reyes Iztacala, Tlalnepantla');
   const [primaryColor, setPrimaryColor] = useState(storeDesign.primaryColor);
 
   // Slide modal state
@@ -54,6 +55,7 @@ export const DesignModule: React.FC = () => {
       logoText,
       logoSubtext,
       logoUrl,
+      storeAddress,
       primaryColor
     });
   };
@@ -183,6 +185,24 @@ export const DesignModule: React.FC = () => {
                 />
               </label>
             </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-[#9E0D0D]" />
+              Ubicación o Dirección Física de la Tienda Principal
+            </label>
+            <input
+              type="text"
+              value={storeAddress}
+              onChange={e => setStoreAddress(e.target.value)}
+              placeholder="Ej. Los Reyes Iztacala, Tlalnepantla"
+              className="w-full p-2.5 border border-gray-200 rounded-xl font-bold text-slate-800"
+              required
+            />
+            <p className="text-[10px] text-gray-500 mt-1">
+              Esta ubicación se mostrará en el pie de página, envíos y contacto con clientes.
+            </p>
           </div>
 
           <div>

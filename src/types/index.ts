@@ -41,7 +41,7 @@ export interface Product {
   images: string[]; // Max 5 images (1 primary, 4 secondary)
   sizes: string[];
   colors: { name: string; hex: string; imageUrl?: string }[];
-  colorImages?: Record<string, string>;
+  colorImages?: Record<string, string | string[]>;
   productType?: 'sencillo' | 'variable';
   variantStock?: ProductVariantStock[];
   description: string;
@@ -201,6 +201,7 @@ export interface StoreDesignConfig {
   logoText: string;
   logoSubtext: string;
   logoUrl?: string;
+  storeAddress?: string;
   announcementBarText: string;
   announcementBarActive: boolean;
   primaryColor: string; // e.g. #632488 (Purple)

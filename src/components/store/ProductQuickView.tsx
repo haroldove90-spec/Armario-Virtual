@@ -37,7 +37,8 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
   const handleSelectColor = (colorName: string) => {
     setSelectedColor(colorName);
     const colObj = product.colors.find(c => c.name === colorName);
-    const colorImg = colObj?.imageUrl || (product.colorImages && product.colorImages[colorName]);
+    const rawImg = colObj?.imageUrl || (product.colorImages && product.colorImages[colorName]);
+    const colorImg = Array.isArray(rawImg) ? rawImg[0] : rawImg;
     if (colorImg) {
       setSelectedImage(colorImg);
       setActiveMediaTab('photos');
