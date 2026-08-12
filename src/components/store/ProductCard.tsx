@@ -9,10 +9,17 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
-  const { addToCart, toggleWishlist, isWishlisted } = useStore();
+  const { addToCart, toggleWishlist, isWishlisted, setSelectedProduct } = useStore();
   const wishlisted = isWishlisted(product.id);
 
   const [activeColorImg, setActiveColorImg] = useState<string | null>(null);
+
+  const handleOpenDetails = () => {
+    setSelectedProduct(product);
+    if (onQuickView) {
+      onQuickView(product);
+    }
+  };
 
   const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
   const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
@@ -74,7 +81,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
 
       {/* Image Container with Quick View Trigger */}
       <div
-        onClick={() => onQuickView(product)}
+        onClick={handleOpenDetails}
         className="relative w-full h-40 xs:h-48 sm:h-72 bg-slate-100 overflow-hidden cursor-pointer flex items-center justify-center"
       >
         <img
@@ -95,12 +102,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           <button
             onClick={e => {
               e.stopPropagation();
-              onQuickView(product);
+              handleOpenDetails();
             }}
             className="w-full bg-[#9E0D0D] hover:bg-red-900 text-white text-[10px] sm:text-xs font-bold py-1.5 sm:py-2 rounded-lg shadow-lg flex items-center justify-center gap-1.5 transition-all uppercase tracking-wider"
           >
             <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E05A1B]" />
-            Ver Detalles y Fotos
+            Ver Detalles del Producto
           </button>
         </div>
       </div>
@@ -121,7 +128,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
 
           {/* Title */}
           <h3
-            onClick={() => onQuickView(product)}
+            onClick={handleOpenDetails}
             className="text-[11px] sm:text-xs font-bold text-slate-900 line-clamp-2 hover:text-[#9E0D0D] cursor-pointer transition-colors leading-tight sm:leading-snug min-h-[1.75rem] sm:min-h-0"
             title={product.name}
           >

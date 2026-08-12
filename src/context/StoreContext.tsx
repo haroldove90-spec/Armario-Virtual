@@ -42,6 +42,8 @@ interface StoreContextType {
   setCustomerTab: (tab: CustomerTab) => void;
   selectedCategory: Category | 'todas';
   setSelectedCategory: (cat: Category | 'todas') => void;
+  selectedProduct: Product | null;
+  setSelectedProduct: (product: Product | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
@@ -190,8 +192,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(LS_CUSTOMER_TAB, tab);
   };
 
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'todas'>('todas');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategoryState] = useState<Category | 'todas'>('todas');
+  const [selectedProduct, setSelectedProductState] = useState<Product | null>(null);
+  const [searchQuery, setSearchQueryState] = useState<string>('');
+
+  const setSelectedCategory = (cat: Category | 'todas') => {
+    setSelectedCategoryState(cat);
+    setSelectedProductState(null);
+  };
+
+  const setSelectedProduct = (prod: Product | null) => {
+    setSelectedProductState(prod);
+    if (prod) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const setSearchQuery = (query: string) => {
+    setSearchQueryState(query);
+    if (query.trim()) {
+      setSelectedProductState(null);
+    }
+  };
 
   // Auth states
   const [isCustomerLoggedIn, setIsCustomerLoggedIn] = useState<boolean>(() => {
@@ -966,6 +988,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCustomerTab,
         selectedCategory,
         setSelectedCategory,
+        selectedProduct,
+        setSelectedProduct,
         searchQuery,
         setSearchQuery,
         isCustomerLoggedIn,

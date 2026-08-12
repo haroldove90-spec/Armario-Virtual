@@ -178,7 +178,7 @@ export const ProductGrid: React.FC = () => {
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-6 mt-4 sm:mt-6">
           {filteredProducts.map(prod => (
-            <ProductCard key={prod.id} product={prod} onQuickView={p => setQuickViewProduct(p)} />
+            <ProductCard key={prod.id} product={prod} onQuickView={() => {}} />
           ))}
         </div>
       ) : (
@@ -199,11 +199,6 @@ export const ProductGrid: React.FC = () => {
             Ver todos los productos
           </button>
         </div>
-      )}
-
-      {/* Quick View Modal */}
-      {quickViewProduct && (
-        <ProductQuickView product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
       )}
     </section>
   );

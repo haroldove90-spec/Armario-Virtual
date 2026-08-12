@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { CustomerTab, OrderStatus } from '../../types';
 import { ProductCard } from '../store/ProductCard';
-import { ProductQuickView } from '../store/ProductQuickView';
 import {
   ShoppingBag,
   User,
@@ -29,7 +28,9 @@ export const CustomerPanel: React.FC = () => {
     setCustomerTab,
     updateCustomerProfile,
     addCustomerAddress,
-    customerLogout
+    customerLogout,
+    setSelectedProduct,
+    setActiveRole
   } = useStore();
 
   const [selectedOrder, setSelectedOrder] = useState<string | null>(orders[0]?.id || null);
@@ -393,7 +394,14 @@ export const CustomerPanel: React.FC = () => {
           {wishlistProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6">
               {wishlistProducts.map(prod => (
-                <ProductCard key={prod.id} product={prod} onQuickView={p => setQuickViewProduct(p)} />
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  onQuickView={p => {
+                    setSelectedProduct(p);
+                    setActiveRole('tienda');
+                  }}
+                />
               ))}
             </div>
           ) : (
@@ -403,8 +411,6 @@ export const CustomerPanel: React.FC = () => {
               <p className="text-xs text-gray-400 mt-1">Navega por la tienda y presiona el ícono del corazón en las prendas que te gusten.</p>
             </div>
           )}
-
-          <ProductQuickView product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
         </div>
       )}
 

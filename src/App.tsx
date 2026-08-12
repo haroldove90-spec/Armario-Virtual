@@ -10,6 +10,7 @@ import { CartDrawer } from './components/store/CartDrawer';
 import { CheckoutModal } from './components/store/CheckoutModal';
 import { CustomerPanel } from './components/customer/CustomerPanel';
 import { CustomerLoginForm } from './components/auth/CustomerLoginForm';
+import { ProductDetailPage } from './components/store/ProductDetailPage';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminLoginForm } from './components/auth/AdminLoginForm';
 import { Footer } from './components/common/Footer';
@@ -21,6 +22,8 @@ const MainAppContent: React.FC = () => {
     toastMessage,
     selectedCategory,
     searchQuery,
+    selectedProduct,
+    setSelectedProduct,
     isCustomerLoggedIn,
     isAdminLoggedIn
   } = useStore();
@@ -48,16 +51,25 @@ const MainAppContent: React.FC = () => {
           <div>
             <Header />
 
-            {/* Show Hero Slider & Promo Flyers if user is on main store page without search */}
-            {selectedCategory === 'todas' && !searchQuery && (
+            {selectedProduct ? (
+              <ProductDetailPage
+                product={selectedProduct}
+                onBack={() => setSelectedProduct(null)}
+              />
+            ) : (
               <>
-                <HeroSlider />
-                <PromoFlyers />
+                {/* Show Hero Slider & Promo Flyers if user is on main store page without search */}
+                {selectedCategory === 'todas' && !searchQuery && (
+                  <>
+                    <HeroSlider />
+                    <PromoFlyers />
+                  </>
+                )}
+
+                {/* Main Catalog Product Grid */}
+                <ProductGrid />
               </>
             )}
-
-            {/* Main Catalog Product Grid */}
-            <ProductGrid />
           </div>
 
           <Footer />
