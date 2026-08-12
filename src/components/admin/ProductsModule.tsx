@@ -70,14 +70,11 @@ export const ProductsModule: React.FC = () => {
     discountPercentage: 33,
     stock: 20,
     sku: `REL-${Math.floor(1000 + Math.random() * 9000)}`,
-    // Up to 5 images: index 0 = primary, 1..4 = secondary
+    // Unlimited images array: index 0 = primary, 1..N = secondary
     images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
-      '',
-      '',
-      '',
-      ''
+      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
     ],
+    newImageUrlInput: '',
     selectedSizes: ['CH', 'M', 'G', 'XG'] as string[],
     selectedColors: [
       { name: 'Negro', hex: '#1A1A1A' },
@@ -250,19 +247,27 @@ export const ProductsModule: React.FC = () => {
     }));
   };
 
-  const handleImageFileChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddGeneralImage = (url: string) => {
+    if (!url || !url.trim()) return;
+    const cleanUrl = url.trim();
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images.filter(img => img && img.trim()), cleanUrl],
+      newImageUrlInput: ''
+    }));
+  };
+
+  const handleUploadGeneralImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploadingImage(true);
       try {
         const url = await uploadImage(file);
         if (url) {
-          const newImages = [...formData.images];
-          newImages[index] = url;
-          setFormData(prev => ({ ...prev, images: newImages }));
+          handleAddGeneralImage(url);
         }
       } catch (err) {
-        console.error('Error uploading main image:', err);
+        console.error('Error uploading general photo:', err);
       } finally {
         setIsUploadingImage(false);
       }
@@ -272,13 +277,14 @@ export const ProductsModule: React.FC = () => {
   const handleImageUrlChange = (index: number, val: string) => {
     const newImages = [...formData.images];
     newImages[index] = val;
-    setFormData({ ...formData, images: newImages });
+    setFormData(prev => ({ ...prev, images: newImages }));
   };
 
   const handleRemoveImage = (index: number) => {
-    const newImages = [...formData.images];
-    newImages[index] = '';
-    setFormData({ ...formData, images: newImages });
+    setFormData(prev => {
+      const updated = prev.images.filter((_, i) => i !== index);
+      return { ...prev, images: updated.length > 0 ? updated : [''] };
+    });
   };
 
   const handleQuickAddCategory = (e: React.FormEvent) => {
@@ -436,10 +442,7 @@ export const ProductsModule: React.FC = () => {
 
   const handleStartEdit = (p: Product) => {
     setEditingProd(p);
-    const imgs = [...p.images];
-    while (imgs.length < 5) {
-      imgs.push('');
-    }
+    const imgs = p.images && p.images.length > 0 ? [...p.images] : [''];
 
     const vMap: Record<string, number> = {};
     if (p.variantStock && p.variantStock.length > 0) {
@@ -491,7 +494,8 @@ export const ProductsModule: React.FC = () => {
       discountPercentage: p.discountPercentage || 0,
       stock: p.stock,
       sku: p.sku,
-      images: imgs.slice(0, 5),
+      images: imgs,
+      newImageUrlInput: '',
       selectedSizes: p.sizes || [],
       selectedColors: loadedColors,
       colorImages: loadedColorMap,
@@ -551,12 +555,9 @@ export const ProductsModule: React.FC = () => {
               stock: 15,
               sku: `REL-${Math.floor(1000 + Math.random() * 9000)}`,
               images: [
-                'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
-                '',
-                '',
-                '',
-                ''
+                'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
               ],
+              newImageUrlInput: '',
               selectedSizes: ['CH', 'M', 'G', 'XG'],
               selectedColors: [
                 { name: 'Negro', hex: '#1A1A1A' },
@@ -1381,58 +1382,47 @@ export const ProductsModule: React.FC = () => {
                 </div>
               )}
 
-              {/* Product Photographs (Max 5: 1 Primary + 4 Secondary) */}
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
+              {/* Product Photographs (Unlimited) */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="font-black text-gray-900 text-xs uppercase flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-[#9E0D0D]" />
-                    Fotografías del Producto (Máximo 5 imágenes: 1 Principal + 4 Secundarias)
+                    Fotografías Generales del Producto (Ilimitadas)
                   </label>
-                  <span className="text-[10px] text-gray-500 font-mono">
-                    {formData.images.filter(Boolean).length}/5 cargadas
+                  <span className="text-[10px] text-emerald-800 bg-emerald-100 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    {formData.images.filter(Boolean).length} {formData.images.filter(Boolean).length === 1 ? 'Foto' : 'Fotos'} Cargadas
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 pt-1">
                   {formData.images.map((imgUrl, index) => (
                     <div
                       key={index}
-                      className="bg-white p-2 rounded-xl border border-gray-200 flex flex-col justify-between space-y-2 relative"
+                      className="bg-white p-2 rounded-xl border border-gray-200 flex flex-col justify-between space-y-2 relative shadow-2xs"
                     >
-                      <span className="text-[9px] font-black uppercase text-gray-500">
-                        {index === 0 ? '1. Principal' : `${index + 1}. Secundaria`}
-                      </span>
-
-                      {/* Image Preview */}
-                      <div className="relative h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center">
-                        {imgUrl ? (
-                          <>
-                            <img src={imgUrl} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveImage(index)}
-                              className="absolute top-1 right-1 bg-red-600 text-white p-0.5 rounded-full hover:bg-red-700 shadow-xs"
-                              title="Borrar foto"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-[10px] text-gray-400 text-center px-1">Sin foto</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-gray-600">
+                          {index === 0 ? '1. Principal' : `${index + 1}. Secundaria`}
+                        </span>
+                        {imgUrl && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            className="bg-red-600 hover:bg-red-700 text-white p-0.5 rounded-full shadow-xs cursor-pointer"
+                            title="Eliminar esta foto"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         )}
                       </div>
 
-                      {/* File Upload Input */}
-                      <div>
-                        <label className="block bg-slate-800 hover:bg-slate-900 text-white text-[9px] font-bold py-1 text-center rounded cursor-pointer transition-colors">
-                          Subir Archivo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={e => handleImageFileChange(index, e)}
-                            className="hidden"
-                          />
-                        </label>
+                      {/* Image Preview */}
+                      <div className="relative h-24 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center">
+                        {imgUrl ? (
+                          <img src={imgUrl} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[10px] text-gray-400 text-center px-1">Sin foto</span>
+                        )}
                       </div>
 
                       {/* URL input fallback */}
@@ -1441,10 +1431,47 @@ export const ProductsModule: React.FC = () => {
                         placeholder="URL de foto..."
                         value={imgUrl}
                         onChange={e => handleImageUrlChange(index, e.target.value)}
-                        className="w-full text-[10px] p-1 border rounded"
+                        className="w-full text-[10px] p-1 border rounded bg-gray-50 focus:bg-white"
                       />
                     </div>
                   ))}
+                </div>
+
+                {/* Unlimited Add Controls */}
+                <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center gap-2">
+                  <label className="w-full sm:w-auto bg-[#9E0D0D] hover:bg-[#800A0A] text-white font-extrabold py-2 px-4 rounded-xl text-xs text-center cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1.5 shrink-0">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>+ Subir Foto (Ilimitadas)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadGeneralImageFile}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <div className="w-full flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="O pega URL de nueva imagen..."
+                      value={formData.newImageUrlInput || ''}
+                      onChange={e => setFormData({ ...formData, newImageUrlInput: e.target.value })}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddGeneralImage(formData.newImageUrlInput || '');
+                        }
+                      }}
+                      className="flex-1 p-2 bg-white border border-gray-300 rounded-xl text-xs font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddGeneralImage(formData.newImageUrlInput || '')}
+                      className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-3 rounded-xl text-xs shrink-0 cursor-pointer"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
                 </div>
               </div>
 
