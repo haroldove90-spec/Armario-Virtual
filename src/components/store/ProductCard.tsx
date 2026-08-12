@@ -12,9 +12,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const { addToCart, toggleWishlist, isWishlisted } = useStore();
   const wishlisted = isWishlisted(product.id);
 
+  const [activeColorImg, setActiveColorImg] = useState<string | null>(null);
+
   const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
   const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
   const originalPriceVal = isOfferActive ? (product.originalPrice || product.price) : product.originalPrice;
+
+  const currentDisplayImage = activeColorImg || product.images[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg';
 
   return (
     <div className="group bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-red-300 transition-all duration-300 flex flex-col overflow-hidden relative font-sans">
@@ -74,11 +78,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
         className="relative w-full h-40 xs:h-48 sm:h-72 bg-slate-100 overflow-hidden cursor-pointer flex items-center justify-center"
       >
         <img
-          src={product.images[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'}
+          src={currentDisplayImage}
           alt={product.name}
           className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
         />
-        {product.images[1] && (
+        {!activeColorImg && product.images[1] && (
           <img
             src={product.images[1]}
             alt={product.name}
@@ -128,6 +132,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             <p className="text-[10px] text-slate-500 line-clamp-1 mt-1 hidden sm:block font-normal">
               {product.description}
             </p>
+          )}
+
+          {/* Color Swatches */}
+          {product.colors && product.colors.length > 0 && (
+            <div className="mt-1.5 flex items-center gap-1 overflow-x-auto py-0.5" onClick={e => e.stopPropagation()}>
+              {product.colors.map(col => {
+                const colImg = col.imageUrl || (product.colorImages && product.colorImages[col.name]);
+                const isActive = activeColorImg === colImg || (!activeColorImg && colImg === product.images[0]);
+                return (
+                  <button
+                    key={col.name}
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (colImg) {
+                        setActiveColorImg(colImg);
+                      } else {
+                        onQuickView(product);
+                      }
+                    }}
+                    onMouseEnter={() => {
+                      if (colImg) setActiveColorImg(colImg);
+                    }}
+                    style={{ backgroundColor: col.hex }}
+                    className={`w-3.5 h-3.5 rounded-full border border-gray-300 transition-all shrink-0 cursor-pointer ${
+                      isActive ? 'ring-2 ring-[#9E0D0D] ring-offset-1 scale-110' : 'hover:scale-110 opacity-80 hover:opacity-100'
+                    }`}
+                    title={`Ver en color ${col.name}`}
+                  />
+                );
+              })}
+            </div>
           )}
 
           {/* Stock badge indicator */}

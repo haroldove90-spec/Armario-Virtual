@@ -80,7 +80,8 @@ export const ProductsModule: React.FC = () => {
     selectedColors: [
       { name: 'Negro', hex: '#1A1A1A' },
       { name: 'Rojo Carmesí', hex: '#9E0D0D' }
-    ] as { name: string; hex: string }[],
+    ] as { name: string; hex: string; imageUrl?: string }[],
+    colorImages: {} as Record<string, string>,
     variantStockMap: {} as Record<string, number>,
     customSizeInput: '',
     customColorName: '',
@@ -100,6 +101,37 @@ export const ProductsModule: React.FC = () => {
       return colors.map(c => ({ size: undefined, color: c.name }));
     }
     return [];
+  };
+
+  const selectedCategoryObj = categories.find(
+    c => c.slug === formData.category || c.id === formData.category || c.name.toLowerCase() === formData.category.toLowerCase()
+  );
+
+  const availableSubcategories = selectedCategoryObj?.subcategories || [];
+
+  const handleColorImageUrlChange = (colorIndex: number, colorName: string, url: string) => {
+    setFormData(prev => {
+      const updatedColors = [...prev.selectedColors];
+      updatedColors[colorIndex] = { ...updatedColors[colorIndex], imageUrl: url };
+      const updatedMap = { ...prev.colorImages, [colorName]: url };
+      return {
+        ...prev,
+        selectedColors: updatedColors,
+        colorImages: updatedMap
+      };
+    });
+  };
+
+  const handleColorImageFileChange = (colorIndex: number, colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      if (event.target?.result) {
+        handleColorImageUrlChange(colorIndex, colorName, event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const filtered = products.filter(p => {
@@ -243,7 +275,6 @@ export const ProductsModule: React.FC = () => {
   const handleSubmitProduct = (e: React.FormEvent) => {
     e.preventDefault();
     const finalSizes = formData.productType === 'sencillo' ? [] : formData.selectedSizes;
-    const finalColors = formData.productType === 'sencillo' ? [] : formData.selectedColors;
     const validImages = formData.images.filter(img => img.trim().length > 0);
     const finalImages = validImages.length > 0 ? validImages : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'];
 
@@ -261,6 +292,15 @@ export const ProductsModule: React.FC = () => {
     }
 
     const calculatedDiscount = origPrice > finalPrice ? Math.round(((origPrice - finalPrice) / origPrice) * 100) : 0;
+
+    const finalColorImages: Record<string, string> = { ...formData.colorImages };
+    const finalColors = formData.productType === 'sencillo'
+      ? []
+      : formData.selectedColors.map(c => {
+          const url = c.imageUrl || formData.colorImages[c.name] || '';
+          if (url) finalColorImages[c.name] = url;
+          return { ...c, imageUrl: url || undefined };
+        });
 
     // Build variant stock entries if variable product
     let finalVariantStock: any[] = [];
@@ -299,6 +339,7 @@ export const ProductsModule: React.FC = () => {
         images: finalImages,
         sizes: finalSizes,
         colors: finalColors,
+        colorImages: finalColorImages,
         productType: formData.productType,
         youtubeUrl: formData.youtubeUrl,
         description: formData.description
@@ -320,6 +361,7 @@ export const ProductsModule: React.FC = () => {
         images: finalImages,
         sizes: finalSizes,
         colors: finalColors,
+        colorImages: finalColorImages,
         productType: formData.productType,
         youtubeUrl: formData.youtubeUrl,
         description: formData.description,
@@ -352,6 +394,17 @@ export const ProductsModule: React.FC = () => {
       });
     }
 
+    const loadedColors = (p.colors || []).map(c => {
+      const colObj = typeof c === 'string' ? { name: c, hex: '#000000' } : c;
+      const url = colObj.imageUrl || (p.colorImages && p.colorImages[colObj.name]) || '';
+      return { ...colObj, imageUrl: url };
+    });
+
+    const loadedColorMap: Record<string, string> = p.colorImages ? { ...p.colorImages } : {};
+    loadedColors.forEach(c => {
+      if (c.imageUrl) loadedColorMap[c.name] = c.imageUrl;
+    });
+
     setFormData({
       productType: p.productType || (p.sizes.length > 0 || p.colors.length > 0 ? 'variable' : 'sencillo'),
       name: p.name,
@@ -366,7 +419,8 @@ export const ProductsModule: React.FC = () => {
       sku: p.sku,
       images: imgs.slice(0, 5),
       selectedSizes: p.sizes || [],
-      selectedColors: p.colors || [],
+      selectedColors: loadedColors,
+      colorImages: loadedColorMap,
       variantStockMap: vMap,
       customSizeInput: '',
       customColorName: '',
@@ -755,8 +809,19 @@ export const ProductsModule: React.FC = () => {
 
                   <select
                     value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value as Category })}
-                    className="w-full p-2.5 bg-white border rounded-xl font-bold text-gray-800"
+                    onChange={e => {
+                      const newCatSlug = e.target.value as Category;
+                      const catObj = categories.find(
+                        c => c.slug === newCatSlug || c.id === newCatSlug || c.name.toLowerCase() === newCatSlug.toLowerCase()
+                      );
+                      const firstSub = catObj?.subcategories?.[0]?.name || 'General';
+                      setFormData(prev => ({
+                        ...prev,
+                        category: newCatSlug,
+                        subcategory: firstSub
+                      }));
+                    }}
+                    className="w-full p-2.5 bg-white border rounded-xl font-bold text-gray-800 focus:border-[#9E0D0D] outline-hidden"
                   >
                     {categories.map(c => (
                       <option key={c.id} value={c.slug}>
@@ -767,15 +832,23 @@ export const ProductsModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-800 mb-1">Subcategoría *</label>
-                  <input
-                    type="text"
+                  <label className="block font-bold text-gray-800 mb-1">Subcategoría (Dinámica) *</label>
+                  <select
                     value={formData.subcategory}
                     onChange={e => setFormData({ ...formData, subcategory: e.target.value })}
-                    placeholder="Ej: Abrigos y Chamarras"
-                    className="w-full p-2.5 bg-white border rounded-xl"
+                    className="w-full p-2.5 bg-white border rounded-xl font-bold text-gray-800 focus:border-[#9E0D0D] outline-hidden"
                     required
-                  />
+                  >
+                    {availableSubcategories.length > 0 ? (
+                      availableSubcategories.map(sub => (
+                        <option key={sub.id} value={sub.name}>
+                          {sub.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="General">General</option>
+                    )}
+                  </select>
                 </div>
               </div>
 
@@ -1062,6 +1135,86 @@ export const ProductsModule: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* 2.1 ASIGNACIÓN DE FOTOS POR VARIANTE DE COLOR */}
+                  {formData.selectedColors.length > 0 && (
+                    <div className="bg-purple-50/70 p-3.5 rounded-2xl border border-purple-200 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <label className="font-extrabold text-purple-950 text-xs uppercase flex items-center gap-1.5">
+                          <ImageIcon className="w-4 h-4 text-purple-700" />
+                          2.1 Asignación de Fotografías por Variante de Color
+                        </label>
+                        <span className="text-[10px] text-purple-900 bg-purple-100 font-extrabold px-2.5 py-0.5 rounded-full border border-purple-200">
+                          Cambio Dinámico en Tienda
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-600 leading-relaxed">
+                        Asigna una foto exclusiva a cada color activado. Al seleccionar este color en la tienda, la imagen del producto cambiará automáticamente.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {formData.selectedColors.map((col, idx) => {
+                          const colImg = col.imageUrl || formData.colorImages[col.name] || '';
+                          const validGalleryImgs = formData.images.filter(img => img.trim().length > 0);
+
+                          return (
+                            <div key={idx} className="bg-white p-3 rounded-xl border border-purple-200 flex flex-col justify-between space-y-2 shadow-2xs">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-4 h-4 rounded-full border border-gray-400 shadow-2xs shrink-0" style={{ backgroundColor: col.hex }} />
+                                  <span className="font-bold text-gray-900 text-xs">{col.name}</span>
+                                </div>
+                                {colImg ? (
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
+                                    ✓ Foto Vinculada
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">
+                                    Sin Foto Específica
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-3 pt-1">
+                                <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shrink-0 flex items-center justify-center">
+                                  {colImg ? (
+                                    <img src={colImg} alt={col.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="text-[9px] text-gray-400 text-center px-1">Gral</span>
+                                  )}
+                                </div>
+
+                                <div className="flex-1 space-y-1.5 text-[10px]">
+                                  <label className="block bg-slate-800 hover:bg-slate-900 text-white font-bold py-1 px-2.5 text-center rounded cursor-pointer transition-colors shadow-2xs">
+                                    Subir Foto para {col.name}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={e => handleColorImageFileChange(idx, col.name, e)}
+                                      className="hidden"
+                                    />
+                                  </label>
+
+                                  {validGalleryImgs.length > 0 && (
+                                    <select
+                                      value={colImg}
+                                      onChange={e => handleColorImageUrlChange(idx, col.name, e.target.value)}
+                                      className="w-full p-1 border rounded bg-gray-50 text-[10px] font-bold text-gray-800 outline-hidden focus:border-purple-600"
+                                    >
+                                      <option value="">-- O Usar Foto de Galería --</option>
+                                      {validGalleryImgs.map((img, i) => (
+                                        <option key={i} value={img}>Foto {i + 1} de Galería</option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 3. STOCK INDIVIDUAL POR VARIANTE (TALLA Y COLOR) */}
                   {formData.productType === 'variable' &&

@@ -33,6 +33,17 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
   const [postalCode, setPostalCode] = useState('');
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
 
+  // Sync color image when color selection changes
+  const handleSelectColor = (colorName: string) => {
+    setSelectedColor(colorName);
+    const colObj = product.colors.find(c => c.name === colorName);
+    const colorImg = colObj?.imageUrl || (product.colorImages && product.colorImages[colorName]);
+    if (colorImg) {
+      setSelectedImage(colorImg);
+      setActiveMediaTab('photos');
+    }
+  };
+
   const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
   const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
   const originalPriceVal = isOfferActive ? (product.originalPrice || product.price) : product.originalPrice;
@@ -236,23 +247,29 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
                   Color: <span className="text-[#9E0D0D]">{selectedColor}</span>
                 </label>
                 <div className="flex items-center gap-3">
-                  {product.colors.map(col => (
-                    <button
-                      key={col.name}
-                      onClick={() => setSelectedColor(col.name)}
-                      style={{ backgroundColor: col.hex }}
-                      className={`w-7 h-7 rounded-full border-2 transition-all shadow-xs relative ${
-                        selectedColor === col.name
-                          ? 'ring-2 ring-[#9E0D0D] ring-offset-2 scale-110'
-                          : 'border-gray-300'
-                      }`}
-                      title={col.name}
-                    >
-                      {selectedColor === col.name && (
-                        <Check className={`w-3.5 h-3.5 absolute inset-0 m-auto ${col.hex === '#ffffff' ? 'text-black' : 'text-white'}`} />
-                      )}
-                    </button>
-                  ))}
+                  {product.colors.map(col => {
+                    const hasSpecificImg = Boolean(col.imageUrl || (product.colorImages && product.colorImages[col.name]));
+                    return (
+                      <button
+                        key={col.name}
+                        onClick={() => handleSelectColor(col.name)}
+                        style={{ backgroundColor: col.hex }}
+                        className={`w-7 h-7 rounded-full border-2 transition-all shadow-xs relative ${
+                          selectedColor === col.name
+                            ? 'ring-2 ring-[#9E0D0D] ring-offset-2 scale-110'
+                            : 'border-gray-300 hover:scale-105'
+                        }`}
+                        title={`${col.name}${hasSpecificImg ? ' (Foto disponible)' : ''}`}
+                      >
+                        {selectedColor === col.name && (
+                          <Check className={`w-3.5 h-3.5 absolute inset-0 m-auto ${col.hex === '#ffffff' ? 'text-black' : 'text-white'}`} />
+                        )}
+                        {hasSpecificImg && selectedColor !== col.name && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-1 ring-white" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

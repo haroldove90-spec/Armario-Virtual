@@ -260,10 +260,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     sizes: ['CH', 'M', 'G', 'XG'],
     colors: [
-      { name: 'Morado Elegante', hex: '#632488' },
-      { name: 'Negro Azabache', hex: '#1a1a1a' },
-      { name: 'Palo de Rosa', hex: '#e8b4b8' }
+      { name: 'Morado Elegante', hex: '#632488', imageUrl: 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg' },
+      { name: 'Negro Azabache', hex: '#1a1a1a', imageUrl: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&q=80' },
+      { name: 'Palo de Rosa', hex: '#e8b4b8', imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=80' }
     ],
+    colorImages: {
+      'Morado Elegante': 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
+      'Negro Azabache': 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&q=80',
+      'Palo de Rosa': 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=80'
+    },
     description: 'Chamarra capitonada acolchada de cuello alto con gorro desmontable y bolsas laterales con cierre. Ideal para protegerte del frío con estilo moderno y confort supremo.',
     tags: ['Gran Barata', 'Otoño e Invierno', 'Exclusivo en Línea'],
     isFeatured: true,

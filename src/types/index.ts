@@ -40,7 +40,8 @@ export interface Product {
   sku: string;
   images: string[]; // Max 5 images (1 primary, 4 secondary)
   sizes: string[];
-  colors: { name: string; hex: string }[];
+  colors: { name: string; hex: string; imageUrl?: string }[];
+  colorImages?: Record<string, string>;
   productType?: 'sencillo' | 'variable';
   variantStock?: ProductVariantStock[];
   description: string;
