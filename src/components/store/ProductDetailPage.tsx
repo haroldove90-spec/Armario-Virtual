@@ -82,38 +82,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
     return imgs;
   }, [product, selectedColor]);
 
-  // Combined gallery images (selected color photos first, then main images, then other color photos)
+  // Strict gallery images for current selected color
   const galleryImages = useMemo(() => {
-    const set = new Set<string>();
+    // 1. If specific color photos exist for the chosen color, show ONLY those color photos
+    if (selectedColorImages.length > 0) {
+      return selectedColorImages;
+    }
 
-    selectedColorImages.forEach(img => set.add(img));
-
+    // 2. Fallback to general product images if no specific color photos exist
     if (product.images && Array.isArray(product.images)) {
-      product.images.forEach(img => {
-        if (img && img.trim()) set.add(img.trim());
-      });
+      const valid = product.images.filter(img => typeof img === 'string' && img.trim().length > 0);
+      if (valid.length > 0) return valid;
     }
 
-    if (product.colors) {
-      product.colors.forEach(col => {
-        if (typeof col !== 'string' && col.imageUrl && col.imageUrl.trim()) {
-          set.add(col.imageUrl.trim());
-        }
-      });
-    }
-
-    if (product.colorImages) {
-      Object.values(product.colorImages).forEach(val => {
-        if (typeof val === 'string' && val.trim()) set.add(val.trim());
-        else if (Array.isArray(val)) {
-          val.forEach(v => { if (typeof v === 'string' && v.trim()) set.add(v.trim()); });
-        }
-      });
-    }
-
-    const list = Array.from(set);
-    return list.length > 0 ? list : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'];
+    return ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'];
   }, [selectedColorImages, product]);
+
+  // Keep selected image aligned with active color gallery
+  useEffect(() => {
+    if (galleryImages.length > 0 && !galleryImages.includes(selectedImage)) {
+      setSelectedImage(galleryImages[0]);
+    }
+  }, [galleryImages]);
 
   // Scroll to top when product changes
   useEffect(() => {

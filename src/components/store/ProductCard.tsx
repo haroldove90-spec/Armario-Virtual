@@ -21,9 +21,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
     }
   };
 
-  const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
-  const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
-  const originalPriceVal = isOfferActive ? (product.originalPrice || product.price) : product.originalPrice;
+  const isOfferActive = product.isOffer && !!product.offerPrice && product.offerPrice > 0;
+  const displayPrice = isOfferActive ? product.offerPrice : product.price;
+  const originalPriceVal = isOfferActive
+    ? (product.originalPrice || product.price)
+    : (product.originalPrice && product.originalPrice > product.price ? product.originalPrice : undefined);
 
   const currentDisplayImage = activeColorImg || product.images[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg';
 

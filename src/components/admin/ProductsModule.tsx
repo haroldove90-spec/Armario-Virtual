@@ -333,19 +333,18 @@ export const ProductsModule: React.FC = () => {
     const finalImages = validImages.length > 0 ? validImages : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'];
 
     // Calculate effective prices and discounts
-    let finalPrice = Number(formData.price);
-    let origPrice = Number(formData.originalPrice);
-    let finalIsOffer = formData.isOffer;
-    let offerPriceNum = Number(formData.offerPrice);
+    const regPrice = Number(formData.price) || 0;
+    const origPrice = Number(formData.originalPrice) || 0;
+    const finalIsOffer = Boolean(formData.isOffer);
+    const offerPriceNum = Number(formData.offerPrice) || 0;
 
-    if (finalIsOffer && offerPriceNum > 0) {
-      finalPrice = offerPriceNum;
-      if (!origPrice || origPrice <= offerPriceNum) {
-        origPrice = Number(formData.price);
-      }
-    }
+    const baseSellingPrice = regPrice;
+    const effectiveSellingPrice = (finalIsOffer && offerPriceNum > 0) ? offerPriceNum : regPrice;
+    const referencePrice = origPrice > 0 ? origPrice : (finalIsOffer && regPrice > offerPriceNum ? regPrice : 0);
 
-    const calculatedDiscount = origPrice > finalPrice ? Math.round(((origPrice - finalPrice) / origPrice) * 100) : 0;
+    const calculatedDiscount = referencePrice > effectiveSellingPrice
+      ? Math.round(((referencePrice - effectiveSellingPrice) / referencePrice) * 100)
+      : 0;
 
     const finalColorImages: Record<string, string[]> = {};
     if (formData.colorImages) {
@@ -396,10 +395,10 @@ export const ProductsModule: React.FC = () => {
         name: formData.name,
         category: formData.category,
         subcategory: formData.subcategory,
-        price: finalPrice,
-        originalPrice: origPrice,
+        price: baseSellingPrice,
+        originalPrice: origPrice > 0 ? origPrice : undefined,
         isOffer: finalIsOffer,
-        offerPrice: finalIsOffer ? offerPriceNum : undefined,
+        offerPrice: finalIsOffer && offerPriceNum > 0 ? offerPriceNum : undefined,
         discountPercentage: calculatedDiscount,
         stock: finalTotalStock,
         variantStock: finalVariantStock,
@@ -418,10 +417,10 @@ export const ProductsModule: React.FC = () => {
         name: formData.name,
         category: formData.category,
         subcategory: formData.subcategory,
-        price: finalPrice,
-        originalPrice: origPrice,
+        price: baseSellingPrice,
+        originalPrice: origPrice > 0 ? origPrice : undefined,
         isOffer: finalIsOffer,
-        offerPrice: finalIsOffer ? offerPriceNum : undefined,
+        offerPrice: finalIsOffer && offerPriceNum > 0 ? offerPriceNum : undefined,
         discountPercentage: calculatedDiscount,
         stock: finalTotalStock,
         variantStock: finalVariantStock,
@@ -948,35 +947,48 @@ export const ProductsModule: React.FC = () => {
                   </label>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Precio Normal ($ MXN) *</label>
+                    <label className="block font-bold text-gray-700 mb-1 text-xs">Precio Regular ($ MXN) *</label>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.price}
                       onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
-                      className="w-full p-2.5 bg-white border rounded-xl font-mono text-sm font-bold"
+                      className="w-full p-2.5 bg-white border rounded-xl font-mono text-sm font-bold text-gray-900"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Precio de Oferta ($ MXN)</label>
+                    <label className="block font-bold text-gray-700 mb-1 text-xs">Precio Anterior / Tachado ($ MXN)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Opcional (Ej: 800)"
+                      value={formData.originalPrice || ''}
+                      onChange={e => setFormData({ ...formData, originalPrice: e.target.value ? Number(e.target.value) : 0 })}
+                      className="w-full p-2.5 bg-white border rounded-xl font-mono text-sm font-bold text-gray-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1 text-xs">Precio de Oferta ($ MXN)</label>
                     <input
                       type="number"
                       step="0.01"
                       disabled={!formData.isOffer}
-                      value={formData.offerPrice}
+                      placeholder={formData.isOffer ? 'Ej: 299' : 'Activa oferta para editar'}
+                      value={formData.isOffer ? (formData.offerPrice || '') : ''}
                       onChange={e => setFormData({ ...formData, offerPrice: Number(e.target.value) })}
                       className={`w-full p-2.5 border rounded-xl font-mono text-sm font-bold ${
-                        formData.isOffer ? 'bg-white border-red-400 text-red-700' : 'bg-gray-100 text-gray-400'
+                        formData.isOffer ? 'bg-white border-red-400 text-red-700 font-extrabold' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Stock Libre (pzas) *</label>
+                    <label className="block font-bold text-gray-700 mb-1 text-xs">Stock Libre (pzas) *</label>
                     <input
                       type="number"
                       value={formData.stock}

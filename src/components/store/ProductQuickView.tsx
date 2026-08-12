@@ -33,6 +33,48 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
   const [postalCode, setPostalCode] = useState('');
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
 
+  // Color-specific images for chosen color
+  const selectedColorImages = React.useMemo(() => {
+    const imgs: string[] = [];
+    if (!selectedColor) return imgs;
+
+    const colObj = product.colors?.find(c => (typeof c === 'string' ? c : c.name) === selectedColor);
+    if (colObj && typeof colObj !== 'string' && colObj.imageUrl && colObj.imageUrl.trim()) {
+      imgs.push(colObj.imageUrl.trim());
+    }
+
+    if (product.colorImages && product.colorImages[selectedColor]) {
+      const val = product.colorImages[selectedColor];
+      if (typeof val === 'string' && val.trim() && !imgs.includes(val.trim())) {
+        imgs.push(val.trim());
+      } else if (Array.isArray(val)) {
+        val.forEach(item => {
+          if (typeof item === 'string' && item.trim() && !imgs.includes(item.trim())) {
+            imgs.push(item.trim());
+          }
+        });
+      }
+    }
+    return imgs;
+  }, [product, selectedColor]);
+
+  // Gallery images filtered strictly by color
+  const galleryImages = React.useMemo(() => {
+    if (selectedColorImages.length > 0) return selectedColorImages;
+    if (product.images && Array.isArray(product.images)) {
+      const valid = product.images.filter(img => typeof img === 'string' && img.trim().length > 0);
+      if (valid.length > 0) return valid;
+    }
+    return ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'];
+  }, [selectedColorImages, product]);
+
+  // Keep selected image aligned with active color gallery
+  React.useEffect(() => {
+    if (galleryImages.length > 0 && !galleryImages.includes(selectedImage)) {
+      setSelectedImage(galleryImages[0]);
+    }
+  }, [galleryImages]);
+
   // Sync color image when color selection changes
   const handleSelectColor = (colorName: string) => {
     setSelectedColor(colorName);
@@ -41,13 +83,17 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
     const colorImg = Array.isArray(rawImg) ? rawImg[0] : rawImg;
     if (colorImg) {
       setSelectedImage(colorImg);
-      setActiveMediaTab('photos');
+    } else if (product.images && product.images[0]) {
+      setSelectedImage(product.images[0]);
     }
+    setActiveMediaTab('photos');
   };
 
-  const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
-  const displayPrice = isOfferActive && product.offerPrice ? product.offerPrice : product.price;
-  const originalPriceVal = isOfferActive ? (product.originalPrice || product.price) : product.originalPrice;
+  const isOfferActive = product.isOffer && !!product.offerPrice && product.offerPrice > 0;
+  const displayPrice = isOfferActive ? product.offerPrice : product.price;
+  const originalPriceVal = isOfferActive
+    ? (product.originalPrice || product.price)
+    : (product.originalPrice && product.originalPrice > product.price ? product.originalPrice : undefined);
 
   // Variant specific stock calculation
   const getSelectedVariantStock = (): number => {
@@ -164,14 +210,14 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
               </div>
             )}
 
-            {/* Thumbnails list (up to 5 images) */}
-            {activeMediaTab === 'photos' && product.images.length > 1 && (
+            {/* Thumbnails list (filtered by selected color) */}
+            {activeMediaTab === 'photos' && galleryImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {product.images.map((img, idx) => (
+                {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(img)}
-                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                       selectedImage === img
                         ? 'border-[#9E0D0D] ring-2 ring-red-100 scale-105'
                         : 'border-gray-200 opacity-70 hover:opacity-100'
