@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { X, Trash2, ShoppingBag, Truck, ArrowRight, ShieldCheck, Tag } from 'lucide-react';
+import { getProductEffectivePrice, getProductColorImage } from '../../utils/cartHelpers';
 
 interface CartDrawerProps {
   onOpenCheckout: () => void;
@@ -13,7 +14,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
 
   if (!cartOpen) return null;
 
-  const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => acc + getProductEffectivePrice(item.product) * item.quantity, 0);
   const freeShippingThreshold = shippingConfig.freeShippingThreshold || 499;
   const missingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const progressPercent = Math.min(100, (subtotal / freeShippingThreshold) * 100);
@@ -71,60 +72,73 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
         {/* Cart Items List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {cart.length > 0 ? (
-            cart.map((item, index) => (
-              <div
-                key={`${item.product.id}-${index}`}
-                className="flex gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100 hover:border-purple-200 transition-all"
-              >
-                <img
-                  src={item.product.images[0]}
-                  alt={item.product.name}
-                  className="w-20 h-20 object-cover rounded-xl border border-gray-200 shrink-0"
-                />
+            cart.map((item, index) => {
+              const effectiveUnitPrice = getProductEffectivePrice(item.product);
+              const colorImage = getProductColorImage(item.product, item.selectedColor);
+              const isOffer = Boolean(item.product.isOffer) && Number(item.product.offerPrice || 0) > 0;
 
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.product.name}</h4>
-                      <button
-                        onClick={() => removeFromCart(index)}
-                        className="text-gray-400 hover:text-pink-600 p-1 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+              return (
+                <div
+                  key={`${item.product.id}-${index}`}
+                  className="flex gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100 hover:border-purple-200 transition-all"
+                >
+                  <img
+                    src={colorImage}
+                    alt={item.product.name}
+                    className="w-20 h-20 object-cover rounded-xl border border-gray-200 shrink-0"
+                  />
+
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.product.name}</h4>
+                        <button
+                          onClick={() => removeFromCart(index)}
+                          className="text-gray-400 hover:text-pink-600 p-1 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex gap-2 text-[11px] text-gray-500 mt-0.5">
+                        {item.selectedSize && <span>Talla: <strong className="text-gray-800">{item.selectedSize}</strong></span>}
+                        {item.selectedColor && <span>Color: <strong className="text-gray-800">{item.selectedColor}</strong></span>}
+                      </div>
                     </div>
 
-                    <div className="flex gap-2 text-[11px] text-gray-500 mt-0.5">
-                      {item.selectedSize && <span>Talla: <strong className="text-gray-800">{item.selectedSize}</strong></span>}
-                      {item.selectedColor && <span>Color: <strong className="text-gray-800">{item.selectedColor}</strong></span>}
-                    </div>
-                  </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-purple-900">
+                          ${(effectiveUnitPrice * item.quantity).toFixed(2)} MXN
+                        </span>
+                        {isOffer && item.product.price > effectiveUnitPrice && (
+                          <span className="text-[10px] text-gray-400 line-through leading-none">
+                            ${(item.product.price * item.quantity).toFixed(2)} MXN
+                          </span>
+                        )}
+                      </div>
 
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm font-black text-purple-900">
-                      ${(item.product.price * item.quantity).toFixed(2)} MXN
-                    </span>
-
-                    {/* Quantity Selector */}
-                    <div className="flex items-center border border-gray-200 rounded-lg bg-white overflow-hidden text-xs">
-                      <button
-                        onClick={() => updateCartQuantity(index, item.quantity - 1)}
-                        className="px-2 py-0.5 text-gray-600 hover:bg-gray-100 font-bold"
-                      >
-                        -
-                      </button>
-                      <span className="px-2.5 font-bold text-gray-900">{item.quantity}</span>
-                      <button
-                        onClick={() => updateCartQuantity(index, item.quantity + 1)}
-                        className="px-2 py-0.5 text-gray-600 hover:bg-gray-100 font-bold"
-                      >
-                        +
-                      </button>
+                      {/* Quantity Selector */}
+                      <div className="flex items-center border border-gray-200 rounded-lg bg-white overflow-hidden text-xs">
+                        <button
+                          onClick={() => updateCartQuantity(index, item.quantity - 1)}
+                          className="px-2 py-0.5 text-gray-600 hover:bg-gray-100 font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="px-2.5 font-bold text-gray-900">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(index, item.quantity + 1)}
+                          className="px-2 py-0.5 text-gray-600 hover:bg-gray-100 font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center py-16 text-gray-500">
               <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-3" />

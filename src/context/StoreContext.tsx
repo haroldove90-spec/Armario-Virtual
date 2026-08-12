@@ -28,6 +28,7 @@ import {
   INITIAL_EMPLOYEES,
   INITIAL_CUSTOMERS_LIST
 } from '../data/initialData';
+import { getProductEffectivePrice, getProductColorImage } from '../utils/cartHelpers';
 import { supabase } from '../lib/supabase';
 
 interface StoreContextType {
@@ -723,7 +724,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     carrierName: string,
     shippingCost: number
   ): Order => {
-    const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const subtotal = cart.reduce((acc, item) => acc + getProductEffectivePrice(item.product) * item.quantity, 0);
     const orderNum = `SUB-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const randomTracking = `${carrierName.slice(0, 3).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}-MX`;
 
@@ -737,8 +738,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       items: cart.map(item => ({
         productId: item.product.id,
         productName: item.product.name,
-        productImage: item.product.images[0] || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&q=80',
-        price: item.product.price,
+        productImage: getProductColorImage(item.product, item.selectedColor),
+        price: getProductEffectivePrice(item.product),
         quantity: item.quantity,
         size: item.selectedSize,
         color: item.selectedColor

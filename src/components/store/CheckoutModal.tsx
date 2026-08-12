@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { ShippingAddress, EnviosRate } from '../../types';
+import { getProductEffectivePrice, getProductColorImage } from '../../utils/cartHelpers';
 import {
   X,
   MapPin,
@@ -89,7 +90,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     }
   }, [step, selectedAddress, shippingConfig.enviosApiKey, shippingConfig.enviosOriginZip]);
 
-  const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => acc + getProductEffectivePrice(item.product) * item.quantity, 0);
   const isFreeShipping = subtotal >= shippingConfig.freeShippingThreshold;
   
   const activeShippingCost = selectedEnviosRate
@@ -463,19 +464,49 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
               </div>
 
               {/* Order summary box */}
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 text-xs space-y-1.5">
-                <p className="font-bold text-gray-800 border-b border-gray-200 pb-1">Resumen final del pedido</p>
-                <div className="flex justify-between text-gray-600">
-                  <span>Productos ({cart.reduce((a, b) => a + b.quantity, 0)}):</span>
-                  <span>${subtotal.toFixed(2)} MXN</span>
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 text-xs space-y-3">
+                <p className="font-bold text-gray-800 border-b border-gray-200 pb-1.5 flex justify-between items-center">
+                  <span>Resumen del Pedido</span>
+                  <span className="text-[11px] font-normal text-gray-500">
+                    {cart.reduce((a, b) => a + b.quantity, 0)} artículo(s)
+                  </span>
+                </p>
+
+                {/* Itemized preview */}
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {cart.map((item, idx) => {
+                    const unitPrice = getProductEffectivePrice(item.product);
+                    const colorImg = getProductColorImage(item.product, item.selectedColor);
+                    return (
+                      <div key={idx} className="flex items-center gap-2.5 bg-white p-2 rounded-xl border border-gray-100">
+                        <img src={colorImg} alt={item.product.name} className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 truncate">{item.product.name}</p>
+                          <p className="text-[10px] text-gray-500">
+                            {item.selectedSize && `Talla: ${item.selectedSize}`} {item.selectedColor && `| Color: ${item.selectedColor}`} | Cant: {item.quantity}
+                          </p>
+                        </div>
+                        <span className="font-extrabold text-gray-900 shrink-0">
+                          ${(unitPrice * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Envío ({selectedEnviosRate ? `${selectedEnviosRate.carrier} (${selectedEnviosRate.service})` : selectedCarrier.name}):</span>
-                  <span>{isFreeShipping ? 'GRATIS' : `$${shippingCost}.00 MXN`}</span>
-                </div>
-                <div className="flex justify-between text-sm font-black text-slate-900 pt-1 border-t border-gray-200">
-                  <span>Total a Pagar:</span>
-                  <span>${totalAmount.toFixed(2)} MXN</span>
+
+                <div className="space-y-1.5 pt-2 border-t border-gray-200">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal Productos:</span>
+                    <span className="font-bold text-gray-800">${subtotal.toFixed(2)} MXN</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Envío ({selectedEnviosRate ? `${selectedEnviosRate.carrier} (${selectedEnviosRate.service})` : selectedCarrier.name}):</span>
+                    <span className="font-bold text-emerald-600">{isFreeShipping ? 'GRATIS' : `$${shippingCost}.00 MXN`}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-black text-slate-900 pt-1.5 border-t border-gray-200">
+                    <span>Total a Pagar:</span>
+                    <span className="text-[#9E0D0D] font-mono">${totalAmount.toFixed(2)} MXN</span>
+                  </div>
                 </div>
               </div>
             </div>
