@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Product, Category } from '../../types';
+import { uploadImage } from '../../lib/imageUploader';
 import {
   Package,
   Plus,
@@ -19,7 +20,8 @@ import {
   Sparkles,
   Sliders,
   Palette,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 
 const CLOTHING_SIZES_PRESETS = ['XS', 'CH', 'M', 'G', 'XG', '2XG', '3XG'];
@@ -122,16 +124,22 @@ export const ProductsModule: React.FC = () => {
     });
   };
 
-  const handleColorImageFileChange = (colorIndex: number, colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleColorImageFileChange = async (colorIndex: number, colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = event => {
-      if (event.target?.result) {
-        handleColorImageUrlChange(colorIndex, colorName, event.target.result as string);
+    setIsUploadingImage(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        handleColorImageUrlChange(colorIndex, colorName, url);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error uploading color image:', err);
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const filtered = products.filter(p => {
@@ -206,18 +214,22 @@ export const ProductsModule: React.FC = () => {
     }));
   };
 
-  const handleImageFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = event => {
-        if (event.target?.result) {
+      setIsUploadingImage(true);
+      try {
+        const url = await uploadImage(file);
+        if (url) {
           const newImages = [...formData.images];
-          newImages[index] = event.target.result as string;
-          setFormData({ ...formData, images: newImages });
+          newImages[index] = url;
+          setFormData(prev => ({ ...prev, images: newImages }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Error uploading main image:', err);
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -488,6 +500,7 @@ export const ProductsModule: React.FC = () => {
                 { name: 'Negro', hex: '#1A1A1A' },
                 { name: 'Rojo Carmesí', hex: '#9E0D0D' }
               ],
+              colorImages: {},
               variantStockMap: {},
               customSizeInput: '',
               customColorName: '',
@@ -1397,13 +1410,21 @@ export const ProductsModule: React.FC = () => {
                 </div>
               </div>
 
+              {isUploadingImage && (
+                <div className="bg-purple-100 border border-purple-300 text-purple-900 p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-700" />
+                  <span>Procesando y optimizando imagen... Por favor espera un momento.</span>
+                </div>
+              )}
+
               <div className="flex gap-2 pt-3 border-t">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#9E0D0D] hover:bg-red-900 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2"
+                  disabled={isUploadingImage}
+                  className="flex-1 bg-[#9E0D0D] hover:bg-red-900 disabled:bg-gray-400 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>{editingProd ? 'Guardar Cambios' : 'Registrar Producto'}</span>
+                  {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>{isUploadingImage ? 'Procesando Imagen...' : editingProd ? 'Guardar Cambios' : 'Registrar Producto'}</span>
                 </button>
                 <button
                   type="button"

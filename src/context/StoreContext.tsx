@@ -493,10 +493,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync to localStorage
+  // Safe localStorage Syncing
   useEffect(() => {
-    localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
+    try {
+      localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
+    } catch (e) {
+      console.warn('No se pudo guardar productos en localStorage por límite de cuota:', e);
+    }
   }, [products]);
+
+  // Sync products with Supabase
+  const syncProductToSupabase = async (p: Product) => {
+    try {
+      await supabase.from('products').upsert({
+        id: p.id,
+        name: p.name,
+        product_type: p.productType || 'sencillo',
+        category: p.category,
+        subcategory: p.subcategory || 'General',
+        price: Number(p.price),
+        original_price: p.originalPrice ? Number(p.originalPrice) : null,
+        discount_percentage: p.discountPercentage || 0,
+        stock: Number(p.stock),
+        sku: p.sku,
+        images: p.images || [],
+        sizes: p.sizes || [],
+        colors: p.colors || [],
+        color_images: p.colorImages || {},
+        variant_stock: p.variantStock || [],
+        description: p.description || '',
+        tags: p.tags || [],
+        is_featured: Boolean(p.isFeatured),
+        date_added: p.dateAdded || new Date().toISOString().split('T')[0]
+      });
+    } catch (e) {
+      console.warn('Supabase product upsert notice:', e);
+    }
+  };
+
+  const deleteProductFromSupabase = async (id: string) => {
+    try {
+      await supabase.from('products').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Supabase product delete notice:', e);
+    }
+  };
 
   // Load products from Supabase if table exists
   useEffect(() => {
@@ -518,6 +559,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
             sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
             colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
+            colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
             variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
             description: p.description || '',
             tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
@@ -534,23 +576,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(LS_ORDERS, JSON.stringify(orders));
+    try {
+      localStorage.setItem(LS_ORDERS, JSON.stringify(orders));
+    } catch (e) {
+      console.warn('Error saving orders to localStorage:', e);
+    }
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem(LS_CUSTOMER, JSON.stringify(customer));
+    try {
+      localStorage.setItem(LS_CUSTOMER, JSON.stringify(customer));
+    } catch (e) {
+      console.warn('Error saving customer to localStorage:', e);
+    }
   }, [customer]);
 
   useEffect(() => {
-    localStorage.setItem(LS_SHIPPING, JSON.stringify(shippingConfig));
+    try {
+      localStorage.setItem(LS_SHIPPING, JSON.stringify(shippingConfig));
+    } catch (e) {
+      console.warn('Error saving shipping config to localStorage:', e);
+    }
   }, [shippingConfig]);
 
   useEffect(() => {
-    localStorage.setItem(LS_DESIGN, JSON.stringify(storeDesign));
+    try {
+      localStorage.setItem(LS_DESIGN, JSON.stringify(storeDesign));
+    } catch (e) {
+      console.warn('Error saving store design to localStorage:', e);
+    }
   }, [storeDesign]);
 
   useEffect(() => {
-    localStorage.setItem(LS_CART, JSON.stringify(cart));
+    try {
+      localStorage.setItem(LS_CART, JSON.stringify(cart));
+    } catch (e) {
+      console.warn('Error saving cart to localStorage:', e);
+    }
   }, [cart]);
 
   const showToast = (msg: string) => {
@@ -738,16 +800,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dateAdded: new Date().toISOString().split('T')[0]
     };
     setProducts(prev => [newProd, ...prev]);
+    syncProductToSupabase(newProd);
     showToast(`✅ Producto "${newProd.name}" registrado en inventario`);
   };
 
   const updateProduct = (id: string, updated: Partial<Product>) => {
-    setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...updated } : p)));
+    setProducts(prev => {
+      const nextProds = prev.map(p => (p.id === id ? { ...p, ...updated } : p));
+      const target = nextProds.find(p => p.id === id);
+      if (target) syncProductToSupabase(target);
+      return nextProds;
+    });
     showToast('Producto actualizado en catálogo');
   };
 
   const deleteProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
+    deleteProductFromSupabase(id);
     showToast('Producto eliminado del catálogo');
   };
 

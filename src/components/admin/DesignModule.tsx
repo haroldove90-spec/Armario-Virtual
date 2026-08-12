@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { uploadImage } from '../../lib/imageUploader';
 import { Palette, Image as ImageIcon, Sparkles, Plus, Trash2, Edit2, Sliders, Layout, Check, Upload, AlertCircle } from 'lucide-react';
 import { Category } from '../../types';
 
@@ -57,29 +58,31 @@ export const DesignModule: React.FC = () => {
     });
   };
 
-  const handleSlideImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSlideImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = event => {
-        if (event.target?.result) {
-          setNewSlide(prev => ({ ...prev, imageUrl: event.target!.result as string }));
+      try {
+        const url = await uploadImage(file);
+        if (url) {
+          setNewSlide(prev => ({ ...prev, imageUrl: url }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Error uploading slide image:', err);
+      }
     }
   };
 
-  const handleFlyerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFlyerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = event => {
-        if (event.target?.result) {
-          setNewFlyer(prev => ({ ...prev, imageUrl: event.target!.result as string }));
+      try {
+        const url = await uploadImage(file);
+        if (url) {
+          setNewFlyer(prev => ({ ...prev, imageUrl: url }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Error uploading flyer image:', err);
+      }
     }
   };
 
@@ -165,14 +168,15 @@ export const DesignModule: React.FC = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={e => {
+                  onChange={async e => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = ev => {
-                        if (ev.target?.result) setLogoUrl(ev.target.result as string);
-                      };
-                      reader.readAsDataURL(file);
+                      try {
+                        const url = await uploadImage(file);
+                        if (url) setLogoUrl(url);
+                      } catch (err) {
+                        console.error('Error uploading logo:', err);
+                      }
                     }
                   }}
                   className="hidden"

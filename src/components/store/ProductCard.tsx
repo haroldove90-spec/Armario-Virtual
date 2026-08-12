@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { Heart, ShoppingBag, Eye, Star, Truck, Percent, Tag, Video } from 'lucide-react';
