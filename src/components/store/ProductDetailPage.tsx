@@ -19,7 +19,9 @@ import {
   ShieldCheck,
   RotateCcw,
   Clock,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  Palette
 } from 'lucide-react';
 
 interface ProductDetailPageProps {
@@ -40,26 +42,121 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
   const [addedAnimation, setAddedAnimation] = useState(false);
 
+  // Helper to extract specific photo for a color
+  const getColorImage = (colorName: string): string | null => {
+    const colObj = product.colors?.find(c => (typeof c === 'string' ? c : c.name) === colorName);
+    if (colObj && typeof colObj !== 'string' && colObj.imageUrl && colObj.imageUrl.trim()) {
+      return colObj.imageUrl.trim();
+    }
+    if (product.colorImages && product.colorImages[colorName]) {
+      const val = product.colorImages[colorName];
+      if (typeof val === 'string' && val.trim()) return val.trim();
+      if (Array.isArray(val) && val[0]) return val[0];
+    }
+    return null;
+  };
+
+  // Specific photos for selected color
+  const selectedColorImages = useMemo(() => {
+    const imgs: string[] = [];
+    if (!selectedColor) return imgs;
+
+    const colObj = product.colors?.find(c => (typeof c === 'string' ? c : c.name) === selectedColor);
+    if (colObj && typeof colObj !== 'string') {
+      if (colObj.imageUrl && colObj.imageUrl.trim()) {
+        imgs.push(colObj.imageUrl.trim());
+      }
+    }
+    if (product.colorImages && product.colorImages[selectedColor]) {
+      const val = product.colorImages[selectedColor];
+      if (typeof val === 'string' && val.trim() && !imgs.includes(val.trim())) {
+        imgs.push(val.trim());
+      } else if (Array.isArray(val)) {
+        val.forEach(item => {
+          if (typeof item === 'string' && item.trim() && !imgs.includes(item.trim())) {
+            imgs.push(item.trim());
+          }
+        });
+      }
+    }
+    return imgs;
+  }, [product, selectedColor]);
+
+  // Combined gallery images (selected color photos first, then main images, then other color photos)
+  const galleryImages = useMemo(() => {
+    const set = new Set<string>();
+
+    selectedColorImages.forEach(img => set.add(img));
+
+    if (product.images && Array.isArray(product.images)) {
+      product.images.forEach(img => {
+        if (img && img.trim()) set.add(img.trim());
+      });
+    }
+
+    if (product.colors) {
+      product.colors.forEach(col => {
+        if (typeof col !== 'string' && col.imageUrl && col.imageUrl.trim()) {
+          set.add(col.imageUrl.trim());
+        }
+      });
+    }
+
+    if (product.colorImages) {
+      Object.values(product.colorImages).forEach(val => {
+        if (typeof val === 'string' && val.trim()) set.add(val.trim());
+        else if (Array.isArray(val)) {
+          val.forEach(v => { if (typeof v === 'string' && v.trim()) set.add(v.trim()); });
+        }
+      });
+    }
+
+    const list = Array.from(set);
+    return list.length > 0 ? list : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'];
+  }, [selectedColorImages, product]);
+
   // Scroll to top when product changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setSelectedImage(product.images[0] || '');
+    const initialColor = product.colors[0]?.name || 'Estándar';
+    setSelectedColor(initialColor);
+    const initialImg = getColorImage(initialColor) || product.images[0] || '';
+    setSelectedImage(initialImg);
     if (product.sizes.length > 0) setSelectedSize(product.sizes[0]);
-    if (product.colors.length > 0) setSelectedColor(product.colors[0].name);
     setQuantity(1);
     setActiveMediaTab('photos');
     setDeliveryEstimate(null);
   }, [product]);
 
-  // Sync color image when color selection changes
+  // Sync color selection & change photo
   const handleSelectColor = (colorName: string) => {
     setSelectedColor(colorName);
-    const colObj = product.colors.find(c => c.name === colorName);
-    const colorImg = colObj?.imageUrl || (product.colorImages && product.colorImages[colorName]);
+    const colorImg = getColorImage(colorName);
     if (colorImg) {
       setSelectedImage(colorImg);
-      setActiveMediaTab('photos');
+    } else if (product.images && product.images[0]) {
+      setSelectedImage(product.images[0]);
     }
+    setActiveMediaTab('photos');
+  };
+
+  const currentImgIndex = useMemo(() => {
+    const idx = galleryImages.indexOf(selectedImage);
+    return idx >= 0 ? idx : 0;
+  }, [galleryImages, selectedImage]);
+
+  const handlePrevImage = () => {
+    if (galleryImages.length <= 1) return;
+    const prevIdx = (currentImgIndex - 1 + galleryImages.length) % galleryImages.length;
+    setSelectedImage(galleryImages[prevIdx]);
+    setActiveMediaTab('photos');
+  };
+
+  const handleNextImage = () => {
+    if (galleryImages.length <= 1) return;
+    const nextIdx = (currentImgIndex + 1) % galleryImages.length;
+    setSelectedImage(galleryImages[nextIdx]);
+    setActiveMediaTab('photos');
   };
 
   const isOfferActive = product.isOffer || (!!product.offerPrice && product.offerPrice < product.price);
@@ -216,10 +313,44 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
               ) : (
                 <div className="relative aspect-4/3 sm:aspect-1/1 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner flex items-center justify-center group">
                   <img
-                    src={selectedImage || product.images[0]}
-                    alt={product.name}
+                    src={selectedImage || galleryImages[0]}
+                    alt={`${product.name} - ${selectedColor}`}
                     className="w-full h-full object-cover object-center transition-all duration-300"
                   />
+
+                  {/* Previous / Next Image Navigation Overlay */}
+                  {galleryImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={handlePrevImage}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 hover:text-[#9E0D0D] shadow-md flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+                        title="Foto anterior"
+                      >
+                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </button>
+
+                      <button
+                        onClick={handleNextImage}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 hover:text-[#9E0D0D] shadow-md flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+                        title="Siguiente foto"
+                      >
+                        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </button>
+
+                      {/* Photo Counter Overlay */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-slate-900/80 backdrop-blur-xs text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+                        <span>
+                          {currentImgIndex + 1} / {galleryImages.length}
+                        </span>
+                        {selectedColor && (
+                          <span className="border-l border-slate-600 pl-1.5 text-slate-200">
+                            Color: {selectedColor}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   {/* Badges */}
                   <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -259,29 +390,48 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                 </div>
               )}
 
-              {/* Thumbnails Gallery */}
-              {product.images && product.images.length > 0 && (
+              {/* Thumbnails Gallery Carousel */}
+              {galleryImages && galleryImages.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Galería de Fotografías ({product.images.length})
-                  </p>
-                  <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
-                    {product.images.map((imgUrl, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setSelectedImage(imgUrl);
-                          setActiveMediaTab('photos');
-                        }}
-                        className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
-                          selectedImage === imgUrl && activeMediaTab === 'photos'
-                            ? 'border-[#9E0D0D] shadow-md ring-2 ring-red-300'
-                            : 'border-slate-200 opacity-70 hover:opacity-100 hover:border-slate-300'
-                        }`}
-                      >
-                        <img src={imgUrl} alt={`Vista ${idx + 1}`} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-[#9E0D0D]" />
+                      <span>Carrusel de Fotos ({galleryImages.length})</span>
+                    </p>
+                    {selectedColorImages.length > 0 && (
+                      <span className="text-[10px] font-bold text-[#9E0D0D] bg-red-50 px-2 py-0.5 rounded-md border border-red-200">
+                        Mostrando imágenes de {selectedColor}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-thin">
+                    {galleryImages.map((imgUrl, idx) => {
+                      const isSelected = selectedImage === imgUrl && activeMediaTab === 'photos';
+                      const isColorSpecific = selectedColorImages.includes(imgUrl);
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setSelectedImage(imgUrl);
+                            setActiveMediaTab('photos');
+                          }}
+                          className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                            isSelected
+                              ? 'border-[#9E0D0D] shadow-md ring-2 ring-red-300 scale-105'
+                              : 'border-slate-200 opacity-75 hover:opacity-100 hover:border-slate-400'
+                          }`}
+                        >
+                          <img src={imgUrl} alt={`Vista ${idx + 1}`} className="w-full h-full object-cover" />
+                          {isColorSpecific && (
+                            <span className="absolute bottom-1 right-1 bg-[#9E0D0D] text-white p-0.5 rounded-full shadow-xs" title={`Perteneciente al color ${selectedColor}`}>
+                              <Check className="w-2.5 h-2.5" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -363,31 +513,49 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                 {/* Color Selection */}
                 {product.colors && product.colors.length > 0 && (
                   <div className="space-y-2">
-                    <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-                      COLOR SELECCIONADO: <span className="text-[#9E0D0D]">{selectedColor}</span>
-                    </label>
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Palette className="w-4 h-4 text-[#9E0D0D]" />
+                        <span>COLOR SELECCIONADO:</span>
+                        <span className="text-[#9E0D0D] font-black">{selectedColor}</span>
+                      </label>
+                      <span className="text-[10px] text-slate-500 font-medium">Haz clic en un color para cambiar la foto</span>
+                    </div>
+
                     <div className="flex flex-wrap gap-2.5">
                       {product.colors.map((col, idx) => {
                         const colName = typeof col === 'string' ? col : col.name;
                         const colHex = typeof col === 'string' ? '#333' : col.hex;
+                        const colImg = getColorImage(colName);
                         const isSelected = selectedColor === colName;
 
                         return (
                           <button
                             key={idx}
                             onClick={() => handleSelectColor(colName)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                               isSelected
-                                ? 'border-[#9E0D0D] bg-red-50/50 text-[#9E0D0D] ring-2 ring-red-200 shadow-2xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                ? 'border-[#9E0D0D] bg-red-50 text-[#9E0D0D] ring-2 ring-red-200 shadow-sm scale-102'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
+                            {/* Color Hex Circle */}
                             <span
-                              className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0"
+                              className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs shrink-0"
                               style={{ backgroundColor: colHex || '#666' }}
                             />
+
+                            {/* Mini Photo Preview if available */}
+                            {colImg && (
+                              <img
+                                src={colImg}
+                                alt={colName}
+                                className="w-6 h-6 rounded-md object-cover border border-slate-200 shrink-0"
+                              />
+                            )}
+
                             <span>{colName}</span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-[#9E0D0D]" />}
+                            {isSelected && <Check className="w-4 h-4 text-[#9E0D0D] shrink-0" />}
                           </button>
                         );
                       })}
