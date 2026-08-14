@@ -318,6 +318,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             description: p.description || '',
             tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
             isFeatured: Boolean(p.is_featured),
+            isPublished: p.is_published !== false,
             dateAdded: p.date_added
           }));
           setProducts(mapped);
@@ -873,6 +874,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: p.description || '',
         tags: p.tags || [],
         is_featured: Boolean(p.isFeatured),
+        is_published: p.isPublished !== false,
         date_added: p.dateAdded || new Date().toISOString().split('T')[0]
       });
       if (error) {
@@ -946,6 +948,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: p.description || '',
         tags: p.tags || [],
         is_featured: Boolean(p.isFeatured),
+        is_published: p.isPublished !== false,
         date_added: p.dateAdded || new Date().toISOString().split('T')[0]
       }));
       const { error: prodErr } = await supabase.from('products').upsert(prodPayload);

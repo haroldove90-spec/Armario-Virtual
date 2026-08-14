@@ -63,6 +63,7 @@ export interface Product {
   description: string;
   tags: string[];
   isFeatured?: boolean;
+  isPublished?: boolean;
   youtubeUrl?: string;
   dateAdded: string;
 }

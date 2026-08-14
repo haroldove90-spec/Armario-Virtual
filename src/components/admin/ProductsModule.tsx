@@ -42,16 +42,21 @@ export const ProductsModule: React.FC = () => {
     setViewMode('form');
   };
 
-  const handleSaveProduct = async (productData: Product) => {
-    if (editingProd) {
+  const handleSaveProduct = async (productData: Product, closeAfterSave: boolean = true) => {
+    const isExisting = Boolean(editingProd) || products.some(p => p.id === productData.id);
+    if (isExisting) {
       await updateProduct(productData.id, productData);
-      showToast(`✅ Producto "${productData.name}" actualizado correctamente en la tienda y Supabase.`);
+      showToast(`✅ Cambios guardados para "${productData.name}".`);
+      setEditingProd(productData);
     } else {
       await addProduct(productData);
-      showToast(`🎉 Producto "${productData.name}" registrado con éxito con su tabla de medidas.`);
+      showToast(`🎉 Producto "${productData.name}" guardado exitosamente.`);
+      setEditingProd(productData);
     }
-    setViewMode('list');
-    setEditingProd(null);
+    if (closeAfterSave) {
+      setViewMode('list');
+      setEditingProd(null);
+    }
   };
 
   const handleCancelForm = () => {

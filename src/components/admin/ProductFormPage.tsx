@@ -21,13 +21,14 @@ import {
   Loader2,
   AlertCircle,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  Save
 } from 'lucide-react';
 
 interface ProductFormPageProps {
   editingProduct: Product | null;
   categories: CategoryItem[];
-  onSave: (product: Product) => void;
+  onSave: (product: Product, closeAfterSave?: boolean) => void;
   onCancel: () => void;
   onQuickAddCategory: (name: string, slug: string, desc: string, subs: string) => void;
 }
@@ -169,6 +170,13 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   onCancel,
   onQuickAddCategory
 }) => {
+  const [productId, setProductId] = useState<string>(
+    editingProduct?.id || `prod-${Date.now()}`
+  );
+  const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
+  const [saveSuccessNotice, setSaveSuccessNotice] = useState<string | null>(null);
+
   const [productType, setProductType] = useState<'sencillo' | 'variable'>(
     editingProduct?.productType || 'variable'
   );
@@ -513,18 +521,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     return null;
   };
 
-  // Submit Handler
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      alert('El nombre del producto es obligatorio.');
-      return;
-    }
-    if (images.length === 0) {
-      alert('Debes incluir al menos una fotografía para el producto.');
-      return;
-    }
-
+  // Helper to compile product object
+  const buildProductData = (isPublishedFlag: boolean = true): Product => {
     // Build variant stock array
     const variantStockList = [];
     if (productType === 'variable') {
@@ -552,20 +550,20 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       rows: sizeGuideRows
     };
 
-    const finalProduct: Product = {
-      id: editingProduct ? editingProduct.id : `prod-${Date.now()}`,
+    return {
+      id: productId,
       productType,
-      name: name.trim(),
+      name: name.trim() || 'Nuevo Producto',
       category,
       subcategory,
-      price: Number(price),
+      price: Number(price) || 0,
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
       isOffer: Boolean(isOffer),
       offerPrice: isOffer && offerPrice ? Number(offerPrice) : undefined,
       discountPercentage: isOffer ? discountPercentage : 0,
-      stock: Number(stock),
-      sku: sku.trim(),
-      images,
+      stock: Number(stock) || 0,
+      sku: sku.trim() || `SKU-${Date.now().toString().slice(-4)}`,
+      images: images.length > 0 ? images : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'],
       sizes: productType === 'variable' ? selectedSizes : [],
       colors: productType === 'variable' ? selectedColors : [],
       colorImages: productType === 'variable' ? colorImages : {},
@@ -574,11 +572,45 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       description: description.trim(),
       tags: [category, subcategory, ...(selectedSizes || [])],
       isFeatured,
+      isPublished: isPublishedFlag,
       youtubeUrl: youtubeUrl.trim(),
       dateAdded: editingProduct ? editingProduct.dateAdded : new Date().toISOString().split('T')[0]
     };
+  };
 
-    onSave(finalProduct);
+  // Botón 1: Guardar Cambios en vivo (sin salir de la pantalla)
+  const handleSaveProgress = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
+    if (!name.trim()) {
+      alert('Por favor ingresa al menos el Nombre del Producto para guardar cambios.');
+      return;
+    }
+    setIsSavingDraft(true);
+    try {
+      const productObj = buildProductData(true);
+      await onSave(productObj, false);
+      const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLastSavedTimestamp(timeStr);
+      setSaveSuccessNotice(`Guardado a las ${timeStr}`);
+      setTimeout(() => setSaveSuccessNotice(null), 4000);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  // Botón 2: Guardar y Publicar (guarda, publica y regresa al catálogo)
+  const handlePublishAndSave = (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
+    if (!name.trim()) {
+      alert('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (images.length === 0) {
+      alert('Debes incluir al menos una fotografía para el producto.');
+      return;
+    }
+    const productObj = buildProductData(true);
+    onSave(productObj, true);
   };
 
   // Dummy product for size guide live preview
@@ -631,12 +663,19 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-end md:self-auto">
+        <div className="flex items-center flex-wrap gap-2 self-end md:self-auto">
+          {saveSuccessNotice && (
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 animate-fade-in">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              {saveSuccessNotice}
+            </span>
+          )}
+
           {sizeGuideEnabled && (
             <button
               type="button"
               onClick={() => setShowPreviewModal(true)}
-              className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-black px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-black px-3.5 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
               title="Previsualizar cómo verá el cliente la Guía de Tallas"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -647,24 +686,38 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+            className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
           >
             Cancelar
           </button>
 
+          {/* Botón 1: Guardar Cambios (Guarda avance sin salir) */}
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={isUploadingImage}
-            className="bg-[#9E0D0D] hover:bg-red-900 disabled:bg-gray-400 text-white text-xs font-extrabold px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
+            onClick={handleSaveProgress}
+            disabled={isSavingDraft || isUploadingImage}
+            className="bg-slate-800 hover:bg-slate-900 active:scale-95 disabled:bg-slate-400 text-white text-xs font-black px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer disabled:cursor-not-allowed border border-slate-700"
+            title="Guardar cambios en la base de datos y continuar editando"
+          >
+            {isSavingDraft ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Save className="w-4 h-4 text-emerald-400" />}
+            <span>Guardar Cambios</span>
+          </button>
+
+          {/* Botón 2: Guardar y Publicar (Guarda, activa y regresa al catálogo) */}
+          <button
+            type="button"
+            onClick={handlePublishAndSave}
+            disabled={isSavingDraft || isUploadingImage}
+            className="bg-[#9E0D0D] hover:bg-red-900 active:scale-95 disabled:bg-gray-400 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
+            title="Guardar los cambios, publicar en la tienda y volver al catálogo"
           >
             {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            <span>{editingProduct ? 'Guardar Cambios' : 'Publicar Producto'}</span>
+            <span>{editingProduct ? 'Guardar y Publicar' : 'Publicar Producto'}</span>
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 text-xs">
+      <form onSubmit={handlePublishAndSave} className="space-y-6 text-xs">
         {/* SECTION 1: Product Type & Basic Info */}
         <div className="bg-white rounded-3xl p-5 sm:p-7 border border-gray-200 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -1619,23 +1672,53 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
         </div>
 
         {/* Bottom Save Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-full sm:w-auto px-6 py-3.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-gray-200">
+          <div className="flex items-center gap-2 text-xs text-gray-500 w-full sm:w-auto">
+            {lastSavedTimestamp ? (
+              <span className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-xl font-bold border border-emerald-200 shadow-2xs">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                Guardado en Supabase a las {lastSavedTimestamp}
+              </span>
+            ) : (
+              <span className="text-gray-400 font-medium italic">
+                * Puedes ir guardando cambios parciales con el botón "Guardar Cambios" sin cerrar el formulario.
+              </span>
+            )}
+          </div>
 
-          <button
-            type="submit"
-            disabled={isUploadingImage}
-            className="w-full sm:w-auto bg-[#9E0D0D] hover:bg-red-900 disabled:bg-gray-400 text-white font-extrabold px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
-          >
-            {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            <span>{editingProduct ? 'Guardar Cambios del Producto' : 'Registrar y Publicar Producto'}</span>
-          </button>
+          <div className="flex items-center flex-wrap gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full sm:w-auto px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+
+            {/* Botón 1: Guardar Cambios (Guarda avance y permanece en pantalla) */}
+            <button
+              type="button"
+              onClick={handleSaveProgress}
+              disabled={isSavingDraft || isUploadingImage}
+              className="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 active:scale-95 disabled:bg-slate-400 text-white font-extrabold px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed border border-slate-700"
+              title="Guardar cambios en la base de datos sin salir de esta pantalla"
+            >
+              {isSavingDraft ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Save className="w-4 h-4 text-emerald-400" />}
+              <span>Guardar Cambios</span>
+            </button>
+
+            {/* Botón 2: Guardar y Publicar (Guarda y regresa al catálogo) */}
+            <button
+              type="button"
+              onClick={handlePublishAndSave}
+              disabled={isSavingDraft || isUploadingImage}
+              className="w-full sm:w-auto bg-[#9E0D0D] hover:bg-red-900 active:scale-95 disabled:bg-gray-400 text-white font-extrabold px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
+              title="Publicar producto y volver al catálogo"
+            >
+              {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              <span>{editingProduct ? 'Guardar y Publicar' : 'Registrar y Publicar Producto'}</span>
+            </button>
+          </div>
         </div>
       </form>
 

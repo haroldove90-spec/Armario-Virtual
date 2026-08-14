@@ -208,6 +208,8 @@ CREATE TABLE IF NOT EXISTS public.products (
     description TEXT,
     tags JSONB DEFAULT '[]'::jsonb,
     is_featured BOOLEAN DEFAULT false,
+    is_published BOOLEAN DEFAULT true,
+    youtube_url TEXT,
     date_added TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
