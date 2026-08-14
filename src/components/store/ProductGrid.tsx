@@ -67,11 +67,12 @@ export const ProductGrid: React.FC = () => {
           );
         }
 
-        // 3. Price & Stock Filters
+        // 3. Price & Stock & Publication Filters
         const matchesPrice = p.price <= priceFilter;
         const matchesStock = p.stock > 0;
+        const isPublished = p.isPublished !== false;
 
-        return matchesCategory && matchesSearch && matchesPrice && matchesStock;
+        return matchesCategory && matchesSearch && matchesPrice && matchesStock && isPublished;
       })
       .sort((a, b) => {
         if (sortBy === 'precio-asc') return a.price - b.price;

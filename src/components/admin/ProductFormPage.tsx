@@ -173,9 +173,13 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const [productId, setProductId] = useState<string>(
     editingProduct?.id || `prod-${Date.now()}`
   );
+  const [isCurrentlyPublished, setIsCurrentlyPublished] = useState<boolean>(
+    editingProduct ? (editingProduct.isPublished !== false) : false
+  );
   const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
   const [saveSuccessNotice, setSaveSuccessNotice] = useState<string | null>(null);
+  const [showDraftModal, setShowDraftModal] = useState<boolean>(false);
 
   const [productType, setProductType] = useState<'sencillo' | 'variable'>(
     editingProduct?.productType || 'variable'
@@ -578,7 +582,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     };
   };
 
-  // Botón 1: Guardar Cambios en vivo (sin salir de la pantalla)
+  // Botón 1: Guardar Cambios en vivo (guarda como borrador sin salir de la pantalla)
   const handleSaveProgress = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     if (!name.trim()) {
@@ -587,19 +591,21 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     }
     setIsSavingDraft(true);
     try {
-      const productObj = buildProductData(true);
+      // Guardar como borrador (isPublished = false) o mantener estado actual
+      const productObj = buildProductData(false);
+      setIsCurrentlyPublished(false);
       await onSave(productObj, false);
       const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setLastSavedTimestamp(timeStr);
-      setSaveSuccessNotice(`Guardado a las ${timeStr}`);
-      setTimeout(() => setSaveSuccessNotice(null), 4000);
+      setSaveSuccessNotice(`Guardado como Borrador a las ${timeStr}`);
+      setShowDraftModal(true);
     } finally {
       setIsSavingDraft(false);
     }
   };
 
-  // Botón 2: Guardar y Publicar (guarda, publica y regresa al catálogo)
-  const handlePublishAndSave = (e?: React.SyntheticEvent) => {
+  // Botón 2: Guardar y Publicar (guarda, activa como publicado y regresa al catálogo)
+  const handlePublishAndSave = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     if (!name.trim()) {
       alert('El nombre del producto es obligatorio.');
@@ -609,8 +615,15 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       alert('Debes incluir al menos una fotografía para el producto.');
       return;
     }
+    setIsCurrentlyPublished(true);
     const productObj = buildProductData(true);
-    onSave(productObj, true);
+    await onSave(productObj, true);
+  };
+
+  // Publicar inmediatamente desde el modal de borrador
+  const handleDirectPublish = async () => {
+    setShowDraftModal(false);
+    await handlePublishAndSave();
   };
 
   // Dummy product for size guide live preview
@@ -716,6 +729,48 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Estado del Producto: Banner de Borrador o Publicado */}
+      {!isCurrentlyPublished ? (
+        <div className="bg-amber-50 border-2 border-amber-300 text-amber-900 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-amber-200 text-amber-900 rounded-2xl shrink-0 mt-0.5 shadow-2xs">
+              <AlertCircle className="w-5 h-5 text-amber-900" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="bg-amber-200 text-amber-900 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg">
+                  Estado: Guardado en Borrador
+                </span>
+                <span className="text-[11px] text-amber-700 font-bold">
+                  (Oculto en la tienda para los clientes)
+                </span>
+              </div>
+              <p className="text-xs text-amber-950 font-medium mt-1 leading-relaxed">
+                Este producto se almacena en el sistema y en Supabase, pero <strong>no aparecerá en el catálogo público</strong> hasta que pulses <strong>"Publicar Producto"</strong>.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handlePublishAndSave}
+            className="bg-[#9E0D0D] hover:bg-red-900 text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-md shrink-0 flex items-center justify-center gap-2 cursor-pointer transition-all w-full sm:w-auto"
+          >
+            <Check className="w-4 h-4" />
+            <span>Publicar en Tienda Ahora</span>
+          </button>
+        </div>
+      ) : (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-4 py-3 shadow-2xs flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 font-bold">
+            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-2xs" />
+            <span>Producto Publicado y Visible para los Clientes en la Tienda</span>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 px-2.5 py-1 rounded-lg">
+            Activo
+          </span>
+        </div>
+      )}
 
       <form onSubmit={handlePublishAndSave} className="space-y-6 text-xs">
         {/* SECTION 1: Product Type & Basic Info */}
@@ -1822,6 +1877,63 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           product={previewProduct}
           selectedSize={selectedSizes[0] || 'CH'}
         />
+      )}
+
+      {/* Modal Notificación de Borrador */}
+      {showDraftModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-2 border-amber-300 space-y-5 animate-scale-up">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0 shadow-xs">
+                <AlertCircle className="w-7 h-7" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200">
+                    Aviso del Sistema
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-mono">
+                    {lastSavedTimestamp || ''}
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-gray-900 leading-tight mt-1">
+                  ¡Producto Guardado como Borrador!
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/80 rounded-2xl p-4 border border-amber-200/80 text-xs text-amber-950 space-y-2.5">
+              <div className="flex items-center gap-2 font-bold text-amber-900">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>Estado: Guardado en Borrador (No Publicado)</span>
+              </div>
+              <p className="text-gray-700 leading-relaxed">
+                Tus cambios se han registrado y sincronizado en la base de datos (Supabase), pero <strong>el producto aún NO está visible para los clientes</strong> en la tienda virtual.
+              </p>
+              <p className="text-gray-500 text-[11px]">
+                Podrás seguir editándolo cuando quieras o publicarlo directamente con el botón <strong>"Publicar en Tienda Ahora"</strong>.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDraftModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
+              >
+                Seguir Editando
+              </button>
+              <button
+                type="button"
+                onClick={handleDirectPublish}
+                className="flex-1 px-5 py-3 bg-[#9E0D0D] hover:bg-red-900 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>Publicar Ahora</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

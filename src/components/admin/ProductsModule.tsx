@@ -23,6 +23,7 @@ export const ProductsModule: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState<string>('todas');
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'publicados' | 'borradores'>('todos');
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -42,15 +43,33 @@ export const ProductsModule: React.FC = () => {
     setViewMode('form');
   };
 
+  const handleTogglePublish = async (p: Product) => {
+    const newStatus = p.isPublished === false ? true : false;
+    await updateProduct(p.id, { ...p, isPublished: newStatus });
+    if (newStatus) {
+      showToast(`🚀 Producto "${p.name}" PUBLICADO en la tienda.`);
+    } else {
+      showToast(`🔒 Producto "${p.name}" cambiado a BORRADOR (oculto en tienda).`);
+    }
+  };
+
   const handleSaveProduct = async (productData: Product, closeAfterSave: boolean = true) => {
     const isExisting = Boolean(editingProd) || products.some(p => p.id === productData.id);
     if (isExisting) {
       await updateProduct(productData.id, productData);
-      showToast(`✅ Cambios guardados para "${productData.name}".`);
+      if (productData.isPublished === false) {
+        showToast(`📝 Producto "${productData.name}" guardado como BORRADOR (No publicado).`);
+      } else {
+        showToast(`✅ Cambios publicados para "${productData.name}".`);
+      }
       setEditingProd(productData);
     } else {
       await addProduct(productData);
-      showToast(`🎉 Producto "${productData.name}" guardado exitosamente.`);
+      if (productData.isPublished === false) {
+        showToast(`📝 Producto "${productData.name}" registrado como BORRADOR (No publicado).`);
+      } else {
+        showToast(`🎉 Producto "${productData.name}" registrado y PUBLICADO en la tienda.`);
+      }
       setEditingProd(productData);
     }
     if (closeAfterSave) {
@@ -99,7 +118,12 @@ export const ProductsModule: React.FC = () => {
       p.category === selectedCat ||
       p.category.toLowerCase() === selectedCat.toLowerCase();
 
-    return matchesSearch && matchesCat;
+    const matchesStatus =
+      statusFilter === 'todos' ||
+      (statusFilter === 'publicados' && p.isPublished !== false) ||
+      (statusFilter === 'borradores' && p.isPublished === false);
+
+    return matchesSearch && matchesCat && matchesStatus;
   });
 
   const lowStockProducts = products.filter(p => p.stock <= 3);
@@ -196,7 +220,19 @@ export const ProductsModule: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as 'todos' | 'publicados' | 'borradores')}
+            className="w-full sm:w-auto px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:border-[#9E0D0D] outline-hidden cursor-pointer"
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="publicados">🟢 Solo Publicados (En tienda)</option>
+            <option value="borradores">🟡 Solo Borradores (Ocultos)</option>
+          </select>
+
+          {/* Category Filter */}
           <select
             value={selectedCat}
             onChange={e => setSelectedCat(e.target.value)}
@@ -219,6 +255,7 @@ export const ProductsModule: React.FC = () => {
             <thead className="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-200">
               <tr>
                 <th className="p-4">Producto & Fotos</th>
+                <th className="p-4">Estado / Tienda</th>
                 <th className="p-4">Tipo & Variantes</th>
                 <th className="p-4">SKU / Categ</th>
                 <th className="p-4">Precio & Oferta</th>
@@ -230,7 +267,7 @@ export const ProductsModule: React.FC = () => {
             <tbody className="divide-y divide-gray-100 font-medium">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-400 italic">
+                  <td colSpan={8} className="p-8 text-center text-gray-400 italic">
                     No se encontraron productos coincidentes con los filtros.
                   </td>
                 </tr>
@@ -241,6 +278,7 @@ export const ProductsModule: React.FC = () => {
                     (p.sizes && p.sizes.length > 0) ||
                     (p.colors && p.colors.length > 0);
                   const hasSizeGuide = p.sizeGuide?.enabled && p.sizeGuide?.rows && p.sizeGuide.rows.length > 0;
+                  const isPub = p.isPublished !== false;
 
                   return (
                     <tr key={p.id} className="hover:bg-red-50/20 transition-colors">
@@ -261,6 +299,41 @@ export const ProductsModule: React.FC = () => {
                           <h4 className="font-bold text-gray-900 text-xs">{p.name}</h4>
                           <p className="text-[11px] text-gray-500 line-clamp-1">{p.subcategory || p.category}</p>
                         </div>
+                      </td>
+
+                      {/* Estado de Publicación */}
+                      <td className="p-4">
+                        {isPub ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                              Publicado
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(p)}
+                              className="text-[10px] text-gray-400 hover:text-amber-700 underline font-bold transition-colors cursor-pointer"
+                              title="Pausar y cambiar a borrador"
+                            >
+                              Ocultar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-full border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                              Borrador
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(p)}
+                              className="text-[10px] text-[#9E0D0D] hover:underline font-extrabold bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                              title="Publicar en la tienda ahora"
+                            >
+                              Publicar
+                            </button>
+                          </div>
+                        )}
                       </td>
 
                       <td className="p-4">
