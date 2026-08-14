@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { AdminTab } from '../../types';
 import { MetricsModule } from './MetricsModule';
@@ -10,10 +10,12 @@ import { DesignModule } from './DesignModule';
 import { AdminProfileModule } from './AdminProfileModule';
 import { CustomersModule } from './CustomersModule';
 import { EmployeesModule } from './EmployeesModule';
-import { BarChart3, Package, Layers, ShoppingBag, Truck, Palette, UserCheck, Users, ShieldCheck, Store, User } from 'lucide-react';
+import { SupabaseDiagnosticModal } from './SupabaseDiagnosticModal';
+import { BarChart3, Package, Layers, ShoppingBag, Truck, Palette, UserCheck, Users, ShieldCheck, Store, User, Database } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
   const { products, adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile } = useStore();
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const lowStockCount = products.filter(p => p.stock <= 3).length;
 
   const tabs = [
@@ -51,17 +53,25 @@ export const AdminLayout: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-2">
+            <button
+              onClick={() => setDiagnosticOpen(true)}
+              className="inline-flex items-center gap-2 bg-slate-900/90 hover:bg-slate-900 text-emerald-400 font-black text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-emerald-500/40 cursor-pointer"
+              title="Comprobar conexión a Supabase y subir datos"
+            >
+              <Database className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span>Diagnóstico Supabase</span>
+            </button>
             <button
               onClick={() => setActiveRole('tienda')}
-              className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-red-50 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-red-50 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <Store className="w-4 h-4 text-[#9E0D0D]" />
               <span>Ver Tienda</span>
             </button>
             <button
               onClick={() => adminLogout()}
-              className="inline-flex items-center gap-1.5 bg-red-900 hover:bg-red-950 text-white font-bold text-xs uppercase tracking-wider px-3 py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-red-700"
+              className="inline-flex items-center gap-1.5 bg-red-900 hover:bg-red-950 text-white font-bold text-xs uppercase tracking-wider px-3 py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-red-700 cursor-pointer"
               title="Cerrar Sesión de Administrador"
             >
               <span>Salir</span>
@@ -109,6 +119,12 @@ export const AdminLayout: React.FC = () => {
         {adminTab === 'usuarios' && <CustomersModule />}
         {adminTab === 'empleados' && <EmployeesModule />}
       </main>
+
+      {/* Supabase Diagnostic & Sync Modal */}
+      <SupabaseDiagnosticModal
+        isOpen={diagnosticOpen}
+        onClose={() => setDiagnosticOpen(false)}
+      />
     </div>
   );
 };
