@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Product, Category, CategoryItem, SizeGuide, SizeGuideRow } from '../../types';
+import { useStore } from '../../context/StoreContext';
 import { uploadImage } from '../../lib/imageUploader';
 import { SizeGuideModal } from '../store/SizeGuideModal';
 import {
@@ -22,7 +23,8 @@ import {
   AlertCircle,
   HelpCircle,
   RefreshCw,
-  Save
+  Save,
+  ExternalLink
 } from 'lucide-react';
 
 interface ProductFormPageProps {
@@ -51,117 +53,6 @@ const PRESET_COLORS = [
   { name: 'Amarillo', hex: '#EAB308' },
   { name: 'Café', hex: '#78350F' }
 ];
-
-// Presets for Size Guides
-const SIZE_GUIDE_TEMPLATES = {
-  tops: {
-    title: 'Guía de Tallas para Playeras, Blusas & Tops',
-    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
-    instructions: 'Mide alrededor de la parte más completa del pecho manteniendo la cinta métrica horizontal. Si estás entre dos tallas, elige la mayor.',
-    columns: ['Pecho / Busto', 'Cintura', 'Cadera', 'Largo'],
-    rows: [
-      {
-        size: 'CH / S',
-        measurements: { 'Pecho / Busto': '88 - 92 cm', 'Cintura': '68 - 72 cm', 'Cadera': '92 - 96 cm', 'Largo': '65 cm' },
-        measurementsInches: { 'Pecho / Busto': '34 - 36 in', 'Cintura': '26 - 28 in', 'Cadera': '36 - 38 in', 'Largo': '25.5 in' }
-      },
-      {
-        size: 'MD / M',
-        measurements: { 'Pecho / Busto': '93 - 97 cm', 'Cintura': '73 - 77 cm', 'Cadera': '97 - 101 cm', 'Largo': '67 cm' },
-        measurementsInches: { 'Pecho / Busto': '36 - 38 in', 'Cintura': '28 - 30 in', 'Cadera': '38 - 40 in', 'Largo': '26.3 in' }
-      },
-      {
-        size: 'GD / L',
-        measurements: { 'Pecho / Busto': '98 - 103 cm', 'Cintura': '78 - 83 cm', 'Cadera': '102 - 107 cm', 'Largo': '69 cm' },
-        measurementsInches: { 'Pecho / Busto': '38 - 40 in', 'Cintura': '30 - 32 in', 'Cadera': '40 - 42 in', 'Largo': '27.1 in' }
-      },
-      {
-        size: 'XGD / XL',
-        measurements: { 'Pecho / Busto': '104 - 110 cm', 'Cintura': '84 - 90 cm', 'Cadera': '108 - 114 cm', 'Largo': '71 cm' },
-        measurementsInches: { 'Pecho / Busto': '41 - 43 in', 'Cintura': '33 - 35 in', 'Cadera': '42 - 45 in', 'Largo': '28.0 in' }
-      }
-    ]
-  },
-  bottoms: {
-    title: 'Guía de Tallas para Pantalones & Jeans',
-    imageUrl: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80',
-    instructions: 'Mide la circunferencia de tu cintura natural y la cadera en el punto más ancho con los pies juntos.',
-    columns: ['Cintura', 'Cadera', 'Muslo', 'Largo Entrepierna'],
-    rows: [
-      {
-        size: '28 / CH',
-        measurements: { 'Cintura': '71 - 74 cm', 'Cadera': '89 - 92 cm', 'Muslo': '52 cm', 'Largo Entrepierna': '76 cm' },
-        measurementsInches: { 'Cintura': '28 - 29 in', 'Cadera': '35 - 36 in', 'Muslo': '20.5 in', 'Largo Entrepierna': '30 in' }
-      },
-      {
-        size: '30 / MD',
-        measurements: { 'Cintura': '76 - 79 cm', 'Cadera': '94 - 97 cm', 'Muslo': '55 cm', 'Largo Entrepierna': '78 cm' },
-        measurementsInches: { 'Cintura': '30 - 31 in', 'Cadera': '37 - 38 in', 'Muslo': '21.6 in', 'Largo Entrepierna': '30.7 in' }
-      },
-      {
-        size: '32 / GD',
-        measurements: { 'Cintura': '81 - 84 cm', 'Cadera': '99 - 102 cm', 'Muslo': '58 cm', 'Largo Entrepierna': '80 cm' },
-        measurementsInches: { 'Cintura': '32 - 33 in', 'Cadera': '39 - 40 in', 'Muslo': '22.8 in', 'Largo Entrepierna': '31.5 in' }
-      },
-      {
-        size: '34 / XG',
-        measurements: { 'Cintura': '86 - 90 cm', 'Cadera': '104 - 108 cm', 'Muslo': '61 cm', 'Largo Entrepierna': '81 cm' },
-        measurementsInches: { 'Cintura': '34 - 35 in', 'Cadera': '41 - 42 in', 'Muslo': '24.0 in', 'Largo Entrepierna': '31.8 in' }
-      }
-    ]
-  },
-  dresses: {
-    title: 'Guía de Medidas para Vestidos & Enterizos',
-    imageUrl: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&auto=format&fit=crop&q=80',
-    instructions: 'Coloca la cinta métrica en paralelo al suelo. Mide busto, cintura y cadera con ropa ligera para máxima precisión.',
-    columns: ['Busto', 'Cintura', 'Cadera', 'Largo Vestido'],
-    rows: [
-      {
-        size: 'CH / S (Talla 4-6)',
-        measurements: { 'Busto': '84 - 88 cm', 'Cintura': '64 - 68 cm', 'Cadera': '90 - 94 cm', 'Largo Vestido': '88 cm' },
-        measurementsInches: { 'Busto': '33 - 35 in', 'Cintura': '25 - 27 in', 'Cadera': '35 - 37 in', 'Largo Vestido': '34.6 in' }
-      },
-      {
-        size: 'MD / M (Talla 8-10)',
-        measurements: { 'Busto': '89 - 93 cm', 'Cintura': '69 - 73 cm', 'Cadera': '95 - 99 cm', 'Largo Vestido': '90 cm' },
-        measurementsInches: { 'Busto': '35 - 37 in', 'Cintura': '27 - 29 in', 'Cadera': '37 - 39 in', 'Largo Vestido': '35.4 in' }
-      },
-      {
-        size: 'GD / L (Talla 12-14)',
-        measurements: { 'Busto': '94 - 100 cm', 'Cintura': '74 - 80 cm', 'Cadera': '100 - 106 cm', 'Largo Vestido': '92 cm' },
-        measurementsInches: { 'Busto': '37 - 39 in', 'Cintura': '29 - 31 in', 'Cadera': '39 - 42 in', 'Largo Vestido': '36.2 in' }
-      }
-    ]
-  },
-  shoes: {
-    title: 'Guía de Tallas para Calzado & Zapatos',
-    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80',
-    instructions: 'Coloca tu pie sobre una hoja de papel, marca la punta del dedo más largo y el talón. Mide la distancia en centímetros.',
-    columns: ['Largo del Pie (CM)', 'Talla México (MX)', 'Talla USA (US)', 'Talla Europa (EUR)'],
-    rows: [
-      {
-        size: '23 MX',
-        measurements: { 'Largo del Pie (CM)': '23.0 cm', 'Talla México (MX)': '23', 'Talla USA (US)': '6.0', 'Talla Europa (EUR)': '36.5' },
-        measurementsInches: { 'Largo del Pie (CM)': '9.0 in', 'Talla México (MX)': '23', 'Talla USA (US)': '6.0', 'Talla Europa (EUR)': '36.5' }
-      },
-      {
-        size: '24 MX',
-        measurements: { 'Largo del Pie (CM)': '24.0 cm', 'Talla México (MX)': '24', 'Talla USA (US)': '7.0', 'Talla Europa (EUR)': '38.0' },
-        measurementsInches: { 'Largo del Pie (CM)': '9.4 in', 'Talla México (MX)': '24', 'Talla USA (US)': '7.0', 'Talla Europa (EUR)': '38.0' }
-      },
-      {
-        size: '25 MX',
-        measurements: { 'Largo del Pie (CM)': '25.0 cm', 'Talla México (MX)': '25', 'Talla USA (US)': '8.0', 'Talla Europa (EUR)': '39.5' },
-        measurementsInches: { 'Largo del Pie (CM)': '9.8 in', 'Talla México (MX)': '25', 'Talla USA (US)': '8.0', 'Talla Europa (EUR)': '39.5' }
-      },
-      {
-        size: '26 MX',
-        measurements: { 'Largo del Pie (CM)': '26.0 cm', 'Talla México (MX)': '26', 'Talla USA (US)': '9.0', 'Talla Europa (EUR)': '41.0' },
-        measurementsInches: { 'Largo del Pie (CM)': '10.2 in', 'Talla México (MX)': '26', 'Talla USA (US)': '9.0', 'Talla Europa (EUR)': '41.0' }
-      }
-    ]
-  }
-};
 
 export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   editingProduct,
@@ -259,29 +150,35 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     return map;
   });
 
-  // Size Guide State
+  // Store Context for size guide templates & navigation
+  const { sizeGuideTemplates, setAdminTab } = useStore();
+
+  // Size Guide Selection State
   const [sizeGuideEnabled, setSizeGuideEnabled] = useState<boolean>(
-    editingProduct?.sizeGuide?.enabled ?? true
+    editingProduct?.sizeGuideTemplateId
+      ? true
+      : editingProduct?.sizeGuide?.enabled !== undefined
+      ? editingProduct.sizeGuide.enabled
+      : true
   );
-  const [sizeGuideTitle, setSizeGuideTitle] = useState<string>(
-    editingProduct?.sizeGuide?.title || `Guía de Medidas - ${editingProduct?.name || 'Prenda'}`
-  );
-  const [sizeGuideImage, setSizeGuideImage] = useState<string>(
-    editingProduct?.sizeGuide?.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80'
-  );
-  const [sizeGuideInstructions, setSizeGuideInstructions] = useState<string>(
-    editingProduct?.sizeGuide?.instructions ||
-      'Usa una cinta métrica flexible. Mantén la cinta nivelada sobre el cuerpo sin apretar en exceso.'
-  );
-  const [sizeGuideColumns, setSizeGuideColumns] = useState<string[]>(
-    editingProduct?.sizeGuide?.columns || ['Pecho / Busto', 'Cintura', 'Cadera', 'Largo']
-  );
-  const [sizeGuideRows, setSizeGuideRows] = useState<SizeGuideRow[]>(
-    editingProduct?.sizeGuide?.rows && editingProduct.sizeGuide.rows.length > 0
-      ? editingProduct.sizeGuide.rows
-      : SIZE_GUIDE_TEMPLATES.tops.rows
-  );
-  const [newColumnInput, setNewColumnInput] = useState('');
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => {
+    if (editingProduct?.sizeGuideTemplateId) {
+      return editingProduct.sizeGuideTemplateId;
+    }
+    if (editingProduct?.sizeGuide?.templateId) {
+      return editingProduct.sizeGuide.templateId;
+    }
+    if (editingProduct?.category === 'calzado') {
+      const match = sizeGuideTemplates.find(t => t.category === 'calzado');
+      if (match) return match.id;
+    } else if (editingProduct?.category === 'hombre') {
+      const match = sizeGuideTemplates.find(t => t.category === 'hombre');
+      if (match) return match.id;
+    }
+    return sizeGuideTemplates[0]?.id || 'template-tops';
+  });
+
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Quick Category Modal
@@ -304,13 +201,6 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     c => c.slug === category || c.id === category || c.name.toLowerCase() === category.toLowerCase()
   );
   const availableSubcategories = currentCategoryObj?.subcategories || [];
-
-  // Update sizeGuideTitle if name changes and title was default
-  useEffect(() => {
-    if (name && (!sizeGuideTitle || sizeGuideTitle.startsWith('Guía de Medidas'))) {
-      setSizeGuideTitle(`Guía de Medidas - ${name}`);
-    }
-  }, [name]);
 
   // General Image handlers
   const handleAddGeneralImage = (url: string) => {
@@ -395,122 +285,6 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     }
   };
 
-  // Size Guide Handlers
-  const handleApplyTemplate = (templateKey: keyof typeof SIZE_GUIDE_TEMPLATES) => {
-    const tmpl = SIZE_GUIDE_TEMPLATES[templateKey];
-    setSizeGuideTitle(tmpl.title);
-    setSizeGuideImage(tmpl.imageUrl);
-    setSizeGuideInstructions(tmpl.instructions);
-    setSizeGuideColumns([...tmpl.columns]);
-    setSizeGuideRows(JSON.parse(JSON.stringify(tmpl.rows)));
-  };
-
-  const handleUploadSizeGuideImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setIsUploadingImage(true);
-    try {
-      const file = files[0];
-      const uploadedUrl = await uploadImage(file);
-      if (uploadedUrl) {
-        setSizeGuideImage(uploadedUrl);
-      }
-    } catch (err) {
-      console.error('Error uploading size guide image:', err);
-    } finally {
-      setIsUploadingImage(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleAddColumn = () => {
-    if (!newColumnInput.trim()) return;
-    const colName = newColumnInput.trim();
-    if (!sizeGuideColumns.includes(colName)) {
-      setSizeGuideColumns(prev => [...prev, colName]);
-    }
-    setNewColumnInput('');
-  };
-
-  const handleRemoveColumn = (colName: string) => {
-    if (sizeGuideColumns.length <= 1) {
-      alert('Debes mantener al menos una columna de medidas.');
-      return;
-    }
-    setSizeGuideColumns(prev => prev.filter(c => c !== colName));
-  };
-
-  const handleAddRow = () => {
-    const newRow: SizeGuideRow = {
-      size: `Talla ${sizeGuideRows.length + 1}`,
-      measurements: {},
-      measurementsInches: {}
-    };
-    sizeGuideColumns.forEach(c => {
-      newRow.measurements[c] = '-';
-      if (newRow.measurementsInches) newRow.measurementsInches[c] = '-';
-    });
-    setSizeGuideRows(prev => [...prev, newRow]);
-  };
-
-  const handleSyncRowsFromProductSizes = () => {
-    if (selectedSizes.length === 0) {
-      alert('Primero selecciona tallas en la sección de Tallas del producto.');
-      return;
-    }
-    const updatedRows: SizeGuideRow[] = selectedSizes.map((sz, idx) => {
-      const existing = sizeGuideRows.find(r => r.size.toLowerCase().includes(sz.toLowerCase()));
-      if (existing) return existing;
-      const base = 88 + idx * 6;
-      return {
-        size: sz,
-        measurements: {
-          'Pecho / Busto': `${base} - ${base + 5} cm`,
-          'Cintura': `${base - 20} - ${base - 15} cm`,
-          'Cadera': `${base + 4} - ${base + 8} cm`,
-          'Largo': `${65 + idx * 2} cm`
-        },
-        measurementsInches: {
-          'Pecho / Busto': `${Math.round(base / 2.54)} - ${Math.round((base + 5) / 2.54)} in`,
-          'Cintura': `${Math.round((base - 20) / 2.54)} - ${Math.round((base - 15) / 2.54)} in`,
-          'Cadera': `${Math.round((base + 4) / 2.54)} - ${Math.round((base + 8) / 2.54)} in`,
-          'Largo': `${Math.round((65 + idx * 2) / 2.54)} in`
-        }
-      };
-    });
-    setSizeGuideRows(updatedRows);
-  };
-
-  const handleRemoveRow = (idx: number) => {
-    if (sizeGuideRows.length <= 1) {
-      alert('Debes mantener al menos una fila de medidas.');
-      return;
-    }
-    setSizeGuideRows(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleUpdateRowValue = (rowIdx: number, colName: string, val: string, isInch = false) => {
-    setSizeGuideRows(prev => {
-      const copy = [...prev];
-      const target = { ...copy[rowIdx] };
-      if (isInch) {
-        target.measurementsInches = { ...(target.measurementsInches || {}), [colName]: val };
-      } else {
-        target.measurements = { ...target.measurements, [colName]: val };
-      }
-      copy[rowIdx] = target;
-      return copy;
-    });
-  };
-
-  const handleUpdateRowSizeName = (rowIdx: number, sizeName: string) => {
-    setSizeGuideRows(prev => {
-      const copy = [...prev];
-      copy[rowIdx] = { ...copy[rowIdx], size: sizeName };
-      return copy;
-    });
-  };
-
   // YouTube Helper
   const getYouTubeEmbedUrl = (urlStr: string): string | null => {
     if (!urlStr) return null;
@@ -524,6 +298,9 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     }
     return null;
   };
+
+  // Currently selected template object
+  const currentTemplate = sizeGuideTemplates.find(t => t.id === selectedTemplateId) || sizeGuideTemplates[0];
 
   // Helper to compile product object
   const buildProductData = (isPublishedFlag: boolean = true): Product => {
@@ -545,15 +322,6 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       }
     }
 
-    const compiledSizeGuide: SizeGuide = {
-      enabled: sizeGuideEnabled,
-      title: sizeGuideTitle,
-      imageUrl: sizeGuideImage,
-      instructions: sizeGuideInstructions,
-      columns: sizeGuideColumns,
-      rows: sizeGuideRows
-    };
-
     return {
       id: productId,
       productType,
@@ -572,7 +340,18 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       colors: productType === 'variable' ? selectedColors : [],
       colorImages: productType === 'variable' ? colorImages : {},
       variantStock: variantStockList,
-      sizeGuide: compiledSizeGuide,
+      sizeGuideTemplateId: sizeGuideEnabled ? selectedTemplateId : undefined,
+      sizeGuide: sizeGuideEnabled && currentTemplate ? {
+        enabled: true,
+        templateId: currentTemplate.id,
+        title: currentTemplate.name,
+        imageUrl: currentTemplate.imageUrl,
+        instructions: currentTemplate.instructions,
+        columns: currentTemplate.columns,
+        rows: currentTemplate.rows
+      } : {
+        enabled: false
+      },
       description: description.trim(),
       tags: [category, subcategory, ...(selectedSizes || [])],
       isFeatured,
@@ -641,14 +420,16 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     description,
     tags: [],
     dateAdded: '2026-01-01',
-    sizeGuide: {
+    sizeGuideTemplateId: selectedTemplateId,
+    sizeGuide: currentTemplate ? {
       enabled: sizeGuideEnabled,
-      title: sizeGuideTitle,
-      imageUrl: sizeGuideImage,
-      instructions: sizeGuideInstructions,
-      columns: sizeGuideColumns,
-      rows: sizeGuideRows
-    }
+      templateId: currentTemplate.id,
+      title: currentTemplate.name,
+      imageUrl: currentTemplate.imageUrl,
+      instructions: currentTemplate.instructions,
+      columns: currentTemplate.columns,
+      rows: currentTemplate.rows
+    } : undefined
   };
 
   return (
@@ -1404,19 +1185,19 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           </div>
         </div>
 
-        {/* SECTION 5: SIZE GUIDE & MEASUREMENTS TABLE (REQUERIMIENTO CLAVE) */}
+        {/* SECTION 5: SIZE GUIDE TEMPLATE SELECTOR */}
         <div className="bg-white rounded-3xl p-5 sm:p-7 border-2 border-amber-300 shadow-md space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200 pb-4">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200 px-2.5 py-0.5 rounded-full inline-block mb-1">
-                Función Activada
+                Plantillas Reutilizables
               </span>
               <h3 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2">
                 <Ruler className="w-5 h-5 text-amber-600" />
-                5. Tabla de Medidas & Guía de Tallas para el Cliente
+                5. Tabla de Medidas & Guía de Tallas (Plantilla)
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Configura la fotografía de referencia y la tabla de medidas exacta para que el comprador elija su talla con confianza.
+                Selecciona una tabla de medidas previamente registrada en el módulo <strong>"Tablas de Medidas"</strong>. Se vinculará y mostrará automáticamente a tus clientes.
               </p>
             </div>
 
@@ -1431,7 +1212,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                 <span>Habilitar Guía en este Producto</span>
               </label>
 
-              {sizeGuideEnabled && (
+              {sizeGuideEnabled && currentTemplate && (
                 <button
                   type="button"
                   onClick={() => setShowPreviewModal(true)}
@@ -1446,282 +1227,173 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
 
           {sizeGuideEnabled ? (
             <div className="space-y-6">
-              {/* Quick Template Selector */}
-              <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-xs text-amber-950 flex items-center gap-1.5">
+              {/* Template Selector dropdown & Quick Navigation */}
+              <div className="bg-amber-50/70 p-4 sm:p-5 rounded-2xl border border-amber-200 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="font-extrabold text-xs text-amber-950 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-600" />
-                    Cargar Plantilla Predefinida (1-Clic):
-                  </span>
-                  <span className="text-[11px] text-amber-800">Autocompleta columnas y medidas típicas</span>
+                    Selecciona la Plantilla de Medidas:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('¿Deseas ir al módulo de Tablas de Medidas para crear o editar plantillas? Guarda tus cambios antes si es necesario.')) {
+                        setAdminTab('tablas-medidas');
+                      }
+                    }}
+                    className="text-xs font-bold text-amber-900 hover:text-amber-950 underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Ir al Administrador de Tablas de Medidas</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('tops')}
-                    className="p-2.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-xl font-bold text-xs text-amber-950 text-left transition-colors cursor-pointer"
-                  >
-                    👚 Tops / Playeras
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('bottoms')}
-                    className="p-2.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-xl font-bold text-xs text-amber-950 text-left transition-colors cursor-pointer"
-                  >
-                    👖 Pantalones & Jeans
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('dresses')}
-                    className="p-2.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-xl font-bold text-xs text-amber-950 text-left transition-colors cursor-pointer"
-                  >
-                    👗 Vestidos & Monos
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('shoes')}
-                    className="p-2.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-xl font-bold text-xs text-amber-950 text-left transition-colors cursor-pointer"
-                  >
-                    👟 Calzado & Tenis
-                  </button>
+                {/* Dropdown Selector */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="md:col-span-2">
+                    <select
+                      value={selectedTemplateId}
+                      onChange={e => setSelectedTemplateId(e.target.value)}
+                      className="w-full p-3 bg-white border-2 border-amber-300 rounded-xl font-bold text-xs text-gray-900 shadow-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500 cursor-pointer"
+                    >
+                      {sizeGuideTemplates.map(tmpl => (
+                        <option key={tmpl.id} value={tmpl.id}>
+                          {tmpl.name} ({tmpl.category.toUpperCase()}) — {tmpl.rows.length} tallas ({tmpl.columns.join(', ')})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 h-full">
+                      <span className="text-xs text-amber-800 font-medium">
+                        {sizeGuideTemplates.length} plantilla(s) disponibles
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Visual Quick Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  {sizeGuideTemplates.map(tmpl => {
+                    const isSelected = tmpl.id === selectedTemplateId;
+                    return (
+                      <button
+                        key={tmpl.id}
+                        type="button"
+                        onClick={() => setSelectedTemplateId(tmpl.id)}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-amber-600 text-white border-amber-700 shadow-sm ring-2 ring-amber-400'
+                            : 'bg-white hover:bg-amber-100/80 text-gray-800 border-amber-200'
+                        }`}
+                      >
+                        <div>
+                          <span
+                            className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full inline-block mb-1 ${
+                              isSelected ? 'bg-amber-800 text-white' : 'bg-amber-100 text-amber-900'
+                            }`}
+                          >
+                            {tmpl.category}
+                          </span>
+                          <h5 className="font-bold text-xs leading-tight line-clamp-2">{tmpl.name}</h5>
+                        </div>
+                        <span className={`text-[10px] mt-2 font-medium ${isSelected ? 'text-amber-100' : 'text-gray-500'}`}>
+                          {tmpl.rows.length} tallas registradas
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Title & Reference Photo Assigned by Admin */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                {/* Reference Photo Container */}
-                <div className="md:col-span-4 bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="font-black text-gray-900 text-xs">Foto / Silueta de Medición</label>
-                    <span className="text-[10px] text-gray-400">Asignada por admin</span>
+              {/* Selected Template Live Preview Summary */}
+              {currentTemplate && (
+                <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-sm text-gray-900">{currentTemplate.name}</h4>
+                        <p className="text-[11px] text-gray-500">
+                          Categoría: <span className="font-bold uppercase text-slate-700">{currentTemplate.category}</span> | {currentTemplate.columns.length} columnas de medida
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewModal(true)}
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Ver cómo lo verá el cliente</span>
+                    </button>
                   </div>
 
-                  <div className="relative rounded-xl overflow-hidden border border-gray-300 aspect-3/4 bg-white flex items-center justify-center">
-                    {sizeGuideImage ? (
-                      <img
-                        src={sizeGuideImage}
-                        alt="Guía de medición de talla"
-                        className="w-full h-full object-contain p-2"
-                      />
-                    ) : (
-                      <div className="text-center p-4 text-gray-400">
-                        <Ruler className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <span className="text-xs">Sin foto asignada</span>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                    {/* Reference Silhouette thumbnail */}
+                    {currentTemplate.imageUrl && (
+                      <div className="md:col-span-3 bg-white p-2 rounded-xl border border-gray-200 flex flex-col items-center">
+                        <span className="text-[10px] font-bold text-gray-400 mb-1">Silueta de Medición</span>
+                        <div className="w-full aspect-3/4 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                          <img
+                            src={currentTemplate.imageUrl}
+                            alt={currentTemplate.name}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                       </div>
                     )}
-                  </div>
 
-                  {/* Photo Controls */}
-                  <div className="space-y-2">
-                    <label className="w-full bg-slate-900 hover:bg-black text-white font-bold py-2 px-3 rounded-xl text-xs text-center cursor-pointer flex items-center justify-center gap-1.5 transition-colors">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Subir Foto desde Equipo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleUploadSizeGuideImage}
-                        className="hidden"
-                      />
-                    </label>
+                    {/* Instructions and Measurement Table Preview */}
+                    <div className={`${currentTemplate.imageUrl ? 'md:col-span-9' : 'md:col-span-12'} space-y-3`}>
+                      {currentTemplate.instructions && (
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 text-xs text-gray-600">
+                          <strong className="text-gray-900 block mb-0.5">Consejos e instrucciones incluidas:</strong>
+                          <p className="line-clamp-2 italic">{currentTemplate.instructions}</p>
+                        </div>
+                      )}
 
-                    <input
-                      type="text"
-                      placeholder="O pega URL de foto guía..."
-                      value={sizeGuideImage}
-                      onChange={e => setSizeGuideImage(e.target.value)}
-                      className="w-full p-2 bg-white border border-gray-300 rounded-xl text-[11px]"
-                    />
-                  </div>
-                </div>
-
-                {/* Guide Title, Instructions & Columns Configuration */}
-                <div className="md:col-span-8 space-y-4">
-                  <div>
-                    <label className="block font-bold text-gray-800 mb-1">Título de la Guía de Tallas *</label>
-                    <input
-                      type="text"
-                      value={sizeGuideTitle}
-                      onChange={e => setSizeGuideTitle(e.target.value)}
-                      placeholder="Ej: Guía de Tallas para Playeras & Chamarras"
-                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl font-bold text-xs"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-gray-800 mb-1">Instrucciones / Consejos para el Cliente</label>
-                    <textarea
-                      value={sizeGuideInstructions}
-                      onChange={e => setSizeGuideInstructions(e.target.value)}
-                      rows={2}
-                      placeholder="Ej: Usa una cinta métrica flexible. Mantén la cinta nivelada sobre el cuerpo..."
-                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs"
-                    />
-                  </div>
-
-                  {/* Columns Manager */}
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
-                    <label className="block font-black text-slate-900 text-xs">Columnas de Medidas:</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sizeGuideColumns.map(col => (
-                        <span
-                          key={col}
-                          className="inline-flex items-center gap-1.5 bg-white border border-slate-300 text-slate-800 font-bold px-2.5 py-1 rounded-lg text-xs"
-                        >
-                          {col}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveColumn(col)}
-                            className="text-gray-400 hover:text-red-600 p-0.5"
-                            title="Eliminar columna"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <input
-                        type="text"
-                        placeholder="Nueva columna (ej. Manga, Espalda, Tiro)..."
-                        value={newColumnInput}
-                        onChange={e => setNewColumnInput(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddColumn();
-                          }
-                        }}
-                        className="flex-1 p-2 bg-white border border-gray-300 rounded-xl text-xs font-medium"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddColumn}
-                        className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs cursor-pointer"
-                      >
-                        + Columna
-                      </button>
+                      {/* Read-only Table preview */}
+                      <div className="border border-gray-200 rounded-xl overflow-hidden shadow-2xs bg-white">
+                        <div className="overflow-x-auto max-h-56">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead className="bg-slate-100 text-slate-800 sticky top-0 uppercase text-[10px] font-extrabold border-b border-gray-200">
+                              <tr>
+                                <th className="py-2 px-3 border-r border-gray-200">Talla</th>
+                                {currentTemplate.columns.map(col => (
+                                  <th key={col} className="py-2 px-3 border-r border-gray-200 text-center">
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {currentTemplate.rows.map((row, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50">
+                                  <td className="py-2 px-3 font-bold text-gray-900 border-r border-gray-100 bg-slate-50/50">
+                                    {row.size}
+                                  </td>
+                                  {currentTemplate.columns.map(col => (
+                                    <td key={col} className="py-2 px-3 text-center text-gray-700 border-r border-gray-100">
+                                      {row.measurements[col] || '-'}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Interactive Measurements Table Designer */}
-              <div className="space-y-3 pt-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h4 className="font-black text-gray-900 text-xs flex items-center gap-1.5">
-                      <Ruler className="w-4 h-4 text-amber-600" />
-                      Tabla de Medidas Editable (Filas por Talla)
-                    </h4>
-                    <p className="text-[11px] text-gray-500">
-                      Introduce los rangos en cm (y opcionalmente en pulgadas). El cliente podrá alternar entre CM e IN.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleSyncRowsFromProductSizes}
-                      className="bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
-                      title="Copia las tallas seleccionadas en el producto"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>Sincronizar Tallas del Producto</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleAddRow}
-                      className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>+ Fila de Talla</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-xs bg-white">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-800 border-b border-gray-200 uppercase text-[10px] font-extrabold">
-                          <th className="py-2.5 px-3 border-r border-gray-200 min-w-[130px]">Talla / Etiqueta</th>
-                          {sizeGuideColumns.map(col => (
-                            <th key={col} className="py-2.5 px-3 border-r border-gray-200 min-w-[140px] text-center">
-                              {col} (CM / IN)
-                            </th>
-                          ))}
-                          <th className="py-2.5 px-2 text-center w-12">Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {sizeGuideRows.map((row, rowIdx) => (
-                          <tr key={rowIdx} className="hover:bg-slate-50">
-                            <td className="p-2 border-r border-gray-100">
-                              <input
-                                type="text"
-                                value={row.size}
-                                onChange={e => handleUpdateRowSizeName(rowIdx, e.target.value)}
-                                className="w-full p-1.5 bg-gray-50 border border-gray-300 rounded-lg font-black text-gray-900 text-xs"
-                                placeholder="ej. CH / S"
-                              />
-                            </td>
-
-                            {sizeGuideColumns.map(col => {
-                              const valCm = row.measurements[col] || '';
-                              const valIn = row.measurementsInches?.[col] || '';
-                              return (
-                                <td key={col} className="p-2 border-r border-gray-100">
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-[10px] font-bold text-gray-400 w-6">CM:</span>
-                                      <input
-                                        type="text"
-                                        value={valCm}
-                                        onChange={e => handleUpdateRowValue(rowIdx, col, e.target.value, false)}
-                                        placeholder="88-92 cm"
-                                        className="flex-1 p-1 bg-white border border-gray-200 rounded text-xs text-center font-medium"
-                                      />
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-[10px] font-bold text-gray-400 w-6">IN:</span>
-                                      <input
-                                        type="text"
-                                        value={valIn}
-                                        onChange={e => handleUpdateRowValue(rowIdx, col, e.target.value, true)}
-                                        placeholder="34-36 in"
-                                        className="flex-1 p-1 bg-white border border-gray-200 rounded text-[11px] text-center text-gray-500 font-medium"
-                                      />
-                                    </div>
-                                  </div>
-                                </td>
-                              );
-                            })}
-
-                            <td className="p-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveRow(rowIdx)}
-                                className="p-1 text-gray-400 hover:text-red-600 rounded cursor-pointer"
-                                title="Eliminar esta fila"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-6 text-gray-400 italic bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-              Guía de tallas desactivada para este producto. Marca la casilla superior para activarla y personalizar sus medidas.
+              Guía de tallas desactivada para este producto. Marca la casilla superior para vincular una plantilla registrada.
             </div>
           )}
         </div>

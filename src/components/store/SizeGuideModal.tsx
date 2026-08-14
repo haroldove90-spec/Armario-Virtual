@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Product, SizeGuide } from '../../types';
+import { Product, SizeGuide, SizeGuideTemplate } from '../../types';
+import { useStore } from '../../context/StoreContext';
 import { Ruler, X, Info, Check, Sparkles, ChevronRight, HelpCircle } from 'lucide-react';
 
 interface SizeGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: Product;
+  product?: Product | null;
+  template?: SizeGuideTemplate | null;
   selectedSize?: string;
   onSelectSize?: (size: string) => void;
 }
@@ -18,23 +20,44 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({
   isOpen,
   onClose,
   product,
+  template,
   selectedSize,
   onSelectSize
 }) => {
   const [unit, setUnit] = useState<'cm' | 'in'>('cm');
+  const { sizeGuideTemplates } = useStore();
 
   if (!isOpen) return null;
 
-  // Resolve size guide data or provide smart clothing fallback
-  const guide: SizeGuide = product.sizeGuide && product.sizeGuide.rows && product.sizeGuide.rows.length > 0
+  // Resolve template if provided or if product references a templateId
+  const effectiveTemplate =
+    template ||
+    (product?.sizeGuideTemplateId
+      ? sizeGuideTemplates.find(t => t.id === product.sizeGuideTemplateId)
+      : product?.sizeGuide?.templateId
+      ? sizeGuideTemplates.find(t => t.id === product.sizeGuide?.templateId)
+      : null);
+
+  // Resolve size guide data from template, product, or fallback
+  const guide: SizeGuide = effectiveTemplate
+    ? {
+        enabled: true,
+        title: effectiveTemplate.name,
+        imageUrl: effectiveTemplate.imageUrl,
+        instructions: effectiveTemplate.instructions,
+        columns: effectiveTemplate.columns,
+        rows: effectiveTemplate.rows,
+        templateId: effectiveTemplate.id
+      }
+    : product?.sizeGuide && product.sizeGuide.rows && product.sizeGuide.rows.length > 0
     ? product.sizeGuide
     : {
         enabled: true,
-        title: `Guía de Tallas & Medidas - ${product.name}`,
-        imageUrl: product.images[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
+        title: product ? `Guía de Tallas & Medidas - ${product.name}` : 'Tabla de Medidas',
+        imageUrl: product?.images?.[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
         instructions: 'Usa una cinta métrica flexible. Mantén la cinta nivelada sobre el cuerpo sin apretar en exceso.',
         columns: ['Pecho / Busto', 'Cintura', 'Cadera', 'Largo'],
-        rows: (product.sizes.length > 0 ? product.sizes : ['CH / S', 'MD / M', 'GD / L', 'XGD / XL']).map((s, idx) => {
+        rows: (product?.sizes && product.sizes.length > 0 ? product.sizes : ['CH / S', 'MD / M', 'GD / L', 'XGD / XL']).map((s, idx) => {
           const base = 88 + idx * 6;
           return {
             size: s,
@@ -54,7 +77,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({
         })
       };
 
-  const guideImage = guide.imageUrl || product.images[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg';
+  const guideImage = guide.imageUrl || product?.images?.[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-sm animate-fade-in">

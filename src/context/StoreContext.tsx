@@ -15,7 +15,8 @@ import {
   CategoryItem,
   SubcategoryItem,
   Employee,
-  AdminProfile
+  AdminProfile,
+  SizeGuideTemplate
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -26,7 +27,8 @@ import {
   INITIAL_CATEGORIES,
   INITIAL_ADMIN_PROFILE,
   INITIAL_EMPLOYEES,
-  INITIAL_CUSTOMERS_LIST
+  INITIAL_CUSTOMERS_LIST,
+  INITIAL_SIZE_GUIDE_TEMPLATES
 } from '../data/initialData';
 import { getProductEffectivePrice, getProductColorImage } from '../utils/cartHelpers';
 import { supabase } from '../lib/supabase';
@@ -59,6 +61,14 @@ interface StoreContextType {
   // Admin Profile
   adminProfile: AdminProfile;
   updateAdminProfile: (profile: Partial<AdminProfile>) => void;
+
+  // Size Guide Templates Management
+  sizeGuideTemplates: SizeGuideTemplate[];
+  addSizeGuideTemplate: (template: Omit<SizeGuideTemplate, 'id' | 'createdAt'>) => void;
+  updateSizeGuideTemplate: (id: string, template: Partial<SizeGuideTemplate>) => void;
+  deleteSizeGuideTemplate: (id: string) => void;
+  duplicateSizeGuideTemplate: (id: string) => void;
+  restoreDefaultSizeGuideTemplates: () => void;
 
   // Categories & Subcategories
   categories: CategoryItem[];
@@ -162,6 +172,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const LS_ADMIN_PROFILE = 'ropaenlinea_admin_profile_v1';
   const LS_EMPLOYEES = 'ropaenlinea_employees_v1';
   const LS_CUSTOMERS_LIST = 'ropaenlinea_customers_list_v1';
+  const LS_SIZE_GUIDE_TEMPLATES = 'ropaenlinea_size_guide_templates_v1';
 
   // Role & UI state with lazy init from localStorage
   const [activeRole, setActiveRoleState] = useState<ActiveRole>(() => {
@@ -259,6 +270,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsAdminLoggedIn(false);
     showToast('Sesión de administrador cerrada');
   };
+
+  // Size Guide Templates State
+  const [sizeGuideTemplates, setSizeGuideTemplates] = useState<SizeGuideTemplate[]>(() => {
+    const saved = localStorage.getItem(LS_SIZE_GUIDE_TEMPLATES);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return INITIAL_SIZE_GUIDE_TEMPLATES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_SIZE_GUIDE_TEMPLATES, JSON.stringify(sizeGuideTemplates));
+  }, [sizeGuideTemplates]);
 
   // Categories State
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
@@ -453,10 +480,115 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
       } catch (e) {}
+
+      // 7. Size Guide Templates
+      try {
+        const { data: dbTemplates, error: tplErr } = await supabase.from('size_guide_templates').select('*');
+        if (!tplErr && dbTemplates && dbTemplates.length > 0) {
+          const mapped: SizeGuideTemplate[] = dbTemplates.map(t => ({
+            id: t.id,
+            name: t.name,
+            category: t.category || 'General',
+            unit: t.unit || 'cm',
+            columns: typeof t.columns === 'string' ? JSON.parse(t.columns) : (t.columns || []),
+            rows: typeof t.rows === 'string' ? JSON.parse(t.rows) : (t.rows || []),
+            imageUrl: t.image_url || t.imageUrl || '',
+            instructions: t.instructions || '',
+            isDefault: Boolean(t.is_default),
+            createdAt: t.created_at || t.createdAt
+          }));
+          setSizeGuideTemplates(mapped);
+        }
+      } catch (e) {
+        console.log('Supabase size_guide_templates read skipped');
+      }
     }
 
     loadAllFromSupabase();
   }, []);
+
+  // Size Guide Templates Sync & CRUD Operations
+  const syncSizeGuideTemplateToSupabase = async (tpl: SizeGuideTemplate) => {
+    try {
+      const { error } = await supabase.from('size_guide_templates').upsert({
+        id: tpl.id,
+        name: tpl.name,
+        category: tpl.category || 'General',
+        unit: tpl.unit || 'cm',
+        columns: tpl.columns || [],
+        rows: tpl.rows || [],
+        image_url: tpl.imageUrl || '',
+        instructions: tpl.instructions || '',
+        is_default: Boolean(tpl.isDefault),
+        created_at: tpl.createdAt || new Date().toISOString().split('T')[0]
+      });
+      if (error) {
+        console.warn('Supabase size_guide_template upsert error:', error.message);
+        if (error.code === '42501' || error.message.toLowerCase().includes('policy')) {
+          showToast('⚠️ Supabase RLS: Ejecuta el script SQL para guardar tablas de medidas');
+        }
+      }
+    } catch (e: any) {
+      console.warn('Supabase size_guide_template upsert exception:', e);
+    }
+  };
+
+  const deleteSizeGuideTemplateFromSupabase = async (id: string) => {
+    try {
+      const { error } = await supabase.from('size_guide_templates').delete().eq('id', id);
+      if (error) console.warn('Supabase size_guide_template delete error:', error.message);
+    } catch (e: any) {
+      console.warn('Supabase size_guide_template delete exception:', e);
+    }
+  };
+
+  const addSizeGuideTemplate = (tplData: Omit<SizeGuideTemplate, 'id' | 'createdAt'>) => {
+    const newTpl: SizeGuideTemplate = {
+      ...tplData,
+      id: `tpl-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setSizeGuideTemplates(prev => [newTpl, ...prev]);
+    syncSizeGuideTemplateToSupabase(newTpl);
+    showToast(`📏 Plantilla "${newTpl.name}" creada exitosamente`);
+  };
+
+  const updateSizeGuideTemplate = (id: string, tplData: Partial<SizeGuideTemplate>) => {
+    setSizeGuideTemplates(prev => {
+      const updated = prev.map(t => (t.id === id ? { ...t, ...tplData } : t));
+      const target = updated.find(t => t.id === id);
+      if (target) syncSizeGuideTemplateToSupabase(target);
+      return updated;
+    });
+    showToast('Plantilla de medidas actualizada');
+  };
+
+  const deleteSizeGuideTemplate = (id: string) => {
+    setSizeGuideTemplates(prev => prev.filter(t => t.id !== id));
+    deleteSizeGuideTemplateFromSupabase(id);
+    showToast('Plantilla de medidas eliminada');
+  };
+
+  const duplicateSizeGuideTemplate = (id: string) => {
+    const original = sizeGuideTemplates.find(t => t.id === id);
+    if (!original) return;
+    const duplicated: SizeGuideTemplate = {
+      ...original,
+      id: `tpl-${Date.now()}`,
+      name: `${original.name} (Copia)`,
+      isDefault: false,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setSizeGuideTemplates(prev => [duplicated, ...prev]);
+    syncSizeGuideTemplateToSupabase(duplicated);
+    showToast(`📋 Plantilla duplicada: "${duplicated.name}"`);
+  };
+
+  const restoreDefaultSizeGuideTemplates = () => {
+    setSizeGuideTemplates(INITIAL_SIZE_GUIDE_TEMPLATES);
+    INITIAL_SIZE_GUIDE_TEMPLATES.forEach(tpl => syncSizeGuideTemplateToSupabase(tpl));
+    showToast('🔄 Plantillas de medidas restauradas a valores predeterminados');
+  };
 
   const syncCategoryToSupabase = async (cat: CategoryItem) => {
     try {
@@ -1055,7 +1187,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       details['employees'] = { success: false, error: e.message || String(e) };
     }
 
-    // 6. Configs
+    // 6. Size Guide Templates
+    try {
+      if (sizeGuideTemplates.length > 0) {
+        const tplPayload = sizeGuideTemplates.map(t => ({
+          id: t.id,
+          name: t.name,
+          category: t.category || 'General',
+          unit: t.unit || 'cm',
+          columns: t.columns || [],
+          rows: t.rows || [],
+          image_url: t.imageUrl || '',
+          instructions: t.instructions || '',
+          is_default: Boolean(t.isDefault),
+          created_at: t.createdAt || new Date().toISOString().split('T')[0]
+        }));
+        const { error: tplErr } = await supabase.from('size_guide_templates').upsert(tplPayload);
+        if (tplErr) {
+          hasError = true;
+          details['size_guide_templates'] = { success: false, error: tplErr.message };
+        } else {
+          details['size_guide_templates'] = { success: true, count: tplPayload.length };
+        }
+      }
+    } catch (e: any) {
+      details['size_guide_templates'] = { success: false, error: e.message || String(e) };
+    }
+
+    // 7. Configs
     try {
       await syncShippingConfigToSupabase(shippingConfig);
       await syncStoreDesignToSupabase(storeDesign);
@@ -1075,7 +1234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return {
       success: true,
-      message: `¡Sincronización completada! ${products.length} productos y ${categories.length} categorías subidos a Supabase.`,
+      message: `¡Sincronización completada! ${products.length} productos, ${categories.length} categorías y ${sizeGuideTemplates.length} tablas de medidas subidas a Supabase.`,
       details
     };
   };
@@ -1509,6 +1668,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setShippingConfig(INITIAL_SHIPPING_CONFIG);
     setStoreDesign(INITIAL_STORE_DESIGN);
     setCategories(INITIAL_CATEGORIES);
+    setSizeGuideTemplates(INITIAL_SIZE_GUIDE_TEMPLATES);
     setAdminProfile(INITIAL_ADMIN_PROFILE);
     setEmployees(INITIAL_EMPLOYEES);
     setCustomersList(INITIAL_CUSTOMERS_LIST);
@@ -1542,6 +1702,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         adminLogout,
         adminProfile,
         updateAdminProfile,
+        sizeGuideTemplates,
+        addSizeGuideTemplate,
+        updateSizeGuideTemplate,
+        deleteSizeGuideTemplate,
+        duplicateSizeGuideTemplate,
+        restoreDefaultSizeGuideTemplates,
         categories,
         addCategory,
         updateCategory,

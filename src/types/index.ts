@@ -37,8 +37,22 @@ export interface SizeGuide {
   title?: string;
   imageUrl?: string;
   instructions?: string;
-  columns: string[]; // e.g. ["Pecho", "Cintura", "Cadera", "Largo"]
+  columns?: string[]; // e.g. ["Pecho", "Cintura", "Cadera", "Largo"]
+  rows?: SizeGuideRow[];
+  templateId?: string;
+}
+
+export interface SizeGuideTemplate {
+  id: string;
+  name: string; // e.g. "Playeras & Polos (Unisex / Hombre)"
+  category?: string; // e.g. "Hombre", "Mujer", "Niños", "Calzado", "Unisex", "Todas"
+  unit?: 'cm' | 'in';
+  columns: string[]; // e.g. ["Pecho / Busto", "Cintura", "Cadera", "Largo"]
   rows: SizeGuideRow[];
+  imageUrl?: string; // Illustration / Silhouette showing where to measure
+  instructions?: string; // Advice text for customers
+  isDefault?: boolean;
+  createdAt?: string;
 }
 
 export interface Product {
@@ -60,6 +74,7 @@ export interface Product {
   productType?: 'sencillo' | 'variable';
   variantStock?: ProductVariantStock[];
   sizeGuide?: SizeGuide;
+  sizeGuideTemplateId?: string;
   description: string;
   tags: string[];
   isFeatured?: boolean;
@@ -235,6 +250,6 @@ export interface CartItem {
 }
 
 export type ActiveRole = 'tienda' | 'cliente' | 'admin';
-export type AdminTab = 'metricas' | 'productos' | 'categorias' | 'ventas' | 'envio' | 'diseno' | 'perfil' | 'usuarios' | 'empleados';
+export type AdminTab = 'metricas' | 'productos' | 'categorias' | 'tablas-medidas' | 'ventas' | 'envio' | 'diseno' | 'perfil' | 'usuarios' | 'empleados';
 export type CustomerTab = 'compras' | 'perfil' | 'domicilios' | 'favoritos';
 

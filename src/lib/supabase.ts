@@ -35,6 +35,7 @@ export async function runCompleteSupabaseDiagnostic(): Promise<SupabaseDiagnosti
   const tablesToCheck = [
     'categories',
     'products',
+    'size_guide_templates',
     'orders',
     'customers',
     'employees',
@@ -95,6 +96,8 @@ export async function runCompleteSupabaseDiagnostic(): Promise<SupabaseDiagnosti
           testPayload = { id: testId, name: 'DiagTest', slug: 'diag-test', icon_name: 'Tag', subcategories: [] };
         } else if (table === 'products') {
           testPayload = { id: testId, name: 'DiagTest', price: 10, stock: 1, category: 'Test', sku: 'TEST-001', images: [], sizes: [], colors: [] };
+        } else if (table === 'size_guide_templates') {
+          testPayload = { id: testId, name: 'DiagTestTpl', columns: [], rows: [] };
         } else if (table === 'orders') {
           testPayload = { id: testId, order_number: 'TEST-001', customer_name: 'DiagTest', total: 10, status: 'pendiente', items: [] };
         }
@@ -205,6 +208,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     color_images JSONB DEFAULT '{}'::jsonb,
     variant_stock JSONB DEFAULT '[]'::jsonb,
     size_guide JSONB DEFAULT NULL,
+    size_guide_template_id TEXT,
     description TEXT,
     tags JSONB DEFAULT '[]'::jsonb,
     is_featured BOOLEAN DEFAULT false,
@@ -212,6 +216,19 @@ CREATE TABLE IF NOT EXISTS public.products (
     youtube_url TEXT,
     date_added TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.size_guide_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT DEFAULT 'General',
+    unit TEXT DEFAULT 'cm',
+    columns JSONB DEFAULT '[]'::jsonb,
+    rows JSONB DEFAULT '[]'::jsonb,
+    image_url TEXT,
+    instructions TEXT,
+    is_default BOOLEAN DEFAULT false,
+    created_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS public.orders (
@@ -305,6 +322,7 @@ CREATE TABLE IF NOT EXISTS public.admin_profile (
 -- Esto soluciona de inmediato el problema donde los productos o categorías no se guardan.
 ALTER TABLE public.categories DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.size_guide_templates DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.employees DISABLE ROW LEVEL SECURITY;

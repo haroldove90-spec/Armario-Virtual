@@ -10,8 +10,9 @@ import { DesignModule } from './DesignModule';
 import { AdminProfileModule } from './AdminProfileModule';
 import { CustomersModule } from './CustomersModule';
 import { EmployeesModule } from './EmployeesModule';
+import { SizeGuidesModule } from './SizeGuidesModule';
 import { SupabaseDiagnosticModal } from './SupabaseDiagnosticModal';
-import { BarChart3, Package, Layers, ShoppingBag, Truck, Palette, UserCheck, Users, ShieldCheck, Store, User, Database } from 'lucide-react';
+import { BarChart3, Package, Layers, ShoppingBag, Truck, Palette, UserCheck, Users, ShieldCheck, Store, User, Database, Ruler } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
   const { products, adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile } = useStore();
@@ -21,6 +22,7 @@ export const AdminLayout: React.FC = () => {
   const tabs = [
     { id: 'metricas' as AdminTab, label: '📊 Métricas & Ventas', icon: BarChart3, description: 'Estadísticas generales y reportes' },
     { id: 'productos' as AdminTab, label: '📦 Productos & Stock', icon: Package, description: 'Catálogo e inventarios' },
+    { id: 'tablas-medidas' as AdminTab, label: '📏 Tabla de Medidas', icon: Ruler, description: 'Plantillas y guías de tallas' },
     { id: 'categorias' as AdminTab, label: '🏷️ Categorías', icon: Layers, description: 'Categorías y subcategorías' },
     { id: 'ventas' as AdminTab, label: '📋 Ventas & Pedidos', icon: ShoppingBag, description: 'Administrar compras y envíos' },
     { id: 'envio' as AdminTab, label: '🚚 Envíos (API)', icon: Truck, description: 'Tarifas y Envíos.com' },
@@ -111,6 +113,7 @@ export const AdminLayout: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         {adminTab === 'metricas' && <MetricsModule />}
         {adminTab === 'productos' && <ProductsModule />}
+        {adminTab === 'tablas-medidas' && <SizeGuidesModule />}
         {adminTab === 'categorias' && <CategoriesModule />}
         {adminTab === 'ventas' && <OrdersModule />}
         {adminTab === 'envio' && <ShippingModule />}
