@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
+import { SizeGuideModal } from './SizeGuideModal';
 import {
   X,
   Star,
@@ -11,7 +12,8 @@ import {
   Check,
   Video,
   Tag,
-  ImageIcon
+  ImageIcon,
+  Ruler
 } from 'lucide-react';
 
 interface ProductQuickViewProps {
@@ -32,6 +34,7 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
   const [quantity, setQuantity] = useState(1);
   const [postalCode, setPostalCode] = useState('');
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   // Color-specific images for chosen color
   const selectedColorImages = React.useMemo(() => {
@@ -266,15 +269,26 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
             {/* Size Selector */}
             {product.sizes.length > 0 && (
               <div className="mb-5">
-                <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-2">
-                  Talla Seleccionada: <span className="text-[#9E0D0D]">{selectedSize}</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider">
+                    Talla Seleccionada: <span className="text-[#9E0D0D]">{selectedSize}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeGuide(true)}
+                    className="text-[11px] font-extrabold text-[#9E0D0D] hover:text-red-900 bg-red-50 hover:bg-red-100/80 px-2 py-0.5 rounded-lg border border-red-200 flex items-center gap-1 transition-all cursor-pointer"
+                    title="Ver tabla de medidas"
+                  >
+                    <Ruler className="w-3 h-3 text-[#9E0D0D]" />
+                    <span>Guía de Tallas</span>
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map(size => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         selectedSize === size
                           ? 'bg-[#9E0D0D] text-white border-[#9E0D0D] shadow-xs'
                           : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-red-300'
@@ -417,6 +431,15 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
           </div>
         </div>
       </div>
+
+      {/* Floating Size Guide Modal */}
+      <SizeGuideModal
+        isOpen={showSizeGuide}
+        onClose={() => setShowSizeGuide(false)}
+        product={product}
+        selectedSize={selectedSize}
+        onSelectSize={(newSize) => setSelectedSize(newSize)}
+      />
     </div>
   );
 };

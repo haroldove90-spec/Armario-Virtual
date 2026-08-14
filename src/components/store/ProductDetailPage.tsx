@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { ProductCard } from './ProductCard';
+import { SizeGuideModal } from './SizeGuideModal';
 import {
   ArrowLeft,
   ShoppingBag,
@@ -21,7 +22,8 @@ import {
   Clock,
   ChevronRight,
   ChevronLeft,
-  Palette
+  Palette,
+  Ruler
 } from 'lucide-react';
 
 interface ProductDetailPageProps {
@@ -41,6 +43,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
   const [postalCode, setPostalCode] = useState('');
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
   const [addedAnimation, setAddedAnimation] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   // Helper to extract specific photo for a color
   const getColorImage = (colorName: string): string | null => {
@@ -562,7 +565,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                       <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
                         TALLA SELECCIONADA: <span className="text-[#9E0D0D]">{selectedSize}</span>
                       </label>
-                      <span className="text-[11px] font-bold text-slate-400 underline">Guía de Tallas</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowSizeGuide(true)}
+                        className="text-[11px] font-extrabold text-[#9E0D0D] hover:text-red-900 bg-red-50 hover:bg-red-100/80 px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        title="Ver tabla de medidas y medidas corporales"
+                      >
+                        <Ruler className="w-3.5 h-3.5 text-[#9E0D0D]" />
+                        <span>Guía de Tallas</span>
+                      </button>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -717,6 +728,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
           </div>
         )}
       </div>
+
+      {/* Floating Size Guide Modal */}
+      <SizeGuideModal
+        isOpen={showSizeGuide}
+        onClose={() => setShowSizeGuide(false)}
+        product={product}
+        selectedSize={selectedSize}
+        onSelectSize={(newSize) => setSelectedSize(newSize)}
+      />
     </div>
   );
 };

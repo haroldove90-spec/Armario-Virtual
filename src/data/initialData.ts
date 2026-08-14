@@ -272,6 +272,35 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Chamarra capitonada acolchada de cuello alto con gorro desmontable y bolsas laterales con cierre. Ideal para protegerte del frío con estilo moderno y confort supremo.',
     tags: ['Gran Barata', 'Otoño e Invierno', 'Exclusivo en Línea'],
     isFeatured: true,
+    sizeGuide: {
+      enabled: true,
+      title: 'Tabla de Medidas - Chamarra Capitonada',
+      imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
+      instructions: 'Para un mejor ajuste, mide con una cinta métrica flexible sin apretar. Si buscas un calce holgado, selecciona una talla superior.',
+      columns: ['Pecho / Busto', 'Cintura', 'Cadera', 'Largo Manga'],
+      rows: [
+        {
+          size: 'CH / S',
+          measurements: { 'Pecho / Busto': '88 - 92 cm', 'Cintura': '68 - 72 cm', 'Cadera': '92 - 96 cm', 'Largo Manga': '60 cm' },
+          measurementsInches: { 'Pecho / Busto': '34 - 36 in', 'Cintura': '26 - 28 in', 'Cadera': '36 - 38 in', 'Largo Manga': '23.6 in' }
+        },
+        {
+          size: 'MD / M',
+          measurements: { 'Pecho / Busto': '93 - 97 cm', 'Cintura': '73 - 77 cm', 'Cadera': '97 - 101 cm', 'Largo Manga': '61 cm' },
+          measurementsInches: { 'Pecho / Busto': '36 - 38 in', 'Cintura': '28 - 30 in', 'Cadera': '38 - 40 in', 'Largo Manga': '24.0 in' }
+        },
+        {
+          size: 'GD / L',
+          measurements: { 'Pecho / Busto': '98 - 103 cm', 'Cintura': '78 - 83 cm', 'Cadera': '102 - 107 cm', 'Largo Manga': '62 cm' },
+          measurementsInches: { 'Pecho / Busto': '38 - 40 in', 'Cintura': '30 - 32 in', 'Cadera': '40 - 42 in', 'Largo Manga': '24.4 in' }
+        },
+        {
+          size: 'XGD / XL',
+          measurements: { 'Pecho / Busto': '104 - 110 cm', 'Cintura': '84 - 90 cm', 'Cadera': '108 - 114 cm', 'Largo Manga': '63 cm' },
+          measurementsInches: { 'Pecho / Busto': '41 - 43 in', 'Cintura': '33 - 35 in', 'Cadera': '42 - 45 in', 'Largo Manga': '24.8 in' }
+        }
+      ]
+    },
     dateAdded: '2026-07-01'
   },
   {
@@ -295,6 +324,30 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Elegante vestido corte A con manga larga suave y escote sutil. Perfecto para eventos casuales y de oficina. Tejido elástico y fresco.',
     tags: ['Moda Mujer', 'Tendencia', 'Novedad'],
     isFeatured: true,
+    sizeGuide: {
+      enabled: true,
+      title: 'Guía de Medidas - Vestido Casual Floral',
+      imageUrl: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&auto=format&fit=crop&q=80',
+      instructions: 'Toma las medidas de busto, cintura y cadera usando ropa ligera. El tejido posee un 5% de elasticidad.',
+      columns: ['Busto', 'Cintura', 'Cadera', 'Largo Total'],
+      rows: [
+        {
+          size: 'CH / S',
+          measurements: { 'Busto': '84 - 88 cm', 'Cintura': '64 - 68 cm', 'Cadera': '90 - 94 cm', 'Largo Total': '88 cm' },
+          measurementsInches: { 'Busto': '33 - 35 in', 'Cintura': '25 - 27 in', 'Cadera': '35 - 37 in', 'Largo Total': '34.6 in' }
+        },
+        {
+          size: 'MD / M',
+          measurements: { 'Busto': '89 - 93 cm', 'Cintura': '69 - 73 cm', 'Cadera': '95 - 99 cm', 'Largo Total': '90 cm' },
+          measurementsInches: { 'Busto': '35 - 37 in', 'Cintura': '27 - 29 in', 'Cadera': '37 - 39 in', 'Largo Total': '35.4 in' }
+        },
+        {
+          size: 'GD / L',
+          measurements: { 'Busto': '94 - 100 cm', 'Cintura': '74 - 80 cm', 'Cadera': '100 - 106 cm', 'Largo Total': '92 cm' },
+          measurementsInches: { 'Busto': '37 - 39 in', 'Cintura': '29 - 31 in', 'Cadera': '39 - 42 in', 'Largo Total': '36.2 in' }
+        }
+      ]
+    },
     dateAdded: '2026-07-10'
   },
   {
@@ -319,6 +372,40 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Pantalón de mezclilla corte slim stretch para hombre. Confeccionado con algodón suave de alta durabilidad y libertad de movimiento.',
     tags: ['Básicos Hombre', 'Gran Barata'],
     isFeatured: true,
+    sizeGuide: {
+      enabled: true,
+      title: 'Guía de Tallas - Jeans Slim Stretch',
+      imageUrl: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80',
+      instructions: 'Mide el contorno de tu cintura a la altura donde acostumbras abrochar el pantalón y el largo de entrepierna.',
+      columns: ['Cintura', 'Cadera', 'Muslo', 'Largo Entrepierna'],
+      rows: [
+        {
+          size: 'Talla 28',
+          measurements: { 'Cintura': '71 - 74 cm', 'Cadera': '89 - 92 cm', 'Muslo': '52 cm', 'Largo Entrepierna': '76 cm' },
+          measurementsInches: { 'Cintura': '28 - 29 in', 'Cadera': '35 - 36 in', 'Muslo': '20.5 in', 'Largo Entrepierna': '30 in' }
+        },
+        {
+          size: 'Talla 30',
+          measurements: { 'Cintura': '76 - 79 cm', 'Cadera': '94 - 97 cm', 'Muslo': '55 cm', 'Largo Entrepierna': '78 cm' },
+          measurementsInches: { 'Cintura': '30 - 31 in', 'Cadera': '37 - 38 in', 'Muslo': '21.6 in', 'Largo Entrepierna': '30.7 in' }
+        },
+        {
+          size: 'Talla 32',
+          measurements: { 'Cintura': '81 - 84 cm', 'Cadera': '99 - 102 cm', 'Muslo': '58 cm', 'Largo Entrepierna': '80 cm' },
+          measurementsInches: { 'Cintura': '32 - 33 in', 'Cadera': '39 - 40 in', 'Muslo': '22.8 in', 'Largo Entrepierna': '31.5 in' }
+        },
+        {
+          size: 'Talla 34',
+          measurements: { 'Cintura': '86 - 90 cm', 'Cadera': '104 - 108 cm', 'Muslo': '61 cm', 'Largo Entrepierna': '81 cm' },
+          measurementsInches: { 'Cintura': '34 - 35 in', 'Cadera': '41 - 42 in', 'Muslo': '24.0 in', 'Largo Entrepierna': '31.8 in' }
+        },
+        {
+          size: 'Talla 36',
+          measurements: { 'Cintura': '91 - 96 cm', 'Cadera': '109 - 114 cm', 'Muslo': '64 cm', 'Largo Entrepierna': '82 cm' },
+          measurementsInches: { 'Cintura': '36 - 38 in', 'Cadera': '43 - 45 in', 'Muslo': '25.2 in', 'Largo Entrepierna': '32.2 in' }
+        }
+      ]
+    },
     dateAdded: '2026-07-12'
   },
   {

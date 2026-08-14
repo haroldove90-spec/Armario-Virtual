@@ -26,6 +26,21 @@ export interface ProductVariantStock {
   sku?: string;
 }
 
+export interface SizeGuideRow {
+  size: string;
+  measurements: Record<string, string>; // Measurements in cm or default
+  measurementsInches?: Record<string, string>; // Measurements in inches (optional)
+}
+
+export interface SizeGuide {
+  enabled: boolean;
+  title?: string;
+  imageUrl?: string;
+  instructions?: string;
+  columns: string[]; // e.g. ["Pecho", "Cintura", "Cadera", "Largo"]
+  rows: SizeGuideRow[];
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -38,12 +53,13 @@ export interface Product {
   offerPrice?: number;
   stock: number;
   sku: string;
-  images: string[]; // Max 5 images (1 primary, 4 secondary)
+  images: string[]; // List of images (1 primary, rest secondary)
   sizes: string[];
   colors: { name: string; hex: string; imageUrl?: string }[];
   colorImages?: Record<string, string | string[]>;
   productType?: 'sencillo' | 'variable';
   variantStock?: ProductVariantStock[];
+  sizeGuide?: SizeGuide;
   description: string;
   tags: string[];
   isFeatured?: boolean;
