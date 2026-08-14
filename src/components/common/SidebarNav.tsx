@@ -18,7 +18,8 @@ import {
   Sparkles,
   ChevronRight,
   Menu,
-  Key
+  Key,
+  Ruler
 } from 'lucide-react';
 import { ActiveRole, AdminTab, CustomerTab, Category } from '../../types';
 
@@ -379,6 +380,21 @@ export const SidebarNav: React.FC = () => {
                     >
                       <Package className="w-4 h-4 text-yellow-400" />
                       <span>Productos & Inventario</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAdminTab('tablas-medidas');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                        adminTab === 'tablas-medidas'
+                          ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
+                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      }`}
+                    >
+                      <Ruler className="w-4 h-4 text-yellow-400" />
+                      <span>Tabla de Medidas</span>
                     </button>
 
                     <button
