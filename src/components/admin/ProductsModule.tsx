@@ -107,16 +107,37 @@ export const ProductsModule: React.FC = () => {
     showToast(`Categoría "${name}" agregada con éxito.`);
   };
 
+  const getCategoryDisplayName = (catValue: string | undefined): string => {
+    if (!catValue) return 'General';
+    const clean = catValue.trim().toLowerCase();
+    const found = categories.find(
+      c =>
+        c.slug.toLowerCase() === clean ||
+        c.id.toLowerCase() === clean ||
+        c.name.toLowerCase() === clean
+    );
+    return found ? found.name : catValue;
+  };
+
   const filtered = products.filter(p => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      (p.subcategory && p.subcategory.toLowerCase().includes(search.toLowerCase()));
+      (p.subcategory && p.subcategory.toLowerCase().includes(search.toLowerCase())) ||
+      getCategoryDisplayName(p.category).toLowerCase().includes(search.toLowerCase());
+
+    const activeCatObj = categories.find(
+      c => c.slug === selectedCat || c.id === selectedCat || c.name.toLowerCase() === selectedCat.toLowerCase()
+    );
 
     const matchesCat =
       selectedCat === 'todas' ||
-      p.category === selectedCat ||
-      p.category.toLowerCase() === selectedCat.toLowerCase();
+      p.category.toLowerCase() === selectedCat.toLowerCase() ||
+      (activeCatObj && (
+        p.category.toLowerCase() === activeCatObj.slug.toLowerCase() ||
+        p.category.toLowerCase() === activeCatObj.id.toLowerCase() ||
+        p.category.toLowerCase() === activeCatObj.name.toLowerCase()
+      ));
 
     const matchesStatus =
       statusFilter === 'todos' ||
@@ -297,7 +318,9 @@ export const ProductsModule: React.FC = () => {
                         </div>
                         <div>
                           <h4 className="font-bold text-gray-900 text-xs">{p.name}</h4>
-                          <p className="text-[11px] text-gray-500 line-clamp-1">{p.subcategory || p.category}</p>
+                          <p className="text-[11px] text-gray-500 line-clamp-1">
+                            {getCategoryDisplayName(p.category)} {p.subcategory && p.subcategory !== 'General' ? `• ${p.subcategory}` : ''}
+                          </p>
                         </div>
                       </td>
 
@@ -362,7 +385,7 @@ export const ProductsModule: React.FC = () => {
                           {p.sku}
                         </span>
                         <span className="block text-[10px] text-[#9E0D0D] font-bold uppercase mt-0.5">
-                          {p.category}
+                          {getCategoryDisplayName(p.category)}
                         </span>
                       </td>
 

@@ -72,12 +72,22 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const [saveSuccessNotice, setSaveSuccessNotice] = useState<string | null>(null);
   const [showDraftModal, setShowDraftModal] = useState<boolean>(false);
 
+  // Helper to resolve category slug reliably from any input (slug, id, or name)
+  const normalizeCategorySlug = (rawCategory: string | undefined, catList: CategoryItem[]): string => {
+    if (!rawCategory) return catList[0]?.slug || 'mujer';
+    const clean = rawCategory.trim().toLowerCase();
+    const matched = catList.find(
+      c => c.slug.toLowerCase() === clean || c.id.toLowerCase() === clean || c.name.toLowerCase() === clean
+    );
+    return matched ? matched.slug : rawCategory;
+  };
+
   const [productType, setProductType] = useState<'sencillo' | 'variable'>(
     editingProduct?.productType || 'variable'
   );
   const [name, setName] = useState(editingProduct?.name || '');
-  const [category, setCategory] = useState<Category>(
-    editingProduct?.category || categories[0]?.slug || 'mujer'
+  const [category, setCategory] = useState<Category>(() =>
+    normalizeCategorySlug(editingProduct?.category, categories)
   );
   const [subcategory, setSubcategory] = useState(
     editingProduct?.subcategory || 'General'
@@ -279,8 +289,12 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   }, [price, originalPrice, isOffer, offerPrice]);
 
   const currentCategoryObj = categories.find(
-    c => c.slug === category || c.id === category || c.name.toLowerCase() === category.toLowerCase()
+    c =>
+      c.slug.toLowerCase() === (category || '').toLowerCase() ||
+      c.id.toLowerCase() === (category || '').toLowerCase() ||
+      c.name.toLowerCase() === (category || '').toLowerCase()
   );
+  const effectiveCategorySlug = currentCategoryObj ? currentCategoryObj.slug : category;
   const availableSubcategories = currentCategoryObj?.subcategories || [];
 
   // General Image handlers
@@ -418,8 +432,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       id: productId,
       productType,
       name: name.trim() || 'Nuevo Producto',
-      category,
-      subcategory,
+      category: (currentCategoryObj ? currentCategoryObj.slug : category).trim(),
+      subcategory: subcategory.trim() || 'General',
       price: Number(price) || 0,
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
       isOffer: Boolean(isOffer),
@@ -727,7 +741,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="font-bold text-gray-800">Categoría / Departamento *</label>
+                <label className="font-bold text-gray-800 flex items-center gap-1.5">
+                  <span>Categoría / Departamento *</span>
+                  {currentCategoryObj && (
+                    <span className="text-[10px] bg-red-100 text-[#9E0D0D] font-extrabold px-2 py-0.5 rounded-full">
+                      ✓ {currentCategoryObj.name}
+                    </span>
+                  )}
+                </label>
                 <button
                   type="button"
                   onClick={() => setShowQuickCategoryModal(true)}
@@ -739,14 +760,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
               </div>
 
               <select
-                value={category}
+                value={effectiveCategorySlug}
                 onChange={e => {
                   const newCatSlug = e.target.value as Category;
                   const catObj = categories.find(
-                    c => c.slug === newCatSlug || c.id === newCatSlug || c.name.toLowerCase() === newCatSlug.toLowerCase()
+                    c => c.slug.toLowerCase() === newCatSlug.toLowerCase() || c.id.toLowerCase() === newCatSlug.toLowerCase() || c.name.toLowerCase() === newCatSlug.toLowerCase()
                   );
                   const firstSub = catObj?.subcategories?.[0]?.name || 'General';
-                  setCategory(newCatSlug);
+                  setCategory(catObj ? catObj.slug : newCatSlug);
                   setSubcategory(firstSub);
                 }}
                 className="w-full p-3 bg-white border border-gray-300 rounded-xl font-bold text-gray-900 focus:border-[#9E0D0D] outline-hidden cursor-pointer"

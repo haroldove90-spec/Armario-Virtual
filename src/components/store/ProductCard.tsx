@@ -9,7 +9,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
-  const { addToCart, toggleWishlist, isWishlisted, setSelectedProduct } = useStore();
+  const { addToCart, toggleWishlist, isWishlisted, setSelectedProduct, categories } = useStore();
   const wishlisted = isWishlisted(product.id);
 
   const [activeColorImg, setActiveColorImg] = useState<string | null>(null);
@@ -20,6 +20,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
       onQuickView(product);
     }
   };
+
+  const categoryObj = categories.find(
+    c =>
+      c.slug.toLowerCase() === (product.category || '').toLowerCase() ||
+      c.id.toLowerCase() === (product.category || '').toLowerCase() ||
+      c.name.toLowerCase() === (product.category || '').toLowerCase()
+  );
+  const categoryName = categoryObj?.name || product.category || 'General';
+  const subName = product.subcategory && product.subcategory !== 'General' ? product.subcategory : '';
 
   const isOfferActive = product.isOffer && !!product.offerPrice && product.offerPrice > 0;
   const displayPrice = isOfferActive ? product.offerPrice : product.price;
@@ -120,7 +129,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           {/* Category & Rating */}
           <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-500 mb-0.5 sm:mb-1 gap-1">
             <span className="uppercase tracking-wider sm:tracking-widest font-extrabold text-[#9E0D0D] line-clamp-1">
-              {product.subcategory || product.category}
+              {categoryName} {subName ? `• ${subName}` : ''}
             </span>
             <div className="flex items-center gap-0.5 sm:gap-1 text-amber-500 font-bold shrink-0">
               <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400" />

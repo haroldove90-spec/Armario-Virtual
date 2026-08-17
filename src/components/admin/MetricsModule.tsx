@@ -3,7 +3,19 @@ import { useStore } from '../../context/StoreContext';
 import { DollarSign, ShoppingBag, TrendingUp, Users, PackageCheck, AlertTriangle } from 'lucide-react';
 
 export const MetricsModule: React.FC = () => {
-  const { orders, products, customer } = useStore();
+  const { orders, products, customer, categories } = useStore();
+
+  const getCategoryDisplayName = (catValue: string | undefined): string => {
+    if (!catValue) return 'General';
+    const clean = catValue.trim().toLowerCase();
+    const found = categories.find(
+      c =>
+        c.slug.toLowerCase() === clean ||
+        c.id.toLowerCase() === clean ||
+        c.name.toLowerCase() === clean
+    );
+    return found ? found.name : catValue;
+  };
 
   const totalSales = orders.reduce((acc, ord) => acc + ord.total, 0);
   const totalOrdersCount = orders.length;
@@ -112,7 +124,9 @@ export const MetricsModule: React.FC = () => {
                   <img src={p.images[0]} alt={p.name} className="w-10 h-10 object-cover rounded-xl border border-gray-200" />
                   <div>
                     <h5 className="font-bold text-gray-900 line-clamp-1">{p.name}</h5>
-                    <span className="text-purple-700 uppercase font-bold text-[10px]">{p.category}</span>
+                    <span className="text-[#9E0D0D] uppercase font-bold text-[10px]">
+                      {getCategoryDisplayName(p.category)} {p.subcategory && p.subcategory !== 'General' ? `• ${p.subcategory}` : ''}
+                    </span>
                   </div>
                 </div>
 

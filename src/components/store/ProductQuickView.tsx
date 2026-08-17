@@ -24,8 +24,17 @@ interface ProductQuickViewProps {
 export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onClose }) => {
   if (!product) return null;
 
-  const { addToCart, toggleWishlist, isWishlisted } = useStore();
+  const { addToCart, toggleWishlist, isWishlisted, categories } = useStore();
   const wishlisted = isWishlisted(product.id);
+
+  const categoryObj = categories.find(
+    c =>
+      c.slug.toLowerCase() === (product.category || '').toLowerCase() ||
+      c.id.toLowerCase() === (product.category || '').toLowerCase() ||
+      c.name.toLowerCase() === (product.category || '').toLowerCase()
+  );
+  const categoryDisplayName = categoryObj?.name || product.category || 'General';
+  const subName = product.subcategory && product.subcategory !== 'General' ? product.subcategory : '';
 
   const [activeMediaTab, setActiveMediaTab] = useState<'photos' | 'video'>('photos');
   const [selectedImage, setSelectedImage] = useState(product.images[0] || '');
@@ -238,7 +247,7 @@ export const ProductQuickView: React.FC<ProductQuickViewProps> = ({ product, onC
         <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs font-bold text-[#9E0D0D] uppercase tracking-wider mb-1">
-              <span>{product.subcategory || product.category}</span>
+              <span>{categoryDisplayName} {subName ? `• ${subName}` : ''}</span>
               <div className="flex items-center gap-1 text-amber-500">
                 <Star className="w-4 h-4 fill-amber-400" />
                 <span>4.9 (48 opiniones)</span>

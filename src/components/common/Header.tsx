@@ -63,6 +63,18 @@ export const Header: React.FC = () => {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
+  const getCategoryDisplayName = (catValue: string | undefined): string => {
+    if (!catValue) return 'General';
+    const clean = catValue.trim().toLowerCase();
+    const found = categories.find(
+      c =>
+        c.slug.toLowerCase() === clean ||
+        c.id.toLowerCase() === clean ||
+        c.name.toLowerCase() === clean
+    );
+    return found ? found.name : catValue;
+  };
+
   const liveMatches = React.useMemo(() => {
     const raw = searchQuery.trim();
     if (!raw) return [];
@@ -217,8 +229,8 @@ export const Header: React.FC = () => {
                             {prod.name}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5 text-[10px]">
-                            <span className="bg-slate-100 px-1.5 py-0.2 rounded text-slate-600 font-medium">
-                              {prod.subcategory || prod.category}
+                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-bold">
+                              {getCategoryDisplayName(prod.category)} {prod.subcategory && prod.subcategory !== 'General' ? `• ${prod.subcategory}` : ''}
                             </span>
                             <span className="font-extrabold text-[#9E0D0D] font-mono">
                               ${prod.price} MXN

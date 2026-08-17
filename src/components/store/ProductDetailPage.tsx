@@ -32,8 +32,19 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onBack }) => {
-  const { addToCart, toggleWishlist, isWishlisted, products, setSelectedCategory, setCartOpen } = useStore();
+  const { addToCart, toggleWishlist, isWishlisted, products, setSelectedCategory, setCartOpen, categories } = useStore();
   const wishlisted = isWishlisted(product.id);
+
+  const categoryObj = useMemo(() => {
+    return categories.find(
+      c =>
+        c.slug.toLowerCase() === (product.category || '').toLowerCase() ||
+        c.id.toLowerCase() === (product.category || '').toLowerCase() ||
+        c.name.toLowerCase() === (product.category || '').toLowerCase()
+    );
+  }, [categories, product.category]);
+
+  const categoryDisplayName = categoryObj?.name || product.category || 'General';
 
   const [activeMediaTab, setActiveMediaTab] = useState<'photos' | 'video'>('photos');
   const [selectedImage, setSelectedImage] = useState(product.images[0] || '');
@@ -246,12 +257,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
             <button
               onClick={() => {
-                setSelectedCategory(product.category as any);
+                setSelectedCategory((categoryObj?.slug || product.category) as any);
                 onBack();
               }}
-              className="hover:text-[#9E0D0D] font-bold text-slate-700 transition-colors cursor-pointer capitalize"
+              className="hover:text-[#9E0D0D] font-bold text-slate-700 transition-colors cursor-pointer"
             >
-              {product.category}
+              {categoryDisplayName}
             </button>
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
             <span className="text-slate-900 font-bold truncate max-w-[200px]">{product.name}</span>
@@ -458,7 +469,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="bg-[#9E0D0D]/10 text-[#9E0D0D] font-extrabold text-[10px] uppercase px-2.5 py-1 rounded-full tracking-wider">
-                      {product.category} {product.subcategory ? `• ${product.subcategory}` : ''}
+                      {categoryDisplayName} {product.subcategory && product.subcategory !== 'General' ? `• ${product.subcategory}` : ''}
                     </span>
                     {product.sku && (
                       <span className="text-[11px] font-mono text-slate-400 font-bold">
@@ -716,7 +727,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                 <span>También te podría interesar</span>
               </h2>
               <p className="text-xs text-slate-500">
-                Otras prendas destacadas de la categoría <strong className="capitalize">{product.category}</strong>
+                Otras prendas destacadas de la categoría <strong>{categoryDisplayName}</strong>
               </p>
             </div>
 
