@@ -112,22 +112,21 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const [newImageUrlInput, setNewImageUrlInput] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // Variants state
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(
-    editingProduct?.sizes && editingProduct.sizes.length > 0
-      ? editingProduct.sizes
-      : ['CH', 'M', 'G', 'XG']
-  );
+  // Variants state - strictly empty by default for new products (no pre-assigned phantom sizes)
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(() => {
+    if (editingProduct?.sizes && Array.isArray(editingProduct.sizes)) {
+      return editingProduct.sizes;
+    }
+    return [];
+  });
   const [customSizeInput, setCustomSizeInput] = useState('');
 
-  const [selectedColors, setSelectedColors] = useState<{ name: string; hex: string; imageUrl?: string }[]>(
-    editingProduct?.colors && editingProduct.colors.length > 0
-      ? editingProduct.colors
-      : [
-          { name: 'Negro', hex: '#1A1A1A' },
-          { name: 'Rojo Carmesí', hex: '#9E0D0D' }
-        ]
-  );
+  const [selectedColors, setSelectedColors] = useState<{ name: string; hex: string; imageUrl?: string }[]>(() => {
+    if (editingProduct?.colors && Array.isArray(editingProduct.colors)) {
+      return editingProduct.colors.map(c => typeof c === 'string' ? { name: c, hex: '#1A1A1A' } : c);
+    }
+    return [];
+  });
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#9E0D0D');
 
@@ -935,20 +934,66 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
               <div className="flex items-center justify-between">
                 <label className="font-bold text-gray-900 flex items-center gap-1.5">
                   <Tag className="w-4 h-4 text-[#9E0D0D]" />
-                  1. Tallas Disponibles ({selectedSizes.length} elegidas)
+                  1. Tallas Disponibles ({selectedSizes.length} elegidas por Admin)
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSizes([])}
-                  className="text-[11px] text-red-600 hover:underline font-bold cursor-pointer"
-                >
-                  Limpiar Tallas
-                </button>
+                {selectedSizes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSizes([]);
+                      setVariantStockMap(prev => {
+                        const next: Record<string, number> = {};
+                        // Only keep color-only keys if any
+                        selectedColors.forEach(c => {
+                          if (prev[`_${c.name}`] !== undefined) next[`_${c.name}`] = prev[`_${c.name}`];
+                        });
+                        return next;
+                      });
+                    }}
+                    className="text-[11px] text-red-600 hover:underline font-bold cursor-pointer"
+                  >
+                    Quitar Todas las Tallas
+                  </button>
+                )}
               </div>
+
+              {/* Active Assigned Sizes Badges */}
+              {selectedSizes.length > 0 ? (
+                <div className="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/20 space-y-1.5">
+                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                    ✓ Tallas Asignadas al Producto ({selectedSizes.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedSizes.map(sz => (
+                      <span
+                        key={sz}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#9E0D0D] text-white rounded-lg text-xs font-black shadow-2xs animate-fade-in"
+                      >
+                        <span>{sz}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSizes(prev => prev.filter(s => s !== sz));
+                          }}
+                          className="w-4 h-4 rounded-full bg-white/20 hover:bg-white text-white hover:text-red-900 flex items-center justify-center text-[10px] font-black cursor-pointer transition-colors"
+                          title={`Eliminar talla ${sz}`}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>Sin tallas asignadas aún. Haz clic en las tallas abajo o escribe una personalizada para activarla.</span>
+                </div>
+              )}
 
               {/* Clothing Presets */}
               <div className="space-y-2">
-                <p className="text-[11px] font-bold text-gray-600">Tallas Ropa Estándar:</p>
+                <p className="text-[11px] font-bold text-gray-600">Tallas Ropa Estándar (haz clic para agregar o quitar):</p>
                 <div className="flex flex-wrap gap-2">
                   {CLOTHING_SIZES_PRESETS.map(sz => {
                     const isSelected = selectedSizes.includes(sz);
@@ -965,11 +1010,11 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         }}
                         className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#9E0D0D] text-white shadow-xs scale-105'
+                            ? 'bg-[#9E0D0D] text-white shadow-xs scale-105 ring-2 ring-red-300'
                             : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
                         }`}
                       >
-                        {sz}
+                        {isSelected ? `✓ ${sz}` : sz}
                       </button>
                     );
                   })}
@@ -995,11 +1040,11 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         }}
                         className={`px-2.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#9E0D0D] text-white shadow-xs'
+                            ? 'bg-[#9E0D0D] text-white shadow-xs ring-2 ring-red-300'
                             : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-400'
                         }`}
                       >
-                        {sz}
+                        {isSelected ? `✓ ${sz}` : sz}
                       </button>
                     );
                   })}
@@ -1016,8 +1061,9 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      if (customSizeInput.trim() && !selectedSizes.includes(customSizeInput.trim())) {
-                        setSelectedSizes(prev => [...prev, customSizeInput.trim()]);
+                      const val = customSizeInput.trim().toUpperCase();
+                      if (val && !selectedSizes.includes(val)) {
+                        setSelectedSizes(prev => [...prev, val]);
                         setCustomSizeInput('');
                       }
                     }
@@ -1027,14 +1073,15 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (customSizeInput.trim() && !selectedSizes.includes(customSizeInput.trim())) {
-                      setSelectedSizes(prev => [...prev, customSizeInput.trim()]);
+                    const val = customSizeInput.trim().toUpperCase();
+                    if (val && !selectedSizes.includes(val)) {
+                      setSelectedSizes(prev => [...prev, val]);
                       setCustomSizeInput('');
                     }
                   }}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs cursor-pointer"
                 >
-                  + Agregar Talla
+                  + Registrar Talla
                 </button>
               </div>
             </div>
@@ -1046,14 +1093,49 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   <Palette className="w-4 h-4 text-[#9E0D0D]" />
                   2. Colores Disponibles ({selectedColors.length} elegidos)
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setSelectedColors([])}
-                  className="text-[11px] text-red-600 hover:underline font-bold cursor-pointer"
-                >
-                  Limpiar Colores
-                </button>
+                {selectedColors.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedColors([])}
+                    className="text-[11px] text-red-600 hover:underline font-bold cursor-pointer"
+                  >
+                    Quitar Todos los Colores
+                  </button>
+                )}
               </div>
+
+              {/* Active Assigned Colors Badges */}
+              {selectedColors.length > 0 && (
+                <div className="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/20 space-y-1.5">
+                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                    ✓ Colores Asignados ({selectedColors.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedColors.map(col => (
+                      <span
+                        key={col.name}
+                        className="inline-flex items-center gap-2 px-3 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold shadow-2xs animate-fade-in"
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full border border-white/50 shrink-0"
+                          style={{ backgroundColor: col.hex }}
+                        />
+                        <span>{col.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedColors(prev => prev.filter(c => c.name !== col.name));
+                          }}
+                          className="w-4 h-4 rounded-full bg-white/20 hover:bg-white text-white hover:text-red-900 flex items-center justify-center text-[10px] font-black cursor-pointer transition-colors"
+                          title={`Eliminar color ${col.name}`}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Preset Color Badges */}
               <div className="flex flex-wrap gap-2">

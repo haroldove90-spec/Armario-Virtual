@@ -57,7 +57,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({
         imageUrl: product?.images?.[0] || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
         instructions: 'Usa una cinta métrica flexible. Mantén la cinta nivelada sobre el cuerpo sin apretar en exceso.',
         columns: ['Pecho / Busto', 'Cintura', 'Cadera', 'Largo'],
-        rows: (product?.sizes && product.sizes.length > 0 ? product.sizes : ['CH / S', 'MD / M', 'GD / L', 'XGD / XL']).map((s, idx) => {
+        rows: (product?.sizes || []).map((s, idx) => {
           const base = 88 + idx * 6;
           return {
             size: s,
@@ -201,6 +201,11 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({
                     <tbody className="divide-y divide-gray-100">
                       {guide.rows.map((row, idx) => {
                         const isMatch = selectedSize && (row.size.toLowerCase() === selectedSize.toLowerCase() || row.size.includes(selectedSize));
+                        const isAvailableInProduct = !product || !product.sizes || product.sizes.length === 0 || product.sizes.some(ps => {
+                          const normPs = ps.toLowerCase().trim();
+                          const normRow = row.size.toLowerCase().trim();
+                          return normRow === normPs || normRow.startsWith(normPs + ' ') || normRow.includes('/ ' + normPs) || normRow.includes(normPs + ' /') || normRow.includes('/' + normPs) || normRow.includes(normPs);
+                        });
 
                         return (
                           <tr
@@ -208,15 +213,24 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({
                             className={`transition-colors ${
                               isMatch
                                 ? 'bg-amber-50/80 font-bold border-l-4 border-l-[#9E0D0D]'
+                                : !isAvailableInProduct
+                                ? 'bg-gray-50/60 text-gray-400 opacity-75'
                                 : 'hover:bg-slate-50 text-gray-700'
                             }`}
                           >
                             <td className="py-3 px-3.5 font-black text-slate-900 border-r border-gray-100 whitespace-nowrap">
                               <span className="flex items-center gap-1.5">
-                                {row.size}
+                                <span className={!isAvailableInProduct ? 'text-gray-400' : 'text-slate-900'}>
+                                  {row.size}
+                                </span>
                                 {isMatch && (
                                   <span className="text-[9px] bg-[#9E0D0D] text-white px-1.5 py-0.2 rounded font-mono">
                                     Tu talla
+                                  </span>
+                                )}
+                                {!isAvailableInProduct && product?.sizes && product.sizes.length > 0 && (
+                                  <span className="text-[8px] bg-gray-200 text-gray-600 px-1 py-0.2 rounded font-semibold">
+                                    No disponible
                                   </span>
                                 )}
                               </span>
@@ -239,20 +253,30 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({
 
                             {onSelectSize && (
                               <td className="py-2 px-2 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    onSelectSize(row.size.split('/')[0].trim());
-                                    onClose();
-                                  }}
-                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                                    isMatch
-                                      ? 'bg-emerald-600 text-white'
-                                      : 'bg-slate-100 hover:bg-[#9E0D0D] hover:text-white text-slate-700'
-                                  }`}
-                                >
-                                  {isMatch ? 'Elegida' : 'Elegir'}
-                                </button>
+                                {isAvailableInProduct ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // Extract size matching product sizes if possible
+                                      const matchedProductSize = product?.sizes?.find(ps => 
+                                        row.size.toLowerCase().includes(ps.toLowerCase())
+                                      );
+                                      onSelectSize(matchedProductSize || row.size.split('/')[0].trim());
+                                      onClose();
+                                    }}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                      isMatch
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'bg-slate-100 hover:bg-[#9E0D0D] hover:text-white text-slate-700'
+                                    }`}
+                                  >
+                                    {isMatch ? 'Elegida' : 'Elegir'}
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 font-medium italic">
+                                    No asignada
+                                  </span>
+                                )}
                               </td>
                             )}
                           </tr>
