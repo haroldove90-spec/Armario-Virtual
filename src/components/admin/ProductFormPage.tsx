@@ -150,8 +150,90 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     return map;
   });
 
+  const [bulkStockInput, setBulkStockInput] = useState<number>(10);
+
   // Store Context for size guide templates & navigation
   const { sizeGuideTemplates, setAdminTab } = useStore();
+
+  // Helper to calculate total variant stock dynamically
+  const calculateTotalVariantStock = (): number => {
+    if (productType !== 'variable') return Number(stock) || 0;
+    if (selectedSizes.length === 0 && selectedColors.length === 0) return Number(stock) || 0;
+
+    const sizesToIterate = selectedSizes.length > 0 ? selectedSizes : [''];
+    const colorsToIterate = selectedColors.length > 0 ? selectedColors : [{ name: '' }];
+
+    let sum = 0;
+    for (const sz of sizesToIterate) {
+      for (const col of colorsToIterate) {
+        const key = `${sz}_${col.name}`;
+        const val = variantStockMap[key];
+        sum += val !== undefined ? Math.max(0, Number(val)) : 0;
+      }
+    }
+    return sum;
+  };
+
+  // Auto-initialize default stock (e.g. 5) for newly selected sizes or colors
+  useEffect(() => {
+    if (productType === 'variable') {
+      const sizesToIterate = selectedSizes.length > 0 ? selectedSizes : [''];
+      const colorsToIterate = selectedColors.length > 0 ? selectedColors : [{ name: '' }];
+
+      setVariantStockMap(prev => {
+        let changed = false;
+        const next = { ...prev };
+        for (const sz of sizesToIterate) {
+          for (const col of colorsToIterate) {
+            const key = `${sz}_${col.name}`;
+            if (next[key] === undefined) {
+              next[key] = 5;
+              changed = true;
+            }
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [productType, selectedSizes, selectedColors]);
+
+  // Bulk update stock across all size/color combinations
+  const handleApplyBulkStock = (amount: number) => {
+    const safeAmt = Math.max(0, Number(amount) || 0);
+    const newMap: Record<string, number> = {};
+    const sizesToIterate = selectedSizes.length > 0 ? selectedSizes : [''];
+    const colorsToIterate = selectedColors.length > 0 ? selectedColors : [{ name: '' }];
+
+    for (const sz of sizesToIterate) {
+      for (const col of colorsToIterate) {
+        const key = `${sz}_${col.name}`;
+        newMap[key] = safeAmt;
+      }
+    }
+    setVariantStockMap(newMap);
+    setStock(safeAmt * sizesToIterate.length * colorsToIterate.length);
+  };
+
+  // Update a single variant stock
+  const handleUpdateSingleVariantStock = (sizeName: string, colorName: string, val: number) => {
+    const key = `${sizeName}_${colorName}`;
+    const safeVal = Math.max(0, Number(val) || 0);
+    setVariantStockMap(prev => ({
+      ...prev,
+      [key]: safeVal
+    }));
+  };
+
+  // Increment / Decrement single variant stock
+  const handleDeltaSingleVariantStock = (sizeName: string, colorName: string, delta: number) => {
+    const key = `${sizeName}_${colorName}`;
+    const current = variantStockMap[key] !== undefined ? Number(variantStockMap[key]) : 0;
+    const nextVal = Math.max(0, current + delta);
+    setVariantStockMap(prev => ({
+      ...prev,
+      [key]: nextVal
+    }));
+  };
 
   // Size Guide Selection State
   const [sizeGuideEnabled, setSizeGuideEnabled] = useState<boolean>(
@@ -306,21 +388,32 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const buildProductData = (isPublishedFlag: boolean = true): Product => {
     // Build variant stock array
     const variantStockList = [];
+    let computedTotalStock = 0;
+
     if (productType === 'variable') {
-      for (const sz of selectedSizes.length > 0 ? selectedSizes : [undefined]) {
-        for (const col of selectedColors.length > 0 ? selectedColors : [undefined]) {
+      const sizesToIterate = selectedSizes.length > 0 ? selectedSizes : [undefined];
+      const colorsToIterate = selectedColors.length > 0 ? selectedColors : [undefined];
+
+      for (const sz of sizesToIterate) {
+        for (const col of colorsToIterate) {
           const key = `${sz || ''}_${col?.name || ''}`;
-          const vStock = variantStockMap[key] !== undefined ? variantStockMap[key] : Math.max(1, Math.floor(stock / Math.max(1, (selectedSizes.length || 1) * (selectedColors.length || 1))));
+          const vStock = variantStockMap[key] !== undefined ? Math.max(0, Number(variantStockMap[key])) : 0;
+          computedTotalStock += vStock;
+
           variantStockList.push({
             id: `vs-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
             size: sz,
             color: col?.name,
             stock: vStock,
-            sku: `${sku}-${sz || 'UNI'}-${col?.name?.slice(0, 3)?.toUpperCase() || 'DEF'}`
+            sku: `${sku}-${sz || 'UNI'}-${col?.name ? col.name.slice(0, 3).toUpperCase() : 'DEF'}`
           });
         }
       }
     }
+
+    const finalStock = productType === 'variable' && (selectedSizes.length > 0 || selectedColors.length > 0)
+      ? computedTotalStock
+      : (Number(stock) || 0);
 
     return {
       id: productId,
@@ -333,7 +426,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       isOffer: Boolean(isOffer),
       offerPrice: isOffer && offerPrice ? Number(offerPrice) : undefined,
       discountPercentage: isOffer ? discountPercentage : 0,
-      stock: Number(stock) || 0,
+      stock: finalStock,
       sku: sku.trim() || `SKU-${Date.now().toString().slice(-4)}`,
       images: images.length > 0 ? images : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'],
       sizes: productType === 'variable' ? selectedSizes : [],
@@ -792,16 +885,34 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
             </div>
 
             <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
-              <label className="block font-bold text-gray-800 mb-1">Stock Libre Total (pzas) *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-bold text-gray-800">
+                  {productType === 'variable' ? 'Stock Total Calculado *' : 'Stock General (pzas) *'}
+                </label>
+                {productType === 'variable' && (
+                  <span className="text-[10px] bg-purple-100 text-purple-800 font-black px-2 py-0.5 rounded-md">
+                    Suma por Tallas
+                  </span>
+                )}
+              </div>
               <input
                 type="number"
                 min="0"
-                value={stock}
+                value={productType === 'variable' ? calculateTotalVariantStock() : stock}
                 onChange={e => setStock(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-black text-gray-900 text-sm focus:border-[#9E0D0D] outline-hidden"
+                readOnly={productType === 'variable'}
+                className={`w-full px-3 py-2 border rounded-xl font-black text-sm outline-hidden ${
+                  productType === 'variable'
+                    ? 'bg-purple-50/50 border-purple-300 text-purple-950 cursor-not-allowed'
+                    : 'bg-white border-gray-300 text-gray-900 focus:border-[#9E0D0D]'
+                }`}
                 required
               />
-              <p className="text-[10px] text-gray-400 mt-1">Unidades disponibles para venta</p>
+              <p className="text-[10px] text-gray-500 mt-1">
+                {productType === 'variable'
+                  ? 'Calculado automáticamente de la suma de tallas (Sección 3).'
+                  : 'Unidades disponibles para venta.'}
+              </p>
             </div>
           </div>
         </div>
@@ -1082,6 +1193,256 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                               className="flex-1 p-1.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px]"
                             />
                           </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3.3 Stock Allocation Matrix per Size & Color */}
+            <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                <div>
+                  <label className="font-extrabold text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
+                    <span className="p-1.5 bg-[#9E0D0D] text-white rounded-lg text-xs font-black">📦</span>
+                    3. Inventario & Stock Específico por Talla {selectedColors.length > 0 ? 'y Color' : ''}
+                  </label>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Asigna el número exacto de piezas en bodega para cada talla. Si una talla se agota (0 pzas), se bloqueará automáticamente en la tienda.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-xs font-black bg-slate-900 text-white px-3 py-1 rounded-xl shadow-xs flex items-center gap-1.5">
+                    <span>Total Inventario:</span>
+                    <span className="text-amber-300 font-mono text-sm">{calculateTotalVariantStock()}</span>
+                    <span>piezas</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Bulk Quick Action Bar */}
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold text-gray-700">⚡ Asignación en Lote:</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      value={bulkStockInput}
+                      onChange={e => setBulkStockInput(Math.max(0, Number(e.target.value)))}
+                      className="w-16 p-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyBulkStock(bulkStockInput)}
+                      className="bg-slate-900 hover:bg-black text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      title="Aplicar esta cantidad a todas las variantes de talla y color"
+                    >
+                      Aplicar a Todas
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Preset Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-gray-500 font-bold hidden sm:inline">Rápidos:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyBulkStock(0)}
+                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                  >
+                    Agotar (0)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyBulkStock(5)}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                  >
+                    5 pzas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyBulkStock(10)}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                  >
+                    10 pzas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyBulkStock(25)}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                  >
+                    25 pzas
+                  </button>
+                </div>
+              </div>
+
+              {/* Sizes / Variants Matrix */}
+              {selectedSizes.length === 0 ? (
+                <div className="p-6 text-center bg-white rounded-xl border border-dashed border-gray-300">
+                  <p className="text-xs text-gray-500 font-medium">
+                    ⚠️ Por favor selecciona al menos una talla arriba para configurar el stock de cada una.
+                  </p>
+                </div>
+              ) : selectedColors.length > 0 ? (
+                /* Grouped by Color */
+                <div className="space-y-4">
+                  {selectedColors.map(col => {
+                    const colorTotalStock = selectedSizes.reduce((acc, sz) => {
+                      const k = `${sz}_${col.name}`;
+                      return acc + (variantStockMap[k] !== undefined ? Number(variantStockMap[k]) : 0);
+                    }, 0);
+
+                    return (
+                      <div key={col.name} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-4 h-4 rounded-full border border-gray-300 shadow-2xs shrink-0"
+                              style={{ backgroundColor: col.hex }}
+                            />
+                            <strong className="text-gray-900 font-black text-xs sm:text-sm">{col.name}</strong>
+                          </div>
+                          <span className="text-[11px] font-bold text-gray-600 bg-gray-100 px-2.5 py-0.5 rounded-lg">
+                            Subtotal color: <strong className="text-gray-900 font-mono">{colorTotalStock}</strong> pzas
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {selectedSizes.map(sz => {
+                            const key = `${sz}_${col.name}`;
+                            const vStock = variantStockMap[key] !== undefined ? Number(variantStockMap[key]) : 0;
+                            const isSoldOut = vStock <= 0;
+                            const isLowStock = vStock > 0 && vStock <= 5;
+
+                            return (
+                              <div
+                                key={key}
+                                className={`p-3 rounded-xl border transition-all ${
+                                  isSoldOut
+                                    ? 'bg-red-50/40 border-red-200'
+                                    : isLowStock
+                                    ? 'bg-amber-50/40 border-amber-200'
+                                    : 'bg-slate-50 border-slate-200'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-black text-xs text-gray-900 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
+                                    Talla {sz}
+                                  </span>
+                                  <span
+                                    className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                                      isSoldOut
+                                        ? 'bg-red-600 text-white'
+                                        : isLowStock
+                                        ? 'bg-amber-500 text-white'
+                                        : 'bg-emerald-600 text-white'
+                                    }`}
+                                  >
+                                    {isSoldOut ? 'Agotado' : isLowStock ? 'Bajo Stock' : 'Disponible'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeltaSingleVariantStock(sz, col.name, -1)}
+                                    className="w-8 h-8 rounded-lg bg-white hover:bg-gray-200 border border-gray-300 font-bold text-gray-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                                  >
+                                    -
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={vStock}
+                                    onChange={e => handleUpdateSingleVariantStock(sz, col.name, Number(e.target.value))}
+                                    className="flex-1 min-w-0 p-1.5 bg-white border border-gray-300 rounded-lg text-center font-black text-xs text-gray-900 focus:border-[#9E0D0D] outline-hidden shadow-2xs"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeltaSingleVariantStock(sz, col.name, 1)}
+                                    className="w-8 h-8 rounded-lg bg-white hover:bg-gray-200 border border-gray-300 font-bold text-gray-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                                <span className="block text-[9px] text-gray-400 font-mono mt-1 text-right">
+                                  {sku}-{sz}-{col.name.slice(0, 3).toUpperCase()}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Only Sizes (No specific colors) */
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {selectedSizes.map(sz => {
+                      const key = `${sz}_`;
+                      const vStock = variantStockMap[key] !== undefined ? Number(variantStockMap[key]) : 0;
+                      const isSoldOut = vStock <= 0;
+                      const isLowStock = vStock > 0 && vStock <= 5;
+
+                      return (
+                        <div
+                          key={key}
+                          className={`p-3.5 rounded-xl border transition-all ${
+                            isSoldOut
+                              ? 'bg-red-50/40 border-red-200'
+                              : isLowStock
+                              ? 'bg-amber-50/40 border-amber-200'
+                              : 'bg-slate-50 border-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-black text-sm text-gray-900 bg-white border border-gray-300 px-2.5 py-0.5 rounded-md shadow-2xs">
+                              Talla {sz}
+                            </span>
+                            <span
+                              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+                                isSoldOut
+                                  ? 'bg-red-600 text-white'
+                                  : isLowStock
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-emerald-600 text-white'
+                              }`}
+                            >
+                              {isSoldOut ? 'Agotado' : isLowStock ? 'Bajo Stock' : 'Disponible'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleDeltaSingleVariantStock(sz, '', -1)}
+                              className="w-8 h-8 rounded-lg bg-white hover:bg-gray-200 border border-gray-300 font-bold text-gray-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min="0"
+                              value={vStock}
+                              onChange={e => handleUpdateSingleVariantStock(sz, '', Number(e.target.value))}
+                              className="flex-1 min-w-0 p-1.5 bg-white border border-gray-300 rounded-lg text-center font-black text-xs text-gray-900 focus:border-[#9E0D0D] outline-hidden shadow-2xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeltaSingleVariantStock(sz, '', 1)}
+                              className="w-8 h-8 rounded-lg bg-white hover:bg-gray-200 border border-gray-300 font-bold text-gray-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <span className="block text-[9px] text-gray-400 font-mono mt-1 text-right">
+                            {sku}-{sz}-UNI
+                          </span>
                         </div>
                       );
                     })}
