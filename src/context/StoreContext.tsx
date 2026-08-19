@@ -930,6 +930,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         name: c.name,
         email: c.email,
         phone: c.phone || '',
+        password: c.password || '',
         registered_at: c.registeredAt || new Date().toISOString().split('T')[0],
         registered_date: c.registeredAt || new Date().toISOString().split('T')[0],
         total_orders: Number(c.totalOrders || 0),
@@ -950,6 +951,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           name: c.name,
           email: c.email,
           phone: c.phone || '',
+          password: c.password || '',
           status: c.status || 'activo'
         };
         const retryRes = await supabase.from('customers').upsert(basicPayload);
@@ -958,8 +960,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (error) {
         console.warn('Supabase customer sync error:', error.message);
-        if (error.code === '42501' || error.message.toLowerCase().includes('policy')) {
-          showToast('⚠️ Supabase RLS: Ejecuta el script SQL en Supabase para permitir guardar clientes');
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('invalid path') || msg.includes('does not exist') || error.code === '42P01') {
+          showToast('⚠️ La tabla "customers" aún no existe en Supabase.');
+        } else if (error.code === '42501' || msg.includes('policy') || msg.includes('row-level security')) {
+          showToast('⚠️ Supabase RLS bloqueado. Ejecuta el script SQL para permitir guardar clientes.');
         } else {
           showToast(`⚠️ Error al guardar cliente en Supabase: ${error.message}`);
         }
@@ -1468,7 +1473,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           name: c.name,
           email: c.email,
           phone: c.phone || '',
+          password: c.password || '',
           registered_at: c.registeredAt || new Date().toISOString().split('T')[0],
+          registered_date: c.registeredAt || new Date().toISOString().split('T')[0],
           total_orders: Number(c.totalOrders || 0),
           total_spent: Number(c.totalSpent || 0),
           favorite_store: c.favoriteStore || '',
@@ -1486,6 +1493,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
     } catch (e: any) {
+      hasError = true;
       details['customers'] = { success: false, error: e.message || String(e) };
     }
 
