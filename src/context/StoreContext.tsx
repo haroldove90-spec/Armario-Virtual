@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Product,
   Order,
@@ -53,7 +53,14 @@ interface StoreContextType {
   // Authentication & Access
   isCustomerLoggedIn: boolean;
   isAdminLoggedIn: boolean;
-  customerLogin: (email?: string, password?: string) => boolean;
+  customerLogin: (email?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  registerCustomer: (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    password?: string;
+    address?: Omit<ShippingAddress, 'id'>;
+  }) => Promise<{ success: boolean; error?: string; customer?: Customer }>;
   customerLogout: () => void;
   adminLogin: (email?: string, password?: string) => boolean;
   adminLogout: () => void;
@@ -116,7 +123,7 @@ interface StoreContextType {
     carrierName: string,
     shippingCost: number
   ) => Order;
-  addCustomerAddress: (address: Omit<ShippingAddress, 'id'>) => void;
+  addCustomerAddress: (address: Omit<ShippingAddress, 'id'>) => ShippingAddress;
   updateCustomerProfile: (name: string, email: string, phone: string, favoriteStore: string) => void;
 
   // Admin Product Operations
@@ -150,6 +157,7 @@ interface StoreContextType {
 
   // Supabase Cloud Sync
   seedAllDataToSupabase: () => Promise<{ success: boolean; message: string; details?: Record<string, { success: boolean; count?: number; error?: string }> }>;
+  reloadFromSupabase: () => Promise<void>;
 
   // Quick Reset
   resetToDefaultData: () => void;
@@ -251,17 +259,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(LS_AUTH_ADMIN, JSON.stringify(isAdminLoggedIn));
   }, [isAdminLoggedIn]);
 
-  const customerLogin = (email?: string, password?: string): boolean => {
-    setIsCustomerLoggedIn(true);
-    showToast('🔑 Sesión de Cliente iniciada correctamente');
-    return true;
-  };
-
-  const customerLogout = () => {
-    setIsCustomerLoggedIn(false);
-    showToast('Sesión de cliente cerrada');
-  };
-
   const adminLogin = (email?: string, password?: string): boolean => {
     setIsAdminLoggedIn(true);
     showToast('🛡️ Sesión de Administrador iniciada correctamente');
@@ -300,214 +297,342 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [categories]);
 
   // Load all data from Supabase if tables exist
-  useEffect(() => {
-    async function loadAllFromSupabase() {
-      // 1. Categories
-      try {
-        const { data: dbCategories, error } = await supabase.from('categories').select('*');
-        if (!error && dbCategories && dbCategories.length > 0) {
-          const mapped: CategoryItem[] = dbCategories.map(c => ({
-            id: c.id,
-            name: c.name,
-            slug: c.slug,
-            description: c.description || '',
-            iconName: c.icon_name || 'Tag',
-            active: true,
-            subcategories: typeof c.subcategories === 'string' ? JSON.parse(c.subcategories) : (Array.isArray(c.subcategories) ? c.subcategories : [])
-          }));
-          setCategories(mapped);
-        }
-      } catch (e) {
-        console.log('Supabase categories read skipped, using local fallback');
+  const loadAllFromSupabase = useCallback(async () => {
+    // 1. Categories
+    try {
+      const { data: dbCategories, error } = await supabase.from('categories').select('*');
+      if (!error && dbCategories && dbCategories.length > 0) {
+        const mapped: CategoryItem[] = dbCategories.map(c => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          description: c.description || '',
+          iconName: c.icon_name || 'Tag',
+          active: true,
+          subcategories: typeof c.subcategories === 'string' ? JSON.parse(c.subcategories) : (Array.isArray(c.subcategories) ? c.subcategories : [])
+        }));
+        setCategories(mapped);
       }
-
-      // 2. Products
-      try {
-        const { data: dbProducts, error } = await supabase.from('products').select('*');
-        if (!error && dbProducts) {
-          const mapped: Product[] = dbProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            productType: p.product_type || 'sencillo',
-            category: p.category,
-            subcategory: p.subcategory || 'General',
-            price: Number(p.price),
-            originalPrice: p.original_price ? Number(p.original_price) : undefined,
-            isOffer: Boolean(p.is_offer),
-            offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
-            discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
-            stock: Number(p.stock),
-            sku: p.sku || '',
-            images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
-            sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
-            colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
-            colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
-            variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
-            sizeGuide: typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined),
-            description: p.description || '',
-            tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
-            isFeatured: Boolean(p.is_featured),
-            isPublished: p.is_published !== false,
-            dateAdded: p.date_added
-          }));
-          setProducts(mapped);
-        }
-      } catch (e) {
-        console.log('Supabase products read skipped, using local fallback');
-      }
-
-      // 3. Orders
-      try {
-        const { data: dbOrders, error } = await supabase.from('orders').select('*');
-        if (!error && dbOrders && dbOrders.length > 0) {
-          const mapped: Order[] = dbOrders.map(o => ({
-            id: o.id,
-            orderNumber: o.order_number,
-            customerName: o.customer_name || '',
-            customerEmail: o.customer_email || '',
-            customerPhone: o.customer_phone || '',
-            shippingAddress: typeof o.shipping_address === 'string' ? JSON.parse(o.shipping_address) : (o.shipping_address || {}),
-            items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
-            subtotal: Number(o.subtotal || 0),
-            shippingCost: Number(o.shipping_cost || 0),
-            discountAmount: Number(o.discount_amount || 0),
-            total: Number(o.total || 0),
-            status: o.status,
-            paymentMethod: o.payment_method || '',
-            shippingProvider: o.shipping_provider || '',
-            trackingNumber: o.tracking_number || '',
-            createdAt: o.created_at,
-            estimatedDelivery: o.estimated_delivery || '',
-            statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || [])
-          }));
-          setOrders(mapped);
-        }
-      } catch (e) {
-        console.log('Supabase orders read skipped');
-      }
-
-      // 4. Customers
-      try {
-        const { data: dbCustomers, error } = await supabase.from('customers').select('*');
-        if (!error && dbCustomers && dbCustomers.length > 0) {
-          const mapped: Customer[] = dbCustomers.map(c => ({
-            id: c.id,
-            name: c.name,
-            email: c.email,
-            phone: c.phone || '',
-            registeredAt: c.registered_at || c.registered_date || new Date().toISOString().split('T')[0],
-            totalOrders: Number(c.total_orders || 0),
-            totalSpent: Number(c.total_spent || 0),
-            favoriteStore: c.favorite_store || '',
-            status: (c.status === 'activo' || c.status === 'suspendido' || c.status === 'inactivo') ? c.status : 'activo',
-            addresses: typeof c.addresses === 'string' ? JSON.parse(c.addresses) : (c.addresses || []),
-            wishlistProductIds: typeof c.wishlist_product_ids === 'string' ? JSON.parse(c.wishlist_product_ids) : (c.wishlist_product_ids || []),
-            avatarUrl: c.avatar_url || ''
-          }));
-          setCustomersList(mapped);
-        }
-      } catch (e) {
-        console.log('Supabase customers read skipped');
-      }
-
-      // 5. Employees
-      try {
-        const { data: dbEmployees, error } = await supabase.from('employees').select('*');
-        if (!error && dbEmployees && dbEmployees.length > 0) {
-          const mapped: Employee[] = dbEmployees.map(e => ({
-            id: e.id,
-            name: e.name,
-            email: e.email,
-            username: e.username || e.email.split('@')[0],
-            password: e.password || 'password123',
-            role: e.role,
-            status: (e.status === 'activo' || e.status === 'suspendido') ? e.status : 'activo',
-            createdAt: e.created_at || e.date_joined || new Date().toISOString().split('T')[0],
-            lastAccess: e.last_access || 'Recientemente',
-            avatarUrl: e.avatar_url || '',
-            permissions: typeof e.permissions === 'string' ? JSON.parse(e.permissions) : (e.permissions || [])
-          }));
-          setEmployees(mapped);
-        }
-      } catch (e) {
-        console.log('Supabase employees read skipped');
-      }
-
-      // 6. Configs (shipping, design, admin)
-      try {
-        const { data: dbShipping } = await supabase.from('shipping_config').select('*').eq('id', 'primary').maybeSingle();
-        if (dbShipping) {
-          setShippingConfig({
-            freeShippingThreshold: Number(dbShipping.free_shipping_threshold || 499),
-            defaultFlatRate: Number(dbShipping.default_flat_rate || dbShipping.local_delivery_cost || 79),
-            expressRate: Number(dbShipping.express_rate || dbShipping.express_delivery_cost || 149),
-            carriers: typeof dbShipping.carriers === 'string' ? JSON.parse(dbShipping.carriers) : (dbShipping.carriers || INITIAL_SHIPPING_CONFIG.carriers),
-            enviosApiKey: dbShipping.envios_api_key || dbShipping.envios_com_api_key || INITIAL_SHIPPING_CONFIG.enviosApiKey,
-            enviosOriginZip: dbShipping.envios_origin_zip || dbShipping.default_origin_postal_code || '06600',
-            useLiveEnviosApi: Boolean(dbShipping.use_live_envios_api ?? dbShipping.envios_com_sandbox_mode)
-          });
-        }
-      } catch (e) {}
-
-      try {
-        const { data: dbDesign } = await supabase.from('store_design').select('*').eq('id', 'primary').maybeSingle();
-        if (dbDesign) {
-          setStoreDesign({
-            storeName: dbDesign.store_name || INITIAL_STORE_DESIGN.storeName,
-            logoText: dbDesign.logo_text || INITIAL_STORE_DESIGN.logoText,
-            logoSubtext: dbDesign.logo_subtext || INITIAL_STORE_DESIGN.logoSubtext,
-            logoUrl: dbDesign.logo_url || INITIAL_STORE_DESIGN.logoUrl,
-            storeAddress: dbDesign.store_address || INITIAL_STORE_DESIGN.storeAddress,
-            primaryColor: dbDesign.primary_color || '#9E0D0D',
-            accentColor: dbDesign.accent_color || '#E05A1B',
-            announcementBarText: dbDesign.announcement_bar_text || dbDesign.top_announcement_text || INITIAL_STORE_DESIGN.announcementBarText,
-            announcementBarActive: Boolean(dbDesign.announcement_bar_active ?? dbDesign.top_announcement_active),
-            heroSliders: typeof dbDesign.hero_sliders === 'string' ? JSON.parse(dbDesign.hero_sliders) : (dbDesign.hero_sliders || INITIAL_STORE_DESIGN.heroSliders),
-            promotionalFlyers: typeof dbDesign.promotional_flyers === 'string' ? JSON.parse(dbDesign.promotional_flyers) : (dbDesign.promotional_flyers || INITIAL_STORE_DESIGN.promotionalFlyers)
-          });
-        }
-      } catch (e) {}
-
-      try {
-        const { data: dbAdmin } = await supabase.from('admin_profile').select('*').eq('id', 'primary').maybeSingle();
-        if (dbAdmin) {
-          setAdminProfile({
-            name: dbAdmin.name || INITIAL_ADMIN_PROFILE.name,
-            email: dbAdmin.email || INITIAL_ADMIN_PROFILE.email,
-            phone: dbAdmin.phone || INITIAL_ADMIN_PROFILE.phone,
-            roleTitle: dbAdmin.role_title || dbAdmin.role || INITIAL_ADMIN_PROFILE.roleTitle,
-            storeName: dbAdmin.store_name || INITIAL_ADMIN_PROFILE.storeName,
-            avatarUrl: dbAdmin.avatar_url || INITIAL_ADMIN_PROFILE.avatarUrl,
-            createdAt: dbAdmin.created_at || INITIAL_ADMIN_PROFILE.createdAt
-          });
-        }
-      } catch (e) {}
-
-      // 7. Size Guide Templates
-      try {
-        const { data: dbTemplates, error: tplErr } = await supabase.from('size_guide_templates').select('*');
-        if (!tplErr && dbTemplates && dbTemplates.length > 0) {
-          const mapped: SizeGuideTemplate[] = dbTemplates.map(t => ({
-            id: t.id,
-            name: t.name,
-            category: t.category || 'General',
-            unit: t.unit || 'cm',
-            columns: typeof t.columns === 'string' ? JSON.parse(t.columns) : (t.columns || []),
-            rows: typeof t.rows === 'string' ? JSON.parse(t.rows) : (t.rows || []),
-            imageUrl: t.image_url || t.imageUrl || '',
-            instructions: t.instructions || '',
-            isDefault: Boolean(t.is_default),
-            createdAt: t.created_at || t.createdAt
-          }));
-          setSizeGuideTemplates(mapped);
-        }
-      } catch (e) {
-        console.log('Supabase size_guide_templates read skipped');
-      }
+    } catch (e) {
+      console.log('Supabase categories read skipped, using local fallback');
     }
 
-    loadAllFromSupabase();
+    // 2. Products
+    try {
+      const { data: dbProducts, error } = await supabase.from('products').select('*');
+      if (!error && dbProducts && dbProducts.length > 0) {
+        const mapped: Product[] = dbProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          productType: p.product_type || 'sencillo',
+          category: p.category,
+          subcategory: p.subcategory || 'General',
+          price: Number(p.price),
+          originalPrice: p.original_price ? Number(p.original_price) : undefined,
+          isOffer: Boolean(p.is_offer),
+          offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
+          discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
+          stock: Number(p.stock),
+          sku: p.sku || '',
+          images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
+          sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
+          colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
+          colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
+          variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
+          sizeGuide: typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined),
+          sizeGuideTemplateId: p.size_guide_template_id || undefined,
+          description: p.description || '',
+          tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
+          isFeatured: Boolean(p.is_featured),
+          isPublished: p.is_published !== false,
+          youtubeUrl: p.youtube_url || '',
+          dateAdded: p.date_added
+        }));
+        setProducts(mapped);
+      }
+    } catch (e) {
+      console.log('Supabase products read skipped, using local fallback');
+    }
+
+    // 3. Orders
+    try {
+      const { data: dbOrders, error } = await supabase.from('orders').select('*');
+      if (!error && dbOrders && dbOrders.length > 0) {
+        const mapped: Order[] = dbOrders.map(o => ({
+          id: o.id,
+          orderNumber: o.order_number,
+          customerName: o.customer_name || '',
+          customerEmail: o.customer_email || '',
+          customerPhone: o.customer_phone || '',
+          shippingAddress: typeof o.shipping_address === 'string' ? JSON.parse(o.shipping_address) : (o.shipping_address || {}),
+          items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+          subtotal: Number(o.subtotal || 0),
+          shippingCost: Number(o.shipping_cost || 0),
+          discountAmount: Number(o.discount_amount || 0),
+          total: Number(o.total || 0),
+          status: o.status,
+          paymentMethod: o.payment_method || '',
+          shippingProvider: o.shipping_provider || '',
+          trackingNumber: o.tracking_number || '',
+          createdAt: o.created_at,
+          estimatedDelivery: o.estimated_delivery || '',
+          statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || [])
+        }));
+        setOrders(mapped);
+      }
+    } catch (e) {
+      console.log('Supabase orders read skipped');
+    }
+
+    // 4. Customers
+    try {
+      const { data: dbCustomers, error } = await supabase.from('customers').select('*');
+      if (!error && dbCustomers && dbCustomers.length > 0) {
+        const mapped: Customer[] = dbCustomers.map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone || '',
+          registeredAt: c.registered_at || c.registered_date || new Date().toISOString().split('T')[0],
+          totalOrders: Number(c.total_orders || 0),
+          totalSpent: Number(c.total_spent || 0),
+          favoriteStore: c.favorite_store || '',
+          status: (c.status === 'activo' || c.status === 'suspendido' || c.status === 'inactivo') ? c.status : 'activo',
+          addresses: typeof c.addresses === 'string' ? JSON.parse(c.addresses) : (c.addresses || []),
+          wishlistProductIds: typeof c.wishlist_product_ids === 'string' ? JSON.parse(c.wishlist_product_ids) : (c.wishlist_product_ids || []),
+          avatarUrl: c.avatar_url || ''
+        }));
+        setCustomersList(mapped);
+      }
+    } catch (e) {
+      console.log('Supabase customers read skipped');
+    }
+
+    // 5. Employees
+    try {
+      const { data: dbEmployees, error } = await supabase.from('employees').select('*');
+      if (!error && dbEmployees && dbEmployees.length > 0) {
+        const mapped: Employee[] = dbEmployees.map(e => ({
+          id: e.id,
+          name: e.name,
+          email: e.email,
+          username: e.username || e.email.split('@')[0],
+          password: e.password || 'password123',
+          role: e.role,
+          status: (e.status === 'activo' || e.status === 'suspendido') ? e.status : 'activo',
+          createdAt: e.created_at || e.date_joined || new Date().toISOString().split('T')[0],
+          lastAccess: e.last_access || 'Recientemente',
+          avatarUrl: e.avatar_url || '',
+          permissions: typeof e.permissions === 'string' ? JSON.parse(e.permissions) : (e.permissions || [])
+        }));
+        setEmployees(mapped);
+      }
+    } catch (e) {
+      console.log('Supabase employees read skipped');
+    }
+
+    // 6. Configs (shipping, design, admin)
+    try {
+      const { data: dbShipping } = await supabase.from('shipping_config').select('*').eq('id', 'primary').maybeSingle();
+      if (dbShipping) {
+        setShippingConfig({
+          freeShippingThreshold: Number(dbShipping.free_shipping_threshold || 499),
+          defaultFlatRate: Number(dbShipping.default_flat_rate || dbShipping.local_delivery_cost || 79),
+          expressRate: Number(dbShipping.express_rate || dbShipping.express_delivery_cost || 149),
+          carriers: typeof dbShipping.carriers === 'string' ? JSON.parse(dbShipping.carriers) : (dbShipping.carriers || INITIAL_SHIPPING_CONFIG.carriers),
+          enviosApiKey: dbShipping.envios_api_key || dbShipping.envios_com_api_key || INITIAL_SHIPPING_CONFIG.enviosApiKey,
+          enviosOriginZip: dbShipping.envios_origin_zip || dbShipping.default_origin_postal_code || '06600',
+          useLiveEnviosApi: Boolean(dbShipping.use_live_envios_api ?? dbShipping.envios_com_sandbox_mode)
+        });
+      }
+    } catch (e) {}
+
+    try {
+      const { data: dbDesign } = await supabase.from('store_design').select('*').eq('id', 'primary').maybeSingle();
+      if (dbDesign) {
+        setStoreDesign({
+          storeName: dbDesign.store_name || INITIAL_STORE_DESIGN.storeName,
+          logoText: dbDesign.logo_text || INITIAL_STORE_DESIGN.logoText,
+          logoSubtext: dbDesign.logo_subtext || INITIAL_STORE_DESIGN.logoSubtext,
+          logoUrl: dbDesign.logo_url || INITIAL_STORE_DESIGN.logoUrl,
+          storeAddress: dbDesign.store_address || INITIAL_STORE_DESIGN.storeAddress,
+          primaryColor: dbDesign.primary_color || '#9E0D0D',
+          accentColor: dbDesign.accent_color || '#E05A1B',
+          announcementBarText: dbDesign.announcement_bar_text || dbDesign.top_announcement_text || INITIAL_STORE_DESIGN.announcementBarText,
+          announcementBarActive: Boolean(dbDesign.announcement_bar_active ?? dbDesign.top_announcement_active),
+          heroSliders: typeof dbDesign.hero_sliders === 'string' ? JSON.parse(dbDesign.hero_sliders) : (dbDesign.hero_sliders || INITIAL_STORE_DESIGN.heroSliders),
+          promotionalFlyers: typeof dbDesign.promotional_flyers === 'string' ? JSON.parse(dbDesign.promotional_flyers) : (dbDesign.promotional_flyers || INITIAL_STORE_DESIGN.promotionalFlyers)
+        });
+      }
+    } catch (e) {}
+
+    try {
+      const { data: dbAdmin } = await supabase.from('admin_profile').select('*').eq('id', 'primary').maybeSingle();
+      if (dbAdmin) {
+        setAdminProfile({
+          name: dbAdmin.name || INITIAL_ADMIN_PROFILE.name,
+          email: dbAdmin.email || INITIAL_ADMIN_PROFILE.email,
+          phone: dbAdmin.phone || INITIAL_ADMIN_PROFILE.phone,
+          roleTitle: dbAdmin.role_title || dbAdmin.role || INITIAL_ADMIN_PROFILE.roleTitle,
+          storeName: dbAdmin.store_name || INITIAL_ADMIN_PROFILE.storeName,
+          avatarUrl: dbAdmin.avatar_url || INITIAL_ADMIN_PROFILE.avatarUrl,
+          createdAt: dbAdmin.created_at || INITIAL_ADMIN_PROFILE.createdAt
+        });
+      }
+    } catch (e) {}
+
+    // 7. Size Guide Templates
+    try {
+      const { data: dbTemplates, error: tplErr } = await supabase.from('size_guide_templates').select('*');
+      if (!tplErr && dbTemplates && dbTemplates.length > 0) {
+        const mapped: SizeGuideTemplate[] = dbTemplates.map(t => ({
+          id: t.id,
+          name: t.name,
+          category: t.category || 'General',
+          unit: t.unit || 'cm',
+          columns: typeof t.columns === 'string' ? JSON.parse(t.columns) : (t.columns || []),
+          rows: typeof t.rows === 'string' ? JSON.parse(t.rows) : (t.rows || []),
+          imageUrl: t.image_url || t.imageUrl || '',
+          instructions: t.instructions || '',
+          isDefault: Boolean(t.is_default),
+          createdAt: t.created_at || t.createdAt
+        }));
+        setSizeGuideTemplates(mapped);
+      }
+    } catch (e) {
+      console.log('Supabase size_guide_templates read skipped');
+    }
   }, []);
+
+  const reloadFromSupabase = async () => {
+    await loadAllFromSupabase();
+    showToast('🔄 Datos actualizados en vivo desde Supabase');
+  };
+
+  useEffect(() => {
+    loadAllFromSupabase();
+
+    // Supabase Realtime Channel Subscription
+    const channel = supabase
+      .channel('schema_live_updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            const o = payload.new as any;
+            const mappedOrder: Order = {
+              id: o.id,
+              orderNumber: o.order_number,
+              customerName: o.customer_name || '',
+              customerEmail: o.customer_email || '',
+              customerPhone: o.customer_phone || '',
+              shippingAddress: typeof o.shipping_address === 'string' ? JSON.parse(o.shipping_address) : (o.shipping_address || {}),
+              items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+              subtotal: Number(o.subtotal || 0),
+              shippingCost: Number(o.shipping_cost || 0),
+              discountAmount: Number(o.discount_amount || 0),
+              total: Number(o.total || 0),
+              status: o.status,
+              paymentMethod: o.payment_method || '',
+              shippingProvider: o.shipping_provider || '',
+              trackingNumber: o.tracking_number || '',
+              createdAt: o.created_at,
+              estimatedDelivery: o.estimated_delivery || '',
+              statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || [])
+            };
+            setOrders(prev => {
+              if (prev.some(x => x.id === mappedOrder.id)) return prev;
+              return [mappedOrder, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const o = payload.new as any;
+            setOrders(prev =>
+              prev.map(x =>
+                x.id === o.id
+                  ? {
+                      ...x,
+                      status: o.status,
+                      shippingProvider: o.shipping_provider || x.shippingProvider,
+                      trackingNumber: o.tracking_number || x.trackingNumber,
+                      statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || x.statusHistory)
+                    }
+                  : x
+              )
+            );
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            const p = payload.new as any;
+            const mappedProd: Product = {
+              id: p.id,
+              name: p.name,
+              productType: p.product_type || 'sencillo',
+              category: p.category,
+              subcategory: p.subcategory || 'General',
+              price: Number(p.price),
+              originalPrice: p.original_price ? Number(p.original_price) : undefined,
+              isOffer: Boolean(p.is_offer),
+              offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
+              discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
+              stock: Number(p.stock),
+              sku: p.sku || '',
+              images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
+              sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
+              colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
+              colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
+              variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
+              sizeGuide: typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined),
+              sizeGuideTemplateId: p.size_guide_template_id || undefined,
+              description: p.description || '',
+              tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
+              isFeatured: Boolean(p.is_featured),
+              isPublished: p.is_published !== false,
+              youtubeUrl: p.youtube_url || '',
+              dateAdded: p.date_added
+            };
+            setProducts(prev => {
+              if (prev.some(x => x.id === mappedProd.id)) {
+                return prev.map(x => (x.id === mappedProd.id ? mappedProd : x));
+              }
+              return [mappedProd, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const p = payload.new as any;
+            setProducts(prev =>
+              prev.map(x =>
+                x.id === p.id
+                  ? {
+                      ...x,
+                      name: p.name,
+                      price: Number(p.price),
+                      stock: Number(p.stock),
+                      isPublished: p.is_published !== false,
+                      isOffer: Boolean(p.is_offer),
+                      offerPrice: p.offer_price ? Number(p.offer_price) : undefined
+                    }
+                  : x
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const p = payload.old as any;
+            if (p && p.id) {
+              setProducts(prev => prev.filter(x => x.id !== p.id));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadAllFromSupabase]);
 
   // Size Guide Templates Sync & CRUD Operations
   const syncSizeGuideTemplateToSupabase = async (tpl: SizeGuideTemplate) => {
@@ -1403,6 +1528,165 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [cart]);
 
+  // Customer Authentication & Registration
+  const registerCustomer = async (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    password?: string;
+    address?: Omit<ShippingAddress, 'id'>;
+  }): Promise<{ success: boolean; error?: string; customer?: Customer }> => {
+    const cleanEmail = (data.email || '').trim().toLowerCase();
+    const cleanName = (data.name || '').trim();
+
+    if (!cleanEmail || !cleanName) {
+      return { success: false, error: 'Por favor ingresa tu nombre completo y correo electrónico.' };
+    }
+
+    // Check if customer already exists in local list or Supabase
+    let existing = customersList.find(c => c.email.toLowerCase() === cleanEmail);
+
+    if (!existing) {
+      try {
+        const { data: dbCust } = await supabase.from('customers').select('*').eq('email', cleanEmail).maybeSingle();
+        if (dbCust) {
+          existing = {
+            id: dbCust.id,
+            name: dbCust.name,
+            email: dbCust.email,
+            phone: dbCust.phone || data.phone || '',
+            avatarUrl: dbCust.avatar_url || '',
+            favoriteStore: dbCust.favorite_store || 'Armario Virtual',
+            wishlistProductIds: typeof dbCust.wishlist_product_ids === 'string' ? JSON.parse(dbCust.wishlist_product_ids) : (dbCust.wishlist_product_ids || []),
+            registeredAt: dbCust.registered_at || new Date().toISOString().split('T')[0],
+            status: dbCust.status || 'activo',
+            totalOrders: Number(dbCust.total_orders || 0),
+            totalSpent: Number(dbCust.total_spent || 0),
+            addresses: typeof dbCust.addresses === 'string' ? JSON.parse(dbCust.addresses) : (dbCust.addresses || [])
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (existing) {
+      setCustomer(existing);
+      setIsCustomerLoggedIn(true);
+      showToast(`👋 ¡Hola de nuevo, ${existing.name}! Sesión iniciada.`);
+      return { success: true, customer: existing };
+    }
+
+    const newAddresses: ShippingAddress[] = data.address ? [{
+      ...data.address,
+      id: `addr-${Date.now()}`,
+      recipientName: cleanName,
+      isDefault: true
+    }] : [];
+
+    const newCust: Customer = {
+      id: `cust-${Date.now()}`,
+      name: cleanName,
+      email: cleanEmail,
+      phone: data.phone || '',
+      password: data.password || '',
+      avatarUrl: '',
+      favoriteStore: 'Armario Virtual',
+      wishlistProductIds: [],
+      registeredAt: new Date().toISOString().split('T')[0],
+      status: 'activo',
+      totalOrders: 0,
+      totalSpent: 0,
+      addresses: newAddresses
+    };
+
+    setCustomer(newCust);
+    setIsCustomerLoggedIn(true);
+    setCustomersList(prev => [newCust, ...prev.filter(c => c.email.toLowerCase() !== cleanEmail)]);
+    
+    // Sync to Supabase
+    await syncCustomerToSupabase(newCust);
+    showToast(`🎉 ¡Cuenta creada con éxito! Bienvenido(a), ${newCust.name}`);
+    return { success: true, customer: newCust };
+  };
+
+  const customerLogin = async (email?: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!email || !email.trim()) {
+      return { success: false, error: 'Ingresa tu correo electrónico.' };
+    }
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Search in local state
+    let found = customersList.find(c => c.email.toLowerCase() === cleanEmail);
+
+    // 2. Search in Supabase
+    if (!found) {
+      try {
+        const { data: dbCust, error } = await supabase.from('customers').select('*').eq('email', cleanEmail).maybeSingle();
+        if (!error && dbCust) {
+          found = {
+            id: dbCust.id,
+            name: dbCust.name,
+            email: dbCust.email,
+            phone: dbCust.phone || '',
+            avatarUrl: dbCust.avatar_url || '',
+            favoriteStore: dbCust.favorite_store || 'Armario Virtual',
+            wishlistProductIds: typeof dbCust.wishlist_product_ids === 'string' ? JSON.parse(dbCust.wishlist_product_ids) : (dbCust.wishlist_product_ids || []),
+            registeredAt: dbCust.registered_at || new Date().toISOString().split('T')[0],
+            status: dbCust.status || 'activo',
+            totalOrders: Number(dbCust.total_orders || 0),
+            totalSpent: Number(dbCust.total_spent || 0),
+            addresses: typeof dbCust.addresses === 'string' ? JSON.parse(dbCust.addresses) : (dbCust.addresses || [])
+          };
+          setCustomersList(prev => [found!, ...prev]);
+        }
+      } catch (e) {
+        console.warn('Error querying customer in Supabase:', e);
+      }
+    }
+
+    if (found) {
+      if (found.status === 'suspendido') {
+        return { success: false, error: 'Esta cuenta se encuentra temporalmente suspendida. Contacta a soporte.' };
+      }
+      setCustomer(found);
+      setIsCustomerLoggedIn(true);
+      showToast(`🔑 ¡Hola de nuevo, ${found.name}!`);
+      return { success: true };
+    }
+
+    // Auto-create customer account on the fly if not existing
+    const generatedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').toUpperCase();
+    const newCust: Customer = {
+      id: `cust-${Date.now()}`,
+      name: generatedName,
+      email: cleanEmail,
+      phone: '',
+      password: password || '',
+      avatarUrl: '',
+      favoriteStore: 'Armario Virtual',
+      wishlistProductIds: [],
+      registeredAt: new Date().toISOString().split('T')[0],
+      status: 'activo',
+      totalOrders: 0,
+      totalSpent: 0,
+      addresses: []
+    };
+
+    setCustomer(newCust);
+    setIsCustomerLoggedIn(true);
+    setCustomersList(prev => [newCust, ...prev]);
+    await syncCustomerToSupabase(newCust);
+    showToast(`✨ ¡Bienvenido(a) a Armario Virtual!`);
+    return { success: true };
+  };
+
+  const customerLogout = () => {
+    setIsCustomerLoggedIn(false);
+    setCustomer(INITIAL_CUSTOMER);
+    localStorage.removeItem(LS_CUSTOMER);
+    localStorage.removeItem(LS_AUTH_CUSTOMER);
+    showToast('Sesión de cliente cerrada');
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -1557,11 +1841,39 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     clearCart();
     setCartOpen(false);
+
+    // Update customer stats & sync
+    if (customer.email) {
+      const updatedCust: Customer = {
+        ...customer,
+        totalOrders: (customer.totalOrders || 0) + 1,
+        totalSpent: (customer.totalSpent || 0) + newOrder.total,
+        addresses: customer.addresses.length === 0 ? [address] : customer.addresses
+      };
+      setCustomer(updatedCust);
+      syncCustomerToSupabase(updatedCust);
+
+      setCustomersList(prev =>
+        prev.map(c => {
+          if (c.email.toLowerCase() === customer.email.toLowerCase() || c.id === customer.id) {
+            const upd: Customer = {
+              ...c,
+              totalOrders: (c.totalOrders || 0) + 1,
+              totalSpent: (c.totalSpent || 0) + newOrder.total
+            };
+            syncCustomerToSupabase(upd);
+            return upd;
+          }
+          return c;
+        })
+      );
+    }
+
     showToast(`🎉 ¡Pedido #${orderNum} realizado con éxito!`);
     return newOrder;
   };
 
-  const addCustomerAddress = (newAddr: Omit<ShippingAddress, 'id'>) => {
+  const addCustomerAddress = (newAddr: Omit<ShippingAddress, 'id'>): ShippingAddress => {
     const fullAddress: ShippingAddress = {
       ...newAddr,
       id: `addr-${Date.now()}`
@@ -1575,6 +1887,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return next;
     });
     showToast('Dirección agregada a tu perfil');
+    return fullAddress;
   };
 
   const updateCustomerProfile = (name: string, email: string, phone: string, favoriteStore: string) => {
@@ -1857,6 +2170,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isCustomerLoggedIn,
         isAdminLoggedIn,
         customerLogin,
+        registerCustomer,
         customerLogout,
         adminLogin,
         adminLogout,
@@ -1920,6 +2234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toastMessage,
         showToast,
         seedAllDataToSupabase,
+        reloadFromSupabase,
         resetToDefaultData
       }}
     >

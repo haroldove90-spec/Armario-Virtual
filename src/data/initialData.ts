@@ -357,102 +357,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   }
 ];
 
-export const INITIAL_CUSTOMERS_LIST: Customer[] = [
-  {
-    id: 'cust-101',
-    name: 'María Fernanda López',
-    email: 'maria.lopez@example.com',
-    phone: '55 4321 9876',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-    favoriteStore: 'Sucursal Perisur CDMX',
-    wishlistProductIds: [],
-    registeredAt: '2026-03-14',
-    status: 'activo',
-    totalOrders: 0,
-    totalSpent: 0,
-    addresses: [
-      {
-        id: 'addr-1',
-        recipientName: 'María Fernanda López',
-        street: 'Av. Insurgentes Sur',
-        exteriorNumber: '2453',
-        interiorNumber: 'Depto 402',
-        neighborhood: 'Tlalpan Centro',
-        city: 'Ciudad de México',
-        state: 'CDMX',
-        postalCode: '14000',
-        phone: '55 4321 9876',
-        isDefault: true
-      }
-    ]
-  },
-  {
-    id: 'cust-102',
-    name: 'Carlos Eduardo Ramírez',
-    email: 'carlos.ramirez@example.com',
-    phone: '55 1122 3344',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
-    favoriteStore: 'Polanco CDMX',
-    wishlistProductIds: [],
-    registeredAt: '2026-05-20',
-    status: 'activo',
-    totalOrders: 0,
-    totalSpent: 0,
-    addresses: [
-      {
-        id: 'addr-carlos',
-        recipientName: 'Carlos Eduardo Ramírez',
-        street: 'Calle Benito Juárez',
-        exteriorNumber: '88',
-        neighborhood: 'Polanco',
-        city: 'Miguel Hidalgo',
-        state: 'CDMX',
-        postalCode: '11560',
-        phone: '55 1122 3344'
-      }
-    ]
-  },
-  {
-    id: 'cust-103',
-    name: 'Ana Sofía Mendoza',
-    email: 'ana.mendoza@example.com',
-    phone: '81 9988 7766',
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-    favoriteStore: 'Monterrey Valle',
-    wishlistProductIds: [],
-    registeredAt: '2026-06-10',
-    status: 'activo',
-    totalOrders: 0,
-    totalSpent: 0,
-    addresses: [
-      {
-        id: 'addr-ana',
-        recipientName: 'Ana Sofía Mendoza',
-        street: 'Av. Constitución',
-        exteriorNumber: '400',
-        neighborhood: 'Centro',
-        city: 'Monterrey',
-        state: 'Nuevo León',
-        postalCode: '64000',
-        phone: '81 9988 7766'
-      }
-    ]
-  },
-  {
-    id: 'cust-104',
-    name: 'Jorge Luis Morales',
-    email: 'jorge.morales@example.com',
-    phone: '33 1234 5678',
-    avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&q=80',
-    favoriteStore: 'Guadalajara Andares',
-    wishlistProductIds: [],
-    registeredAt: '2026-07-01',
-    status: 'inactivo',
-    totalOrders: 0,
-    totalSpent: 0,
-    addresses: []
-  }
-];
+export const INITIAL_CUSTOMERS_LIST: Customer[] = [];
 
 export const INITIAL_PRODUCTS: Product[] = [];
 
@@ -597,42 +502,15 @@ export const INITIAL_STORE_DESIGN: StoreDesignConfig = {
 };
 
 export const INITIAL_CUSTOMER: Customer = {
-  id: 'cust-101',
-  name: 'María Fernanda López',
-  email: 'maria.lopez@example.com',
-  phone: '55 4321 9876',
-  avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-  favoriteStore: 'Sucursal Perisur CDMX',
+  id: '',
+  name: 'Invitado',
+  email: '',
+  phone: '',
+  avatarUrl: '',
+  favoriteStore: 'Armario Virtual',
   wishlistProductIds: [],
-  registeredAt: '2026-03-14',
-  addresses: [
-    {
-      id: 'addr-1',
-      recipientName: 'María Fernanda López',
-      street: 'Av. Insurgentes Sur',
-      exteriorNumber: '2453',
-      interiorNumber: 'Depto 402',
-      neighborhood: 'Tlalpan Centro',
-      city: 'Ciudad de México',
-      state: 'CDMX',
-      postalCode: '14000',
-      phone: '55 4321 9876',
-      isDefault: true
-    },
-    {
-      id: 'addr-2',
-      recipientName: 'María Fernanda López (Oficina)',
-      street: 'Av. Paseo de la Reforma',
-      exteriorNumber: '180',
-      interiorNumber: 'Piso 12',
-      neighborhood: 'Juárez',
-      city: 'Cuauhtémoc',
-      state: 'CDMX',
-      postalCode: '06600',
-      phone: '55 9876 5432',
-      isDefault: false
-    }
-  ]
+  registeredAt: '2026-08-19',
+  addresses: []
 };
 
 export const INITIAL_ORDERS: Order[] = [];

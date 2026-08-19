@@ -39,7 +39,12 @@ export const ProductGrid: React.FC = () => {
           selectedCategory === 'todas' ||
           p.category === selectedCategory ||
           normalizeText(p.category) === normalizeText(selectedCategory) ||
-          (activeCategoryObj && (p.category === activeCategoryObj.slug || normalizeText(p.category) === normalizeText(activeCategoryObj.name)));
+          (activeCategoryObj && (
+            p.category === activeCategoryObj.slug ||
+            p.category === activeCategoryObj.id ||
+            normalizeText(p.category) === normalizeText(activeCategoryObj.slug) ||
+            normalizeText(p.category) === normalizeText(activeCategoryObj.name)
+          ));
 
         // 2. Comprehensive Search Matching across Name, Desc, Category, Subcategory, SKU, Tags, Sizes, Colors
         let matchesSearch = true;
@@ -67,12 +72,12 @@ export const ProductGrid: React.FC = () => {
           );
         }
 
-        // 3. Price & Stock & Publication Filters
-        const matchesPrice = p.price <= priceFilter;
-        const matchesStock = p.stock > 0;
+        // 3. Price & Publication Filters
+        const effectivePrice = p.isOffer && p.offerPrice ? p.offerPrice : p.price;
+        const matchesPrice = effectivePrice <= priceFilter;
         const isPublished = p.isPublished !== false;
 
-        return matchesCategory && matchesSearch && matchesPrice && matchesStock && isPublished;
+        return matchesCategory && matchesSearch && matchesPrice && isPublished;
       })
       .sort((a, b) => {
         if (sortBy === 'precio-asc') return a.price - b.price;

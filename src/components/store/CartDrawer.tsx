@@ -34,11 +34,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
     <div className="fixed inset-0 z-[9999] flex justify-end bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
       <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between relative border-l border-gray-200">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-purple-50/50">
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-red-50/50">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-purple-700" />
+            <ShoppingBag className="w-5 h-5 text-[#9E0D0D]" />
             <h3 className="font-extrabold text-gray-900 text-lg">Mi Bolsa de Compras</h3>
-            <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            <span className="bg-[#9E0D0D] text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {cart.reduce((a, b) => a + b.quantity, 0)}
             </span>
           </div>
@@ -51,17 +51,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
         </div>
 
         {/* Free Shipping Progress Indicator */}
-        <div className="bg-purple-900 text-white p-3.5 text-xs">
+        <div className="bg-[#9E0D0D] text-white p-3.5 text-xs">
           <div className="flex items-center justify-between font-bold mb-1.5">
             <span className="flex items-center gap-1.5">
               <Truck className="w-4 h-4 text-yellow-300" />
               {missingForFreeShipping === 0
                 ? '¡Felicidades! Tienes Envío Gratis'
-                : `Agrega $${missingForFreeShipping.toFixed(2)} MXN más para Envío Gratis`}
+                : `Agrega ${missingForFreeShipping.toFixed(2)} MXN más para Envío Gratis`}
             </span>
             <span className="text-yellow-300">{Math.round(progressPercent)}%</span>
           </div>
-          <div className="w-full bg-purple-950/80 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-red-950/80 rounded-full h-2 overflow-hidden">
             <div
               style={{ width: `${progressPercent}%` }}
               className="bg-yellow-400 h-full rounded-full transition-all duration-500"
@@ -80,7 +80,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
               return (
                 <div
                   key={`${item.product.id}-${index}`}
-                  className="flex gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100 hover:border-purple-200 transition-all"
+                  className="flex gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100 hover:border-red-200 transition-all"
                 >
                   <img
                     src={colorImage}
@@ -94,7 +94,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
                         <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.product.name}</h4>
                         <button
                           onClick={() => removeFromCart(index)}
-                          className="text-gray-400 hover:text-pink-600 p-1 transition-colors"
+                          className="text-gray-400 hover:text-red-600 p-1 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -108,7 +108,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
 
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex flex-col">
-                        <span className="text-sm font-black text-purple-900">
+                        <span className="text-sm font-black text-[#9E0D0D]">
                           ${(effectiveUnitPrice * item.quantity).toFixed(2)} MXN
                         </span>
                         {isOffer && item.product.price > effectiveUnitPrice && (
@@ -160,7 +160,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
                   placeholder="Cupón (ej: MODA10)"
                   value={couponCode}
                   onChange={e => setCouponCode(e.target.value)}
-                  className="w-full bg-white text-xs pl-8 pr-3 py-2 border border-gray-200 rounded-xl outline-hidden focus:border-purple-600 uppercase"
+                  className="w-full bg-white text-xs pl-8 pr-3 py-2 border border-gray-200 rounded-xl outline-hidden focus:border-[#9E0D0D] uppercase"
                 />
               </div>
               <button
@@ -181,7 +181,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
                 <span className="font-bold text-gray-900">${subtotal.toFixed(2)} MXN</span>
               </div>
               {couponApplied && (
-                <div className="flex justify-between text-pink-600 font-bold">
+                <div className="flex justify-between text-[#E05A1B] font-bold">
                   <span>Descuento Cupón:</span>
                   <span>-${discountAmount.toFixed(2)} MXN</span>
                 </div>
@@ -189,10 +189,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
               <div className="flex justify-between">
                 <span>Envío estimado:</span>
                 <span className="font-bold text-emerald-600">
-                  {subtotal >= freeShippingThreshold ? 'GRATIS' : `$${shippingConfig.defaultFlatRate}.00 MXN`}
+                  {subtotal >= freeShippingThreshold ? 'GRATIS' : `${shippingConfig.defaultFlatRate}.00 MXN`}
                 </span>
               </div>
-              <div className="flex justify-between text-base font-black text-purple-950 pt-2 border-t border-gray-200">
+              <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-gray-200">
                 <span>Total Estimado:</span>
                 <span>${(estimatedTotal + (subtotal >= freeShippingThreshold ? 0 : shippingConfig.defaultFlatRate)).toFixed(2)} MXN</span>
               </div>
@@ -203,10 +203,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOpenCheckout }) => {
                 setCartOpen(false);
                 onOpenCheckout();
               }}
-              className="w-full bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-sm py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2"
+              className="w-full bg-[#9E0D0D] hover:bg-red-800 text-white font-extrabold text-sm py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Continuar con el Pedido</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 text-[#E05A1B]" />
             </button>
 
             <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-400 font-medium pt-1">

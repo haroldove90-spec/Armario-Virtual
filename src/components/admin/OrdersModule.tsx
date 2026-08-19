@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus } from '../../types';
-import { ShoppingBag, Search, Filter, Truck, CheckCircle2, Clock, XCircle, Printer } from 'lucide-react';
+import { ShoppingBag, Search, Filter, Truck, CheckCircle2, Clock, XCircle, Printer, RefreshCw, Database } from 'lucide-react';
 
 export const OrdersModule: React.FC = () => {
-  const { orders, updateOrderStatus, assignOrderTracking } = useStore();
+  const { orders, updateOrderStatus, assignOrderTracking, reloadFromSupabase } = useStore();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
@@ -14,6 +15,15 @@ export const OrdersModule: React.FC = () => {
   const [trackingModalOrder, setTrackingModalOrder] = useState<string | null>(null);
   const [carrierInput, setCarrierInput] = useState('SubuEntrega Exprés');
   const [trackingNumInput, setTrackingNumInput] = useState('');
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await reloadFromSupabase();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch =
@@ -37,12 +47,31 @@ export const OrdersModule: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Module Title */}
-      <div>
-        <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-purple-700" />
-          Administración de Ventas y Pedidos ({orders.length})
-        </h3>
-        <p className="text-xs text-gray-500">Gestiona las compras realizadas, cambia su estatus y asigna números de guía</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-purple-700" />
+            Administración de Ventas y Pedidos ({orders.length})
+          </h3>
+          <p className="text-xs text-gray-500">Gestiona las compras realizadas, cambia su estatus y asigna números de guía</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-semibold text-emerald-700">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Supabase Conectado
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+            title="Recargar pedidos desde Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-purple-600' : ''}`} />
+            {isRefreshing ? 'Sincronizando...' : 'Actualizar'}
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search */}
