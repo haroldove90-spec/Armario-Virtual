@@ -42,7 +42,7 @@ export const AdminLayout: React.FC = () => {
     'ventas': '📋 Gestión de Pedidos',
     'envio': '🚚 Envíos & Tarifas',
     'diseno': '🎨 Diseño de Tienda & Banners',
-    'perfil': '👤 Perfil Administrador',
+    'perfil': '👤 Mi Perfil y Fiscal',
     'usuarios': '👥 Usuarios Registrados',
     'empleados': '👨‍💼 Empleados & Credenciales'
   }[adminTab] || 'Módulo';

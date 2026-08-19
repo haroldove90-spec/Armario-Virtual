@@ -163,6 +163,30 @@ export interface Employee {
   avatarUrl?: string;
 }
 
+export type PacProvider = 'facturapi' | 'finkok' | 'sw_smarter' | 'prodigia' | 'pax';
+
+export interface FiscalConfig {
+  rfc: string;
+  razonSocial: string;
+  regimenFiscal: string;
+  codigoPostalFiscal: string;
+  lugarExpedicion?: string;
+  pacProvider: PacProvider;
+  pacApiKey?: string;
+  pacUser?: string;
+  pacPassword?: string;
+  pacEnvironment: 'sandbox' | 'production';
+  csdCerFileName?: string;
+  csdKeyFileName?: string;
+  csdPassword?: string;
+  csdValidUntil?: string;
+  csdStatus?: 'valid' | 'expired' | 'pending' | 'not_configured';
+  timbresDisponibles?: number;
+  lastConnectionTest?: string;
+  connectionStatus?: 'connected' | 'error' | 'untested';
+  connectionMessage?: string;
+}
+
 export interface AdminProfile {
   name: string;
   email: string;
@@ -171,6 +195,7 @@ export interface AdminProfile {
   storeName: string;
   avatarUrl?: string;
   createdAt: string;
+  fiscal?: FiscalConfig;
 }
 
 export interface EnviosRate {

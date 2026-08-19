@@ -15,11 +15,23 @@ import {
   CheckCircle2,
   Eye,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  X,
+  Sparkles
 } from 'lucide-react';
 
 export const ProductsModule: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory } = useStore();
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    clearSampleProducts,
+    clearAllProducts,
+    categories,
+    addCategory
+  } = useStore();
 
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState<string>('todas');
@@ -27,6 +39,8 @@ export const ProductsModule: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showCleanModal, setShowCleanModal] = useState<boolean>(false);
+  const [isCleaning, setIsCleaning] = useState<boolean>(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -190,13 +204,26 @@ export const ProductsModule: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleStartCreate}
-          className="bg-[#9E0D0D] hover:bg-red-900 text-white text-xs font-extrabold px-5 py-3 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Registrar Nuevo Producto</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {products.length > 0 && (
+            <button
+              onClick={() => setShowCleanModal(true)}
+              className="bg-red-50 hover:bg-red-100 text-[#9E0D0D] border border-red-200 text-xs font-extrabold px-4 py-3 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer shrink-0"
+              title="Borrar productos de muestra o vaciar inventario"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Limpiar Catálogo / Muestras</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleStartCreate}
+            className="bg-[#9E0D0D] hover:bg-red-900 text-white text-xs font-extrabold px-5 py-3 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Nuevo Producto</span>
+          </button>
+        </div>
       </div>
 
       {/* Low Stock Alert Banner */}
@@ -469,6 +496,97 @@ export const ProductsModule: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Clean Catalog / Sample Products Modal */}
+      {showCleanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5 animate-scaleUp">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-red-100 text-[#9E0D0D] rounded-2xl">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-black text-slate-900 text-base">Limpiar Catálogo de Productos</h4>
+                  <p className="text-xs text-slate-500">¿Qué artículos deseas eliminar de la tienda y de Supabase?</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCleanModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Option 1: Only Demo/Sample */}
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-black text-amber-950 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    Opción 1: Borrar Solo Productos de Muestra (Demo)
+                  </h5>
+                </div>
+                <p className="text-amber-800 leading-relaxed text-[11px]">
+                  Elimina únicamente los 8 productos de ejemplo iniciales (Chamarra, Vestido, Jeans, etc.) de la tienda y de la base de datos de Supabase. Cualquier producto que tú hayas registrado manualmente se mantendrá intacto.
+                </p>
+                <button
+                  onClick={async () => {
+                    setIsCleaning(true);
+                    await clearSampleProducts();
+                    setIsCleaning(false);
+                    setShowCleanModal(false);
+                  }}
+                  disabled={isCleaning}
+                  className="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isCleaning ? 'Eliminando...' : 'Borrar Solo Productos de Muestra'}</span>
+                </button>
+              </div>
+
+              {/* Option 2: Clear Entire Catalog */}
+              <div className="p-4 bg-red-50 rounded-2xl border border-red-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-black text-red-950 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-[#9E0D0D]" />
+                    Opción 2: Vaciar Catálogo Completo (Empezar desde 0)
+                  </h5>
+                </div>
+                <p className="text-red-800 leading-relaxed text-[11px]">
+                  Elimina <strong>TODOS</strong> los productos registrados (tanto en la memoria de la tienda como en la tabla <code>products</code> de Supabase) dejando el catálogo completamente en blanco.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('⚠️ ¿Confirmas que deseas vaciar TODOS los productos del inventario y de Supabase? Esta acción no se puede deshacer.')) {
+                      setIsCleaning(true);
+                      await clearAllProducts();
+                      setIsCleaning(false);
+                      setShowCleanModal(false);
+                    }
+                  }}
+                  disabled={isCleaning}
+                  className="w-full mt-2 bg-[#9E0D0D] hover:bg-red-900 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isCleaning ? 'Vaciando...' : 'Vaciar Catálogo Completo (0 Productos)'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowCleanModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -295,7 +295,24 @@ export const INITIAL_ADMIN_PROFILE: AdminProfile = {
   roleTitle: 'Director General & Administrador Principal',
   storeName: 'Armario Virtual / Ropa en Línea',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
-  createdAt: '2026-01-15'
+  createdAt: '2026-01-15',
+  fiscal: {
+    rfc: 'MOMA850614HN1',
+    razonSocial: 'ADRIAN MANCILLA MORGA (ARMARIO VIRTUAL)',
+    regimenFiscal: '612 - Personas Físicas con Actividades Empresariales y Profesionales',
+    codigoPostalFiscal: '54090',
+    lugarExpedicion: 'Tlalnepantla de Baz, Estado de México',
+    pacProvider: 'facturapi',
+    pacApiKey: '',
+    pacEnvironment: 'sandbox',
+    csdCerFileName: '',
+    csdKeyFileName: '',
+    csdPassword: '',
+    csdStatus: 'not_configured',
+    timbresDisponibles: 50,
+    connectionStatus: 'untested',
+    connectionMessage: 'Listo para conectar con PAC (Facturapi / Finkok / SW Smarter)'
+  }
 };
 
 export const INITIAL_EMPLOYEES: Employee[] = [
@@ -348,11 +365,11 @@ export const INITIAL_CUSTOMERS_LIST: Customer[] = [
     phone: '55 4321 9876',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
     favoriteStore: 'Sucursal Perisur CDMX',
-    wishlistProductIds: ['prod-1', 'prod-7'],
+    wishlistProductIds: [],
     registeredAt: '2026-03-14',
     status: 'activo',
-    totalOrders: 3,
-    totalSpent: 2450.00,
+    totalOrders: 0,
+    totalSpent: 0,
     addresses: [
       {
         id: 'addr-1',
@@ -376,11 +393,11 @@ export const INITIAL_CUSTOMERS_LIST: Customer[] = [
     phone: '55 1122 3344',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
     favoriteStore: 'Polanco CDMX',
-    wishlistProductIds: ['prod-3'],
+    wishlistProductIds: [],
     registeredAt: '2026-05-20',
     status: 'activo',
-    totalOrders: 2,
-    totalSpent: 1596.00,
+    totalOrders: 0,
+    totalSpent: 0,
     addresses: [
       {
         id: 'addr-carlos',
@@ -402,11 +419,11 @@ export const INITIAL_CUSTOMERS_LIST: Customer[] = [
     phone: '81 9988 7766',
     avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
     favoriteStore: 'Monterrey Valle',
-    wishlistProductIds: ['prod-5'],
+    wishlistProductIds: [],
     registeredAt: '2026-06-10',
     status: 'activo',
-    totalOrders: 1,
-    totalSpent: 549.00,
+    totalOrders: 0,
+    totalSpent: 0,
     addresses: [
       {
         id: 'addr-ana',
@@ -437,287 +454,7 @@ export const INITIAL_CUSTOMERS_LIST: Customer[] = [
   }
 ];
 
-export const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: 'prod-1',
-    name: 'Chamarra Capitonada con Gorro Acolchada',
-    category: 'mujer',
-    subcategory: 'Abrigos y Chamarras',
-    price: 699,
-    originalPrice: 1199,
-    discountPercentage: 41,
-    stock: 24,
-    sku: 'REL-M-9021',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['CH', 'M', 'G', 'XG'],
-    colors: [
-      { name: 'Morado Elegante', hex: '#632488', imageUrl: 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg' },
-      { name: 'Negro Azabache', hex: '#1a1a1a', imageUrl: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&q=80' },
-      { name: 'Palo de Rosa', hex: '#e8b4b8', imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=80' }
-    ],
-    colorImages: {
-      'Morado Elegante': 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg',
-      'Negro Azabache': 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&q=80',
-      'Palo de Rosa': 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=80'
-    },
-    description: 'Chamarra capitonada acolchada de cuello alto con gorro desmontable y bolsas laterales con cierre. Ideal para protegerte del frío con estilo moderno y confort supremo.',
-    tags: ['Gran Barata', 'Otoño e Invierno', 'Exclusivo en Línea'],
-    isFeatured: true,
-    sizeGuide: {
-      enabled: true,
-      title: 'Tabla de Medidas - Chamarra Capitonada',
-      imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
-      instructions: 'Para un mejor ajuste, mide con una cinta métrica flexible sin apretar. Si buscas un calce holgado, selecciona una talla superior.',
-      columns: ['Pecho / Busto', 'Cintura', 'Cadera', 'Largo Manga'],
-      rows: [
-        {
-          size: 'CH / S',
-          measurements: { 'Pecho / Busto': '88 - 92 cm', 'Cintura': '68 - 72 cm', 'Cadera': '92 - 96 cm', 'Largo Manga': '60 cm' },
-          measurementsInches: { 'Pecho / Busto': '34 - 36 in', 'Cintura': '26 - 28 in', 'Cadera': '36 - 38 in', 'Largo Manga': '23.6 in' }
-        },
-        {
-          size: 'MD / M',
-          measurements: { 'Pecho / Busto': '93 - 97 cm', 'Cintura': '73 - 77 cm', 'Cadera': '97 - 101 cm', 'Largo Manga': '61 cm' },
-          measurementsInches: { 'Pecho / Busto': '36 - 38 in', 'Cintura': '28 - 30 in', 'Cadera': '38 - 40 in', 'Largo Manga': '24.0 in' }
-        },
-        {
-          size: 'GD / L',
-          measurements: { 'Pecho / Busto': '98 - 103 cm', 'Cintura': '78 - 83 cm', 'Cadera': '102 - 107 cm', 'Largo Manga': '62 cm' },
-          measurementsInches: { 'Pecho / Busto': '38 - 40 in', 'Cintura': '30 - 32 in', 'Cadera': '40 - 42 in', 'Largo Manga': '24.4 in' }
-        },
-        {
-          size: 'XGD / XL',
-          measurements: { 'Pecho / Busto': '104 - 110 cm', 'Cintura': '84 - 90 cm', 'Cadera': '108 - 114 cm', 'Largo Manga': '63 cm' },
-          measurementsInches: { 'Pecho / Busto': '41 - 43 in', 'Cintura': '33 - 35 in', 'Cadera': '42 - 45 in', 'Largo Manga': '24.8 in' }
-        }
-      ]
-    },
-    dateAdded: '2026-07-01'
-  },
-  {
-    id: 'prod-2',
-    name: 'Vestido Casual Manga Larga Estampado Floral',
-    category: 'mujer',
-    subcategory: 'Vestidos',
-    price: 499,
-    originalPrice: 799,
-    discountPercentage: 37,
-    stock: 18,
-    sku: 'SUB-M-8820',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['CH', 'M', 'G'],
-    colors: [
-      { name: 'Floral Azul', hex: '#1e3d59' },
-      { name: 'Vino', hex: '#581845' }
-    ],
-    description: 'Elegante vestido corte A con manga larga suave y escote sutil. Perfecto para eventos casuales y de oficina. Tejido elástico y fresco.',
-    tags: ['Moda Mujer', 'Tendencia', 'Novedad'],
-    isFeatured: true,
-    sizeGuide: {
-      enabled: true,
-      title: 'Guía de Medidas - Vestido Casual Floral',
-      imageUrl: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&auto=format&fit=crop&q=80',
-      instructions: 'Toma las medidas de busto, cintura y cadera usando ropa ligera. El tejido posee un 5% de elasticidad.',
-      columns: ['Busto', 'Cintura', 'Cadera', 'Largo Total'],
-      rows: [
-        {
-          size: 'CH / S',
-          measurements: { 'Busto': '84 - 88 cm', 'Cintura': '64 - 68 cm', 'Cadera': '90 - 94 cm', 'Largo Total': '88 cm' },
-          measurementsInches: { 'Busto': '33 - 35 in', 'Cintura': '25 - 27 in', 'Cadera': '35 - 37 in', 'Largo Total': '34.6 in' }
-        },
-        {
-          size: 'MD / M',
-          measurements: { 'Busto': '89 - 93 cm', 'Cintura': '69 - 73 cm', 'Cadera': '95 - 99 cm', 'Largo Total': '90 cm' },
-          measurementsInches: { 'Busto': '35 - 37 in', 'Cintura': '27 - 29 in', 'Cadera': '37 - 39 in', 'Largo Total': '35.4 in' }
-        },
-        {
-          size: 'GD / L',
-          measurements: { 'Busto': '94 - 100 cm', 'Cintura': '74 - 80 cm', 'Cadera': '100 - 106 cm', 'Largo Total': '92 cm' },
-          measurementsInches: { 'Busto': '37 - 39 in', 'Cintura': '29 - 31 in', 'Cadera': '39 - 42 in', 'Largo Total': '36.2 in' }
-        }
-      ]
-    },
-    dateAdded: '2026-07-10'
-  },
-  {
-    id: 'prod-3',
-    name: 'Jeans Corte Slim Fit Mezclilla Stretch',
-    category: 'hombre',
-    subcategory: 'Pantalones y Jeans',
-    price: 399,
-    originalPrice: 649,
-    discountPercentage: 38,
-    stock: 35,
-    sku: 'SUB-H-4410',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['28', '30', '32', '34', '36'],
-    colors: [
-      { name: 'Azul Índigo', hex: '#203a43' },
-      { name: 'Azul Claro Deslavado', hex: '#637373' },
-      { name: 'Negro', hex: '#000000' }
-    ],
-    description: 'Pantalón de mezclilla corte slim stretch para hombre. Confeccionado con algodón suave de alta durabilidad y libertad de movimiento.',
-    tags: ['Básicos Hombre', 'Gran Barata'],
-    isFeatured: true,
-    sizeGuide: {
-      enabled: true,
-      title: 'Guía de Tallas - Jeans Slim Stretch',
-      imageUrl: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80',
-      instructions: 'Mide el contorno de tu cintura a la altura donde acostumbras abrochar el pantalón y el largo de entrepierna.',
-      columns: ['Cintura', 'Cadera', 'Muslo', 'Largo Entrepierna'],
-      rows: [
-        {
-          size: 'Talla 28',
-          measurements: { 'Cintura': '71 - 74 cm', 'Cadera': '89 - 92 cm', 'Muslo': '52 cm', 'Largo Entrepierna': '76 cm' },
-          measurementsInches: { 'Cintura': '28 - 29 in', 'Cadera': '35 - 36 in', 'Muslo': '20.5 in', 'Largo Entrepierna': '30 in' }
-        },
-        {
-          size: 'Talla 30',
-          measurements: { 'Cintura': '76 - 79 cm', 'Cadera': '94 - 97 cm', 'Muslo': '55 cm', 'Largo Entrepierna': '78 cm' },
-          measurementsInches: { 'Cintura': '30 - 31 in', 'Cadera': '37 - 38 in', 'Muslo': '21.6 in', 'Largo Entrepierna': '30.7 in' }
-        },
-        {
-          size: 'Talla 32',
-          measurements: { 'Cintura': '81 - 84 cm', 'Cadera': '99 - 102 cm', 'Muslo': '58 cm', 'Largo Entrepierna': '80 cm' },
-          measurementsInches: { 'Cintura': '32 - 33 in', 'Cadera': '39 - 40 in', 'Muslo': '22.8 in', 'Largo Entrepierna': '31.5 in' }
-        },
-        {
-          size: 'Talla 34',
-          measurements: { 'Cintura': '86 - 90 cm', 'Cadera': '104 - 108 cm', 'Muslo': '61 cm', 'Largo Entrepierna': '81 cm' },
-          measurementsInches: { 'Cintura': '34 - 35 in', 'Cadera': '41 - 42 in', 'Muslo': '24.0 in', 'Largo Entrepierna': '31.8 in' }
-        },
-        {
-          size: 'Talla 36',
-          measurements: { 'Cintura': '91 - 96 cm', 'Cadera': '109 - 114 cm', 'Muslo': '64 cm', 'Largo Entrepierna': '82 cm' },
-          measurementsInches: { 'Cintura': '36 - 38 in', 'Cadera': '43 - 45 in', 'Muslo': '25.2 in', 'Largo Entrepierna': '32.2 in' }
-        }
-      ]
-    },
-    dateAdded: '2026-07-12'
-  },
-  {
-    id: 'prod-4',
-    name: 'Saco Formal de Vestir Corte Moderno',
-    category: 'hombre',
-    subcategory: 'Sacos y Trajes',
-    price: 1199,
-    originalPrice: 1899,
-    discountPercentage: 36,
-    stock: 12,
-    sku: 'SUB-H-1022',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['38R', '40R', '42R'],
-    colors: [
-      { name: 'Azul Marino', hex: '#0a192f' },
-      { name: 'Gris Oxford', hex: '#333333' }
-    ],
-    description: 'Saco vestir para caballero de estructura semi-armada. Incluye bolsas frontales con solapa e interior completamente forrado.',
-    tags: ['Elegante', 'Moda Caballero'],
-    isFeatured: false,
-    dateAdded: '2026-06-25'
-  },
-  {
-    id: 'prod-5',
-    name: 'Tenis Urbanos Casuales Suela Ancha',
-    category: 'calzado',
-    subcategory: 'Tenis Casuales',
-    price: 549,
-    originalPrice: 899,
-    discountPercentage: 38,
-    stock: 40,
-    sku: 'SUB-Z-5501',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['25 MX', '26 MX', '27 MX', '28 MX', '29 MX'],
-    colors: [
-      { name: 'Blanco Puro', hex: '#ffffff' },
-      { name: 'Negro con Blanco', hex: '#111111' }
-    ],
-    description: 'Tenis estilo streetwear de suela antiderrapante de goma, ajuste por agujetas y plantilla confort acolchada para uso diario prolongado.',
-    tags: ['Calzado', 'Envío Gratis', 'Top Ventas'],
-    isFeatured: true,
-    dateAdded: '2026-07-15'
-  },
-  {
-    id: 'prod-6',
-    name: 'Conjunto Infantil Deportivo Sudadera y Pants',
-    category: 'ninos',
-    subcategory: 'Moda Infantil',
-    price: 349,
-    originalPrice: 599,
-    discountPercentage: 41,
-    stock: 30,
-    sku: 'SUB-N-3011',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['4 Años', '6 Años', '8 Años', '10 Años'],
-    colors: [
-      { name: 'Azul Rey', hex: '#0055ff' },
-      { name: 'Amarillo Mostaza', hex: '#e6a100' }
-    ],
-    description: 'Conjunto deportivo de felpa súper suave para niñas y niños. Sudadera con gorro y pants con resorte ajustable en la cintura.',
-    tags: ['Infantil', 'Gran Barata'],
-    isFeatured: false,
-    dateAdded: '2026-07-02'
-  },
-  {
-    id: 'prod-7',
-    name: 'Bolso de Mano Crossbody con Cadena Dorada',
-    category: 'mujer',
-    subcategory: 'Accesorios y Bolsos',
-    price: 389,
-    originalPrice: 699,
-    discountPercentage: 44,
-    stock: 15,
-    sku: 'REL-ACC-091',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['Unitalla'],
-    colors: [
-      { name: 'Beige Neutro', hex: '#f5f5dc' },
-      { name: 'Vino Tinto', hex: '#6b112d' }
-    ],
-    description: 'Bolso versátil estilo crossbody de piel sintética textura saffiano. Compartimentos organizadores internos y asa metálica dorada brillante.',
-    tags: ['Accesorios', 'Exclusivo en Línea'],
-    isFeatured: true,
-    dateAdded: '2026-07-05'
-  },
-  {
-    id: 'prod-8',
-    name: 'Juego de Sábanas Microfibra Ultra Suave Matrimonial',
-    category: 'hogar',
-    subcategory: 'Blancos y Cama',
-    price: 299,
-    originalPrice: 499,
-    discountPercentage: 40,
-    stock: 50,
-    sku: 'SUB-HOG-101',
-    images: [
-      'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'
-    ],
-    sizes: ['Individual', 'Matrimonial', 'King Size'],
-    colors: [
-      { name: 'Gris Perla', hex: '#cccccc' },
-      { name: 'Azul Cielo', hex: '#87ceeb' },
-      { name: 'Blanco', hex: '#ffffff' }
-    ],
-    description: 'Juego de sábanas ultra transpirable que no genera pelusa ni se arruga. Incluye sabana de cajón, plana y 2 fundas para almohada.',
-    tags: ['Hogar', 'Promoción'],
-    isFeatured: false,
-    dateAdded: '2026-06-20'
-  }
-];
+export const INITIAL_PRODUCTS: Product[] = [];
 
 export const INITIAL_SHIPPING_CONFIG: ShippingConfig = {
   freeShippingThreshold: 499,
@@ -866,7 +603,7 @@ export const INITIAL_CUSTOMER: Customer = {
   phone: '55 4321 9876',
   avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
   favoriteStore: 'Sucursal Perisur CDMX',
-  wishlistProductIds: ['prod-1', 'prod-7'],
+  wishlistProductIds: [],
   registeredAt: '2026-03-14',
   addresses: [
     {
@@ -898,136 +635,4 @@ export const INITIAL_CUSTOMER: Customer = {
   ]
 };
 
-export const INITIAL_ORDERS: Order[] = [
-  {
-    id: 'ord-8801',
-    orderNumber: 'REL-2026-0941',
-    customerName: 'María Fernanda López',
-    customerEmail: 'maria.lopez@example.com',
-    customerPhone: '55 4321 9876',
-    shippingAddress: INITIAL_CUSTOMER.addresses[0],
-    items: [
-      {
-        productId: 'prod-1',
-        productName: 'Chamarra Capitonada con Gorro Acolchada',
-        productImage: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&q=80',
-        price: 699,
-        quantity: 1,
-        size: 'M',
-        color: 'Morado Elegante'
-      },
-      {
-        productId: 'prod-7',
-        productName: 'Bolso de Mano Crossbody con Cadena Dorada',
-        productImage: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&q=80',
-        price: 389,
-        quantity: 1,
-        size: 'Unitalla',
-        color: 'Beige Neutro'
-      }
-    ],
-    subtotal: 1088,
-    shippingCost: 0, // Free shipping > $499
-    discountAmount: 100,
-    total: 988,
-    status: 'enviado',
-    paymentMethod: 'Tarjeta de Crédito (Visa *** 4921)',
-    shippingProvider: 'SubuEntrega Exprés (Propio)',
-    trackingNumber: 'SUB-EX-889021-MX',
-    createdAt: '2026-07-28 14:30',
-    estimatedDelivery: '30 de Julio, 2026',
-    statusHistory: [
-      { status: 'pendiente', timestamp: '2026-07-28 14:30', note: 'Pago autorizado con éxito' },
-      { status: 'en_preparacion', timestamp: '2026-07-28 16:00', note: 'Empacado en Almacén Perisur' },
-      { status: 'enviado', timestamp: '2026-07-29 09:15', note: 'En tránsito con chofer SubuEntrega' }
-    ]
-  },
-  {
-    id: 'ord-8802',
-    orderNumber: 'SUB-2026-0935',
-    customerName: 'Carlos Eduardo Ramírez',
-    customerEmail: 'carlos.ramirez@example.com',
-    customerPhone: '55 1122 3344',
-    shippingAddress: {
-      id: 'addr-carlos',
-      recipientName: 'Carlos Eduardo Ramírez',
-      street: 'Calle Benito Juárez',
-      exteriorNumber: '88',
-      neighborhood: 'Polanco',
-      city: 'Miguel Hidalgo',
-      state: 'CDMX',
-      postalCode: '11560',
-      phone: '55 1122 3344'
-    },
-    items: [
-      {
-        productId: 'prod-3',
-        productName: 'Jeans Corte Slim Fit Mezclilla Stretch',
-        productImage: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&q=80',
-        price: 399,
-        quantity: 2,
-        size: '32',
-        color: 'Azul Índigo'
-      }
-    ],
-    subtotal: 798,
-    shippingCost: 0,
-    discountAmount: 0,
-    total: 798,
-    status: 'entregado',
-    paymentMethod: 'Mercado Pago / OXXO',
-    shippingProvider: 'Estafeta México',
-    trackingNumber: 'ESTA-992014-MX',
-    createdAt: '2026-07-25 10:12',
-    estimatedDelivery: '27 de Julio, 2026',
-    statusHistory: [
-      { status: 'pendiente', timestamp: '2026-07-25 10:12', note: 'Orden creada' },
-      { status: 'en_preparacion', timestamp: '2026-07-25 12:00', note: 'Confirmado en almacén' },
-      { status: 'enviado', timestamp: '2026-07-26 08:30', note: 'Guía Estafeta generada' },
-      { status: 'entregado', timestamp: '2026-07-27 15:45', note: 'Entregado en domicilio' }
-    ]
-  },
-  {
-    id: 'ord-8803',
-    orderNumber: 'SUB-2026-0945',
-    customerName: 'Ana Sofía Mendoza',
-    customerEmail: 'ana.mendoza@example.com',
-    customerPhone: '81 9988 7766',
-    shippingAddress: {
-      id: 'addr-ana',
-      recipientName: 'Ana Sofía Mendoza',
-      street: 'Av. Constitución',
-      exteriorNumber: '400',
-      neighborhood: 'Centro',
-      city: 'Monterrey',
-      state: 'Nuevo León',
-      postalCode: '64000',
-      phone: '81 9988 7766'
-    },
-    items: [
-      {
-        productId: 'prod-5',
-        productName: 'Tenis Urbanos Casuales Suela Ancha',
-        productImage: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800&q=80',
-        price: 549,
-        quantity: 1,
-        size: '26 MX',
-        color: 'Blanco Puro'
-      }
-    ],
-    subtotal: 549,
-    shippingCost: 0,
-    discountAmount: 0,
-    total: 549,
-    status: 'en_preparacion',
-    paymentMethod: 'PayPal Express',
-    shippingProvider: 'DHL Express',
-    trackingNumber: 'DHL-302910-MX',
-    createdAt: '2026-07-29 11:20',
-    estimatedDelivery: '31 de Julio, 2026',
-    statusHistory: [
-      { status: 'pendiente', timestamp: '2026-07-29 11:20', note: 'Pago verificado' },
-      { status: 'en_preparacion', timestamp: '2026-07-29 12:30', note: 'Procesando en centro de distribución' }
-    ]
-  }
-];
+export const INITIAL_ORDERS: Order[] = [];

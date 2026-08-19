@@ -123,6 +123,8 @@ interface StoreContextType {
   addProduct: (product: Omit<Product, 'id' | 'dateAdded'>) => void;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+  clearSampleProducts: () => Promise<void>;
+  clearAllProducts: () => Promise<void>;
   updateStock: (id: string, newStock: number) => void;
 
   // Admin Order Operations
@@ -322,7 +324,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 2. Products
       try {
         const { data: dbProducts, error } = await supabase.from('products').select('*');
-        if (!error && dbProducts && dbProducts.length > 0) {
+        if (!error && dbProducts) {
           const mapped: Product[] = dbProducts.map(p => ({
             id: p.id,
             name: p.name,
@@ -592,19 +594,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const syncCategoryToSupabase = async (cat: CategoryItem) => {
     try {
-      const { error } = await supabase.from('categories').upsert({
+      const fullPayload = {
         id: cat.id,
         name: cat.name,
         slug: cat.slug,
         description: cat.description || '',
         icon_name: cat.iconName || 'Tag',
         subcategories: cat.subcategories || []
-      });
+      };
+      
+      let { error } = await supabase.from('categories').upsert(fullPayload);
+      
+      // Si la tabla no tiene la columna subcategories, reintentar con las columnas base
+      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column') || error.message.toLowerCase().includes('subcategories'))) {
+        console.warn('Supabase categories: reintentando sin columna subcategories...');
+        const basePayload = {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          description: cat.description || '',
+          icon_name: cat.iconName || 'Tag'
+        };
+        const fallbackRes = await supabase.from('categories').upsert(basePayload);
+        error = fallbackRes.error;
+      }
+
       if (error) {
         console.warn('Supabase category upsert error:', error.message);
         if (error.code === '42501' || error.message.toLowerCase().includes('policy')) {
-          showToast('⚠️ Supabase RLS: Ejecuta el script SQL para permitir guardar categorías');
+          showToast('⚠️ Supabase RLS: Ejecuta el script SQL en Supabase para permitir guardar categorías');
+        } else {
+          showToast(`⚠️ Error al guardar categoría en Supabase: ${error.message}`);
         }
+      } else {
+        console.log('✅ Categoría guardada en Supabase con éxito:', cat.name);
       }
     } catch (e: any) {
       console.warn('Supabase category upsert exception:', e);
@@ -816,7 +839,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Admin Profile State
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(() => {
     const saved = localStorage.getItem(LS_ADMIN_PROFILE);
-    return saved ? JSON.parse(saved) : INITIAL_ADMIN_PROFILE;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_ADMIN_PROFILE,
+          ...parsed,
+          fiscal: {
+            ...INITIAL_ADMIN_PROFILE.fiscal,
+            ...(parsed.fiscal || {})
+          }
+        };
+      } catch (e) {}
+    }
+    return INITIAL_ADMIN_PROFILE;
   });
 
   useEffect(() => {
@@ -825,11 +861,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateAdminProfile = (data: Partial<AdminProfile>) => {
     setAdminProfile(prev => {
-      const next = { ...prev, ...data };
+      const next: AdminProfile = {
+        ...prev,
+        ...data,
+        fiscal: data.fiscal
+          ? { ...(prev.fiscal || INITIAL_ADMIN_PROFILE.fiscal!), ...data.fiscal }
+          : prev.fiscal
+      };
       syncAdminProfileToSupabase(next);
       return next;
     });
-    showToast('👤 Perfil de administrador actualizado');
+    showToast('👤 Perfil y configuración fiscal actualizados');
   };
 
   // Employees State
@@ -935,15 +977,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Main state with localStorage lazy init
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem(LS_PRODUCTS);
-    if (saved && !saved.includes('unsplash.com')) {
-      return JSON.parse(saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(p => !['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8'].includes(p.id));
+        }
+      } catch (e) {}
     }
     return INITIAL_PRODUCTS;
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem(LS_ORDERS);
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(o => !['ord-8801', 'ord-8802', 'ord-8803'].includes(o.id));
+        }
+      } catch (e) {}
+    }
+    return INITIAL_ORDERS;
   });
 
   const [customer, setCustomer] = useState<Customer>(() => {
@@ -984,19 +1039,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Sync products with Supabase
   const syncProductToSupabase = async (p: Product) => {
     try {
-      const { error } = await supabase.from('products').upsert({
+      const fullPayload = {
         id: p.id,
         name: p.name,
         product_type: p.productType || 'sencillo',
         category: p.category,
         subcategory: p.subcategory || 'General',
-        price: Number(p.price),
+        price: Number(p.price) || 0,
         original_price: p.originalPrice ? Number(p.originalPrice) : null,
         is_offer: Boolean(p.isOffer),
         offer_price: p.offerPrice ? Number(p.offerPrice) : null,
-        discount_percentage: p.discountPercentage || 0,
-        stock: Number(p.stock),
-        sku: p.sku || '',
+        discount_percentage: Number(p.discountPercentage) || 0,
+        stock: Number(p.stock) || 0,
+        sku: p.sku || `SKU-${p.id}`,
         images: p.images || [],
         sizes: p.sizes || [],
         colors: p.colors || [],
@@ -1008,12 +1063,46 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         is_featured: Boolean(p.isFeatured),
         is_published: p.isPublished !== false,
         date_added: p.dateAdded || new Date().toISOString().split('T')[0]
-      });
+      };
+
+      let { error } = await supabase.from('products').upsert(fullPayload);
+
+      // Si falla por columnas adicionales faltantes, reintentar con las columnas estándar
+      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
+        console.warn('Supabase products: reintentando con esquema estándar sin columnas extendidas...');
+        const standardPayload = {
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          subcategory: p.subcategory || 'General',
+          price: Number(p.price) || 0,
+          original_price: p.originalPrice ? Number(p.originalPrice) : null,
+          is_offer: Boolean(p.isOffer),
+          offer_price: p.offerPrice ? Number(p.offerPrice) : null,
+          discount_percentage: Number(p.discountPercentage) || 0,
+          stock: Number(p.stock) || 0,
+          sku: p.sku || `SKU-${p.id}`,
+          images: p.images || [],
+          sizes: p.sizes || [],
+          colors: p.colors || [],
+          description: p.description || '',
+          tags: p.tags || [],
+          is_featured: Boolean(p.isFeatured),
+          date_added: p.dateAdded || new Date().toISOString().split('T')[0]
+        };
+        const retryRes = await supabase.from('products').upsert(standardPayload);
+        error = retryRes.error;
+      }
+
       if (error) {
         console.warn('Supabase product upsert error:', error.message);
         if (error.code === '42501' || error.message.toLowerCase().includes('policy')) {
           showToast('⚠️ Supabase RLS: Ejecuta el script SQL en Supabase para permitir guardar productos');
+        } else {
+          showToast(`⚠️ Error al guardar producto en Supabase: ${error.message}`);
         }
+      } else {
+        console.log('✅ Producto guardado en Supabase:', p.name);
       }
     } catch (e: any) {
       console.warn('Supabase product upsert notice:', e);
@@ -1044,7 +1133,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         icon_name: c.iconName || 'Tag',
         subcategories: c.subcategories || []
       }));
-      const { error: catErr } = await supabase.from('categories').upsert(catPayload);
+      let { error: catErr } = await supabase.from('categories').upsert(catPayload);
+      if (catErr && (catErr.code === '42703' || catErr.message.toLowerCase().includes('column'))) {
+        const baseCatPayload = categories.map(c => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          description: c.description || '',
+          icon_name: c.iconName || 'Tag'
+        }));
+        const retryCat = await supabase.from('categories').upsert(baseCatPayload);
+        catErr = retryCat.error;
+      }
       if (catErr) {
         hasError = true;
         details['categories'] = { success: false, error: catErr.message };
@@ -1064,13 +1164,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         product_type: p.productType || 'sencillo',
         category: p.category,
         subcategory: p.subcategory || 'General',
-        price: Number(p.price),
+        price: Number(p.price) || 0,
         original_price: p.originalPrice ? Number(p.originalPrice) : null,
         is_offer: Boolean(p.isOffer),
         offer_price: p.offerPrice ? Number(p.offerPrice) : null,
-        discount_percentage: p.discountPercentage || 0,
-        stock: Number(p.stock),
-        sku: p.sku || '',
+        discount_percentage: Number(p.discountPercentage) || 0,
+        stock: Number(p.stock) || 0,
+        sku: p.sku || `SKU-${p.id}`,
         images: p.images || [],
         sizes: p.sizes || [],
         colors: p.colors || [],
@@ -1083,7 +1183,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         is_published: p.isPublished !== false,
         date_added: p.dateAdded || new Date().toISOString().split('T')[0]
       }));
-      const { error: prodErr } = await supabase.from('products').upsert(prodPayload);
+      let { error: prodErr } = await supabase.from('products').upsert(prodPayload);
+      if (prodErr && (prodErr.code === '42703' || prodErr.message.toLowerCase().includes('column'))) {
+        const stdProdPayload = products.map(p => ({
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          subcategory: p.subcategory || 'General',
+          price: Number(p.price) || 0,
+          original_price: p.originalPrice ? Number(p.originalPrice) : null,
+          is_offer: Boolean(p.isOffer),
+          offer_price: p.offerPrice ? Number(p.offerPrice) : null,
+          discount_percentage: Number(p.discountPercentage) || 0,
+          stock: Number(p.stock) || 0,
+          sku: p.sku || `SKU-${p.id}`,
+          images: p.images || [],
+          sizes: p.sizes || [],
+          colors: p.colors || [],
+          description: p.description || '',
+          tags: p.tags || [],
+          is_featured: Boolean(p.isFeatured),
+          date_added: p.dateAdded || new Date().toISOString().split('T')[0]
+        }));
+        const retryProd = await supabase.from('products').upsert(stdProdPayload);
+        prodErr = retryProd.error;
+      }
       if (prodErr) {
         hasError = true;
         details['products'] = { success: false, error: prodErr.message };
@@ -1496,6 +1620,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Producto eliminado del catálogo');
   };
 
+  const clearSampleProducts = async () => {
+    const sampleIds = ['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8'];
+    setProducts(prev => {
+      const remaining = prev.filter(p => !sampleIds.includes(p.id));
+      try {
+        localStorage.setItem(LS_PRODUCTS, JSON.stringify(remaining));
+      } catch (e) {}
+      return remaining;
+    });
+
+    try {
+      await supabase.from('products').delete().in('id', sampleIds);
+      console.log('🗑️ Productos muestra eliminados de Supabase');
+    } catch (e) {
+      console.warn('Error eliminando muestras en Supabase:', e);
+    }
+    showToast('🗑️ Productos de muestra eliminados de la tienda y Supabase');
+  };
+
+  const clearAllProducts = async () => {
+    setProducts([]);
+    setCart([]);
+    try {
+      localStorage.setItem(LS_PRODUCTS, JSON.stringify([]));
+      localStorage.setItem(LS_CART, JSON.stringify([]));
+    } catch (e) {}
+
+    try {
+      await supabase.from('products').delete().neq('id', '_dummy_none_');
+      console.log('🗑️ Catálogo completo eliminado de Supabase');
+    } catch (e) {
+      console.warn('Error vaciando catálogo en Supabase:', e);
+    }
+    showToast('🗑️ Catálogo vaciado por completo (Tienda y Supabase)');
+  };
+
   const updateStock = (id: string, newStock: number) => {
     setProducts(prev => {
       const next = prev.map(p => (p.id === id ? { ...p, stock: newStock } : p));
@@ -1743,6 +1903,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addProduct,
         updateProduct,
         deleteProduct,
+        clearSampleProducts,
+        clearAllProducts,
         updateStock,
         updateOrderStatus,
         assignOrderTracking,

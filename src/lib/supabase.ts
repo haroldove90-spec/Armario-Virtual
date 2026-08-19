@@ -189,6 +189,12 @@ CREATE TABLE IF NOT EXISTS public.categories (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Asegurar columnas si la tabla ya existía previamente
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS icon_name TEXT DEFAULT 'Tag';
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS subcategories JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+
 CREATE TABLE IF NOT EXISTS public.products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -217,6 +223,22 @@ CREATE TABLE IF NOT EXISTS public.products (
     date_added TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Asegurar columnas si la tabla ya existía previamente
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS product_type TEXT DEFAULT 'sencillo';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS subcategory TEXT DEFAULT 'General';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS original_price NUMERIC;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_offer BOOLEAN DEFAULT false;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS offer_price NUMERIC;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS discount_percentage NUMERIC DEFAULT 0;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS color_images JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variant_stock JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS size_guide JSONB DEFAULT NULL;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS size_guide_template_id TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS date_added TEXT;
+ALTER TABLE public.products ALTER COLUMN sku DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.size_guide_templates (
     id TEXT PRIMARY KEY,
