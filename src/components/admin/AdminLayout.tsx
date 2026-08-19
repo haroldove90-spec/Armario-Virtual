@@ -26,7 +26,8 @@ import {
   User,
   Database,
   Ruler,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
@@ -103,10 +104,11 @@ export const AdminLayout: React.FC = () => {
             </button>
             <button
               onClick={() => adminLogout()}
-              className="inline-flex items-center gap-1.5 bg-red-900 hover:bg-red-950 text-white font-bold text-xs uppercase tracking-wider px-3 py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-red-700 cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-red-950 hover:bg-black text-red-200 hover:text-white font-bold text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-red-700/60 cursor-pointer"
               title="Cerrar Sesión de Administrador"
             >
-              <span>Salir</span>
+              <LogOut className="w-4 h-4 text-red-400" />
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         </div>

@@ -133,11 +133,11 @@ export const CustomerPanel: React.FC = () => {
           })}
           <button
             onClick={() => customerLogout()}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-pink-700 hover:bg-pink-800 text-white transition-all shadow-xs cursor-pointer active:scale-95 border border-pink-500/40"
             title="Cerrar Sesión de Cliente"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Salir</span>
+            <LogOut className="w-4 h-4 text-pink-200" />
+            <span>Cerrar Sesión</span>
           </button>
         </div>
       </div>

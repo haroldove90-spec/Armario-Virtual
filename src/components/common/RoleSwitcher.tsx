@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../../context/StoreContext';
-import { ShieldCheck, UserCheck, RefreshCw, ShoppingBag, PanelLeft, Menu } from 'lucide-react';
+import { ShieldCheck, UserCheck, RefreshCw, ShoppingBag, PanelLeft, Menu, LogOut, User } from 'lucide-react';
 
 export const RoleSwitcher: React.FC = () => {
   const {
@@ -11,7 +11,11 @@ export const RoleSwitcher: React.FC = () => {
     resetToDefaultData,
     setSidebarOpen,
     isCustomerLoggedIn,
-    isAdminLoggedIn
+    isAdminLoggedIn,
+    customerLogout,
+    adminLogout,
+    customer,
+    adminProfile
   } = useStore();
 
   return (
@@ -22,7 +26,7 @@ export const RoleSwitcher: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex items-center gap-1.5 bg-[#9E0D0D] hover:bg-red-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition-all shadow-xs border border-red-400/30 active:scale-95"
+            className="flex items-center gap-1.5 bg-[#9E0D0D] hover:bg-red-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition-all shadow-xs border border-red-400/30 active:scale-95 cursor-pointer"
             title="Abrir Menú Lateral de Navegación"
           >
             <Menu className="w-4 h-4 text-[#E05A1B]" />
@@ -53,7 +57,7 @@ export const RoleSwitcher: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setAdminTab(tab.id as any)}
-                className={`px-2.5 py-1 rounded-md transition-all font-bold text-[11px] ${
+                className={`px-2.5 py-1 rounded-md transition-all font-bold text-[11px] cursor-pointer ${
                   adminTab === tab.id
                     ? 'bg-[#9E0D0D] text-white shadow-xs border border-red-500'
                     : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
@@ -65,13 +69,61 @@ export const RoleSwitcher: React.FC = () => {
           </div>
         )}
 
-        {/* Right: 3 Role Selector Buttons */}
+        {/* Right: 3 Role Selector Buttons + Session Indicator & Log Out */}
         <div className="flex items-center gap-2">
+          {/* Active Session Logout Buttons */}
+          {activeRole === 'admin' && isAdminLoggedIn && (
+            <button
+              onClick={() => adminLogout()}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-red-900/80 hover:bg-red-800 text-red-100 border border-red-500/50 rounded-md font-bold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Cerrar sesión de administrador"
+            >
+              <LogOut className="w-3.5 h-3.5 text-red-300" />
+              <span>Cerrar Sesión Admin</span>
+            </button>
+          )}
+
+          {activeRole === 'cliente' && isCustomerLoggedIn && (
+            <button
+              onClick={() => customerLogout()}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-pink-950/80 hover:bg-pink-900 text-pink-100 border border-pink-500/50 rounded-md font-bold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Cerrar sesión de cliente"
+            >
+              <LogOut className="w-3.5 h-3.5 text-pink-300" />
+              <span>Cerrar Sesión ({customer.name.split(' ')[0]})</span>
+            </button>
+          )}
+
+          {activeRole === 'tienda' && (isCustomerLoggedIn || isAdminLoggedIn) && (
+            <div className="hidden md:flex items-center gap-1.5">
+              {isCustomerLoggedIn && (
+                <button
+                  onClick={() => customerLogout()}
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-pink-300 border border-slate-700 rounded-md text-[10px] font-bold transition-all cursor-pointer"
+                  title="Cerrar sesión de cliente actual"
+                >
+                  <LogOut className="w-3 h-3 text-pink-400" />
+                  <span>Salir Cliente</span>
+                </button>
+              )}
+              {isAdminLoggedIn && (
+                <button
+                  onClick={() => adminLogout()}
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-red-300 border border-slate-700 rounded-md text-[10px] font-bold transition-all cursor-pointer"
+                  title="Cerrar sesión de administrador actual"
+                >
+                  <LogOut className="w-3 h-3 text-red-400" />
+                  <span>Salir Admin</span>
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="bg-slate-800 p-0.5 rounded-lg border border-slate-700 flex items-center gap-0.5">
             {/* Tienda en Línea Button */}
             <button
               onClick={() => setActiveRole('tienda')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'tienda'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -84,7 +136,7 @@ export const RoleSwitcher: React.FC = () => {
             {/* Cliente Button */}
             <button
               onClick={() => setActiveRole('cliente')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'cliente'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -97,7 +149,7 @@ export const RoleSwitcher: React.FC = () => {
             {/* Admin Button */}
             <button
               onClick={() => setActiveRole('admin')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'admin'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -111,7 +163,7 @@ export const RoleSwitcher: React.FC = () => {
           <button
             onClick={resetToDefaultData}
             title="Restablecer datos predeterminados"
-            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-all"
+            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-all cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>

@@ -15,7 +15,9 @@ import {
   ShieldCheck,
   ShoppingBasket,
   Layers,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -32,7 +34,11 @@ export const Header: React.FC = () => {
     setCustomerTab,
     setSidebarOpen,
     categories,
-    products
+    products,
+    isCustomerLoggedIn,
+    isAdminLoggedIn,
+    customerLogout,
+    adminLogout
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -313,10 +319,13 @@ export const Header: React.FC = () => {
 
               {/* User Dropdown */}
               {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 text-xs">
+                <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 text-xs">
                   <div className="px-4 py-2 border-b border-slate-100 bg-red-50/60">
                     <p className="font-bold text-slate-900">{customer.name}</p>
                     <p className="text-slate-500 text-[11px] truncate">{customer.email}</p>
+                    <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white border border-red-200 text-[#9E0D0D]">
+                      {isCustomerLoggedIn ? '🟢 Sesión Cliente Activa' : '⚪ Invitado'}
+                    </span>
                   </div>
 
                   <button
@@ -325,7 +334,7 @@ export const Header: React.FC = () => {
                       setCustomerTab('compras');
                       setUserDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium"
+                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium cursor-pointer"
                   >
                     <ShoppingBag className="w-4 h-4 text-[#9E0D0D]" />
                     Mis Compras / Pedidos
@@ -337,7 +346,7 @@ export const Header: React.FC = () => {
                       setCustomerTab('domicilios');
                       setUserDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium"
+                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium cursor-pointer"
                   >
                     <MapPin className="w-4 h-4 text-[#9E0D0D]" />
                     Mis Domicilios de Entrega
@@ -349,23 +358,49 @@ export const Header: React.FC = () => {
                       setCustomerTab('perfil');
                       setUserDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium"
+                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium cursor-pointer"
                   >
                     <User className="w-4 h-4 text-[#9E0D0D]" />
                     Mi Perfil
                   </button>
 
-                  <div className="border-t border-slate-100 mt-1 pt-1">
+                  <div className="border-t border-slate-100 mt-1 pt-1 space-y-0.5">
                     <button
                       onClick={() => {
                         setActiveRole('admin');
                         setUserDropdownOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2.5 text-[#9E0D0D] hover:bg-red-100 flex items-center gap-2 font-bold"
+                      className="w-full text-left px-4 py-2 text-[#9E0D0D] hover:bg-red-50 flex items-center gap-2 font-bold cursor-pointer"
                     >
                       <ShieldCheck className="w-4 h-4 text-[#9E0D0D]" />
-                      Ir al Panel de Administración
+                      Panel de Administración
                     </button>
+
+                    {isCustomerLoggedIn && (
+                      <button
+                        onClick={() => {
+                          customerLogout();
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-pink-700 hover:bg-pink-50 flex items-center gap-2 font-bold cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-pink-600" />
+                        <span>Cerrar Sesión Cliente</span>
+                      </button>
+                    )}
+
+                    {isAdminLoggedIn && (
+                      <button
+                        onClick={() => {
+                          adminLogout();
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-red-700 hover:bg-red-50 flex items-center gap-2 font-bold cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-red-600" />
+                        <span>Cerrar Sesión Admin</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
