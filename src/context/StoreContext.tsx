@@ -1299,10 +1299,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (error) {
         console.warn('Supabase product upsert error:', error.message);
-        if (error.code === '42501' || error.message.toLowerCase().includes('policy')) {
-          showToast('⚠️ Supabase RLS: Ejecuta el script SQL en Supabase para permitir guardar productos');
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('invalid path') || msg.includes('does not exist') || error.code === '42P01') {
+          showToast('⚠️ La tabla "products" no existe en Supabase. Abre "Diagnóstico Supabase" y ejecuta el Script SQL.');
+        } else if (error.code === '42501' || msg.includes('policy') || msg.includes('row-level security')) {
+          showToast('⚠️ Permiso denegado por RLS en Supabase. Ejecuta el Script SQL para permitir guardar productos.');
         } else {
-          showToast(`⚠️ Error al guardar producto en Supabase: ${error.message}`);
+          showToast(`⚠️ Error al guardar en Supabase: ${error.message}`);
         }
       } else {
         console.log('✅ Producto guardado en Supabase:', p.name);

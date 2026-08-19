@@ -66,11 +66,20 @@ export async function runCompleteSupabaseDiagnostic(): Promise<SupabaseDiagnosti
         .limit(10);
 
       if (error) {
+        const msgLower = (error.message || '').toLowerCase();
         diag.readError = error.message;
-        if (error.code === '42P01' || error.message.toLowerCase().includes('relation') || error.message.toLowerCase().includes('does not exist')) {
+        if (
+          error.code === '42P01' ||
+          error.code === 'PGRST204' ||
+          error.code === 'PGRST200' ||
+          msgLower.includes('relation') ||
+          msgLower.includes('does not exist') ||
+          msgLower.includes('invalid path') ||
+          msgLower.includes('not found')
+        ) {
           diag.exists = false;
           anyMissing = true;
-        } else if (error.code === '42501' || error.message.toLowerCase().includes('policy') || error.message.toLowerCase().includes('permission')) {
+        } else if (error.code === '42501' || msgLower.includes('policy') || msgLower.includes('permission')) {
           diag.exists = true;
           diag.rlsBlocked = true;
           anyRlsBlocked = true;
