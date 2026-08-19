@@ -279,6 +279,8 @@ CREATE TABLE IF NOT EXISTS public.customers (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT,
+    password TEXT,
+    registered_at TEXT,
     registered_date TEXT,
     total_orders NUMERIC DEFAULT 0,
     total_spent NUMERIC DEFAULT 0,
@@ -286,8 +288,21 @@ CREATE TABLE IF NOT EXISTS public.customers (
     status TEXT DEFAULT 'activo',
     addresses JSONB DEFAULT '[]'::jsonb,
     wishlist_product_ids JSONB DEFAULT '[]'::jsonb,
+    avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Garantizar que existan todas las columnas en customers
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS registered_at TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS registered_date TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS wishlist_product_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS addresses JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS total_orders NUMERIC DEFAULT 0;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS total_spent NUMERIC DEFAULT 0;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS favorite_store TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'activo';
 
 CREATE TABLE IF NOT EXISTS public.employees (
     id TEXT PRIMARY KEY,
@@ -341,7 +356,7 @@ CREATE TABLE IF NOT EXISTS public.admin_profile (
 );
 
 -- 2. DESACTIVAR RLS O PERMITIR ACCESO TOTAL A LA CLAVE PÚBLICA (ANON)
--- Esto soluciona de inmediato el problema donde los productos o categorías no se guardan.
+-- Esto soluciona de inmediato el problema donde los productos, órdenes o clientes no se guardan.
 ALTER TABLE public.categories DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.size_guide_templates DISABLE ROW LEVEL SECURITY;

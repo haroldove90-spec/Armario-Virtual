@@ -627,6 +627,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            const c = payload.new as any;
+            const mappedCust: Customer = {
+              id: c.id,
+              name: c.name,
+              email: c.email,
+              phone: c.phone || '',
+              registeredAt: c.registered_at || c.registered_date || new Date().toISOString().split('T')[0],
+              totalOrders: Number(c.total_orders || 0),
+              totalSpent: Number(c.total_spent || 0),
+              favoriteStore: c.favorite_store || 'Armario Virtual',
+              status: (c.status === 'activo' || c.status === 'suspendido' || c.status === 'inactivo') ? c.status : 'activo',
+              addresses: typeof c.addresses === 'string' ? JSON.parse(c.addresses) : (c.addresses || []),
+              wishlistProductIds: typeof c.wishlist_product_ids === 'string' ? JSON.parse(c.wishlist_product_ids) : (c.wishlist_product_ids || []),
+              avatarUrl: c.avatar_url || ''
+            };
+            setCustomersList(prev => {
+              if (prev.some(x => x.id === mappedCust.id)) {
+                return prev.map(x => (x.id === mappedCust.id ? mappedCust : x));
+              }
+              return [mappedCust, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const c = payload.new as any;
+            setCustomersList(prev =>
+              prev.map(x =>
+                x.id === c.id
+                  ? {
+                      ...x,
+                      name: c.name || x.name,
+                      phone: c.phone || x.phone,
+                      status: c.status || x.status,
+                      totalOrders: Number(c.total_orders ?? x.totalOrders),
+                      totalSpent: Number(c.total_spent ?? x.totalSpent)
+                    }
+                  : x
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const c = payload.old as any;
+            if (c && c.id) {
+              setCustomersList(prev => prev.filter(x => x.id !== c.id));
+            }
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -875,12 +925,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const syncCustomerToSupabase = async (c: Customer) => {
     try {
-      const { error } = await supabase.from('customers').upsert({
+      const fullPayload = {
         id: c.id,
         name: c.name,
         email: c.email,
         phone: c.phone || '',
         registered_at: c.registeredAt || new Date().toISOString().split('T')[0],
+        registered_date: c.registeredAt || new Date().toISOString().split('T')[0],
         total_orders: Number(c.totalOrders || 0),
         total_spent: Number(c.totalSpent || 0),
         favorite_store: c.favoriteStore || '',
@@ -888,9 +939,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addresses: c.addresses || [],
         wishlist_product_ids: c.wishlistProductIds || [],
         avatar_url: c.avatarUrl || ''
-      });
-      if (error) console.warn('Supabase customer sync:', error.message);
-    } catch (e) {}
+      };
+
+      let { error } = await supabase.from('customers').upsert(fullPayload);
+
+      // Fallback si la tabla no tiene algunas columnas opcionales
+      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
+        const basicPayload = {
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone || '',
+          status: c.status || 'activo'
+        };
+        const retryRes = await supabase.from('customers').upsert(basicPayload);
+        error = retryRes.error;
+      }
+
+      if (error) {
+        console.warn('Supabase customer sync error:', error.message);
+        if (error.code === '42501' || error.message.toLowerCase().includes('policy')) {
+          showToast('⚠️ Supabase RLS: Ejecuta el script SQL en Supabase para permitir guardar clientes');
+        } else {
+          showToast(`⚠️ Error al guardar cliente en Supabase: ${error.message}`);
+        }
+      } else {
+        console.log('✅ Cliente sincronizado con Supabase:', c.email);
+      }
+    } catch (e: any) {
+      console.warn('Supabase customer sync exception:', e);
+    }
   };
 
   const deleteCustomerFromSupabase = async (id: string) => {
