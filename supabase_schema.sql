@@ -91,16 +91,31 @@ CREATE TABLE IF NOT EXISTS public.customers (
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
+  password TEXT,
   avatar_url TEXT,
-  favorite_store TEXT,
+  favorite_store TEXT DEFAULT 'Armario Virtual',
   status TEXT DEFAULT 'activo',
   addresses JSONB DEFAULT '[]'::jsonb,
   wishlist_product_ids JSONB DEFAULT '[]'::jsonb,
   total_orders NUMERIC DEFAULT 0,
   total_spent NUMERIC DEFAULT 0,
   registered_at TEXT,
+  registered_date TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Asegurar columnas si la tabla ya existía previamente
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS favorite_store TEXT DEFAULT 'Armario Virtual';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'activo';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS addresses JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS wishlist_product_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS total_orders NUMERIC DEFAULT 0;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS total_spent NUMERIC DEFAULT 0;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS registered_at TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS registered_date TEXT;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
 -- 6. TABLA DE PEDIDOS / VENTAS (orders)
 CREATE TABLE IF NOT EXISTS public.orders (

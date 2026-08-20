@@ -27,12 +27,14 @@ export const CustomersModule: React.FC = () => {
     toggleCustomerStatus,
     addCustomerAccount,
     deleteCustomerAccount,
+    syncCustomerToSupabase,
     reloadFromSupabase,
     seedAllDataToSupabase,
     showToast
   } = useStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncingCustId, setSyncingCustId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | 'activo' | 'suspendido' | 'inactivo'>('todos');
@@ -382,6 +384,24 @@ export const CustomersModule: React.FC = () => {
                       </td>
 
                       <td className="p-4 text-right space-x-1">
+                        <button
+                          onClick={async () => {
+                            setSyncingCustId(cust.id);
+                            const res = await syncCustomerToSupabase(cust);
+                            setSyncingCustId(null);
+                            if (res.success) {
+                              showToast(`☁️ Usuario "${cust.name}" sincronizado en Supabase`);
+                            } else {
+                              showToast(`⚠️ Error al sincronizar: ${res.error || 'Verifica RLS'}`);
+                            }
+                          }}
+                          disabled={syncingCustId === cust.id}
+                          className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl transition-all border border-purple-200"
+                          title="Sincronizar este usuario con Supabase"
+                        >
+                          <UploadCloud className={`w-3.5 h-3.5 inline mr-1 ${syncingCustId === cust.id ? 'animate-bounce' : ''}`} />
+                          {syncingCustId === cust.id ? '...' : 'Nube'}
+                        </button>
                         <button
                           onClick={() => setSelectedCustomer(cust)}
                           className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-all"

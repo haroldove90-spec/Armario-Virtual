@@ -16,7 +16,10 @@ import {
   Trash2,
   Building,
   Edit2,
-  LogOut
+  LogOut,
+  Database,
+  UploadCloud,
+  Check
 } from 'lucide-react';
 
 export const CustomerPanel: React.FC = () => {
@@ -29,10 +32,13 @@ export const CustomerPanel: React.FC = () => {
     updateCustomerProfile,
     addCustomerAddress,
     customerLogout,
+    syncCustomerToSupabase,
+    showToast,
     setSelectedProduct,
     setActiveRole
   } = useStore();
 
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(orders[0]?.id || null);
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
@@ -475,13 +481,54 @@ export const CustomerPanel: React.FC = () => {
               />
             </div>
 
-            <button
-              type="submit"
-              className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all"
-            >
-              Guardar Cambios de Perfil
-            </button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <button
+                type="submit"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                Guardar Cambios de Perfil
+              </button>
+
+              <button
+                type="button"
+                disabled={isSyncingCloud}
+                onClick={async () => {
+                  setIsSyncingCloud(true);
+                  try {
+                    const res = await syncCustomerToSupabase({
+                      ...customer,
+                      name: profileName,
+                      email: profileEmail,
+                      phone: profilePhone,
+                      favoriteStore: profileStore
+                    });
+                    if (res.success) {
+                      showToast('✅ ¡Cuenta sincronizada con éxito en Supabase!');
+                    } else {
+                      showToast(`⚠️ Estado: ${res.error || 'Verifica RLS en Supabase'}`);
+                    }
+                  } finally {
+                    setIsSyncingCloud(false);
+                  }
+                }}
+                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs px-4 py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <UploadCloud className={`w-4 h-4 ${isSyncingCloud ? 'animate-bounce' : 'text-emerald-600'}`} />
+                <span>{isSyncingCloud ? 'Sincronizando...' : 'Sincronizar con Supabase'}</span>
+              </button>
+            </div>
           </form>
+
+          {/* Supabase Status Info Banner */}
+          <div className="p-4 rounded-2xl bg-purple-50 border border-purple-100 text-xs text-purple-900 space-y-1">
+            <div className="flex items-center gap-2 font-bold">
+              <Database className="w-4 h-4 text-purple-700" />
+              <span>Base de Datos Supabase</span>
+            </div>
+            <p className="text-[11px] text-purple-800 leading-relaxed">
+              Tus datos se guardan en la tabla <code className="font-mono font-bold bg-white px-1 rounded">public.customers</code> y en el sistema de autenticación de Supabase. Si eres el administrador del proyecto, puedes verificar este registro en tu panel de Supabase &gt; Table Editor &gt; customers.
+            </p>
+          </div>
         </div>
       )}
     </div>

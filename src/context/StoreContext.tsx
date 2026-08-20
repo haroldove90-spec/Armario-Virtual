@@ -97,6 +97,7 @@ interface StoreContextType {
   addCustomerAccount: (customerData: Omit<Customer, 'id'>) => void;
   toggleCustomerStatus: (id: string) => void;
   deleteCustomerAccount: (id: string) => void;
+  syncCustomerToSupabase: (customer: Customer) => Promise<{ success: boolean; error?: string }>;
 
   // Store Data
   products: Product[];
@@ -966,7 +967,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {}
   };
 
-  const syncCustomerToSupabase = async (c: Customer) => {
+  const syncCustomerToSupabase = async (c: Customer): Promise<{ success: boolean; error?: string }> => {
     try {
       // 1. Intento con todas las columnas
       const fullPayload = {
@@ -979,7 +980,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         registered_date: c.registeredAt || new Date().toISOString().split('T')[0],
         total_orders: Number(c.totalOrders || 0),
         total_spent: Number(c.totalSpent || 0),
-        favorite_store: c.favoriteStore || '',
+        favorite_store: c.favoriteStore || 'Armario Virtual',
         status: c.status || 'activo',
         addresses: c.addresses || [],
         wishlist_product_ids: c.wishlistProductIds || [],
@@ -989,13 +990,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let { error } = await supabase.from('customers').upsert(fullPayload);
 
       // Fallback 1: Si faltan columnas en Supabase, guardar columnas que sí tiene la tabla (id, name, email, phone, avatar_url)
-      if (error) {
+      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
         console.warn('Supabase customers: reintentando con campos compatibles...', error.message);
         const standardPayload = {
           id: c.id,
           name: c.name,
           email: c.email,
           phone: c.phone || '',
+          favorite_store: c.favoriteStore || 'Armario Virtual',
+          status: c.status || 'activo',
           avatar_url: c.avatarUrl || ''
         };
         const retry1 = await supabase.from('customers').upsert(standardPayload);
@@ -1014,21 +1017,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
+      // También sincronizar opcionalmente con Supabase Auth para que aparezca en Authentication > Users
+      if (c.password && c.email) {
+        try {
+          await supabase.auth.signUp({
+            email: c.email.trim().toLowerCase(),
+            password: c.password.length >= 6 ? c.password : `${c.password}123`,
+            options: {
+              data: {
+                name: c.name,
+                phone: c.phone || '',
+                favorite_store: c.favoriteStore || 'Armario Virtual'
+              }
+            }
+          });
+        } catch (authErr) {
+          // Si ya existe en auth o tiene restricción de email confirmation, continuamos normalmente
+          console.log('Supabase Auth sync notice:', authErr);
+        }
+      }
+
       if (error) {
         console.warn('Supabase customer sync error:', error.message);
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('relation') && (msg.includes('does not exist') || error.code === '42P01')) {
-          showToast('⚠️ La tabla "customers" aún no existe en Supabase.');
+          showToast('⚠️ La tabla "customers" aún no existe en Supabase. Abre el Diagnóstico SQL.');
         } else if (error.code === '42501' || msg.includes('policy') || msg.includes('row-level security')) {
-          showToast('⚠️ Supabase RLS bloqueado. Ejecuta el script SQL para permitir guardar clientes.');
+          showToast('⚠️ Supabase RLS activo. Ejecuta el script SQL en Supabase para permitir guardar clientes.');
         } else {
           console.warn('Error al guardar cliente en Supabase:', error.message);
         }
+        return { success: false, error: error.message };
       } else {
         console.log('✅ Cliente guardado con éxito en Supabase:', c.email);
+        return { success: true };
       }
     } catch (e: any) {
       console.warn('Supabase customer sync exception:', e);
+      return { success: false, error: e.message || String(e) };
     }
   };
 
@@ -2381,6 +2407,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addCustomerAccount,
         toggleCustomerStatus,
         deleteCustomerAccount,
+        syncCustomerToSupabase,
         products,
         orders,
         customer,
