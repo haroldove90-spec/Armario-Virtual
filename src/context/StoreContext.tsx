@@ -944,18 +944,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       let { error } = await supabase.from('customers').upsert(fullPayload);
 
-      // Fallback si la tabla no tiene algunas columnas opcionales
+      // Fallback 1: Si faltan columnas como status, registered_date, addresses, etc.
       if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
-        const basicPayload = {
+        console.warn('Supabase customers: reintentando sin columnas extendidas...', error.message);
+        const standardPayload = {
           id: c.id,
           name: c.name,
           email: c.email,
           phone: c.phone || '',
           password: c.password || '',
-          status: c.status || 'activo'
+          avatar_url: c.avatarUrl || ''
         };
-        const retryRes = await supabase.from('customers').upsert(basicPayload);
-        error = retryRes.error;
+        const retry1 = await supabase.from('customers').upsert(standardPayload);
+        error = retry1.error;
+
+        // Fallback 2: Ultra seguro con solo id, name, email, phone
+        if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
+          const minimalPayload = {
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            phone: c.phone || ''
+          };
+          const retry2 = await supabase.from('customers').upsert(minimalPayload);
+          error = retry2.error;
+        }
       }
 
       if (error) {
@@ -1484,7 +1497,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           wishlist_product_ids: c.wishlistProductIds || [],
           avatar_url: c.avatarUrl || ''
         }));
-        const { error: custErr } = await supabase.from('customers').upsert(custPayload);
+        let { error: custErr } = await supabase.from('customers').upsert(custPayload);
+
+        // Fallback si la tabla no tiene algunas columnas extendidas
+        if (custErr && (custErr.code === '42703' || custErr.message.toLowerCase().includes('column'))) {
+          const basicCustPayload = customersList.map(c => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            phone: c.phone || '',
+            password: c.password || ''
+          }));
+          const retryRes = await supabase.from('customers').upsert(basicCustPayload);
+          custErr = retryRes.error;
+        }
+
         if (custErr) {
           hasError = true;
           details['customers'] = { success: false, error: custErr.message };
