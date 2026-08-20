@@ -348,7 +348,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           youtubeUrl: p.youtube_url || '',
           dateAdded: p.date_added
         }));
-        setProducts(mapped);
+        // Merge Supabase products with local products so locally created ones are never lost
+        setProducts(prev => {
+          const dbIds = new Set(mapped.map(m => m.id));
+          const localOnly = prev.filter(p => !dbIds.has(p.id));
+          return [...mapped, ...localOnly];
+        });
       }
     } catch (e) {
       console.log('Supabase products read skipped, using local fallback');
@@ -1313,6 +1318,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
         const retryRes = await supabase.from('products').upsert(standardPayload);
         error = retryRes.error;
+
+        if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
+          const basicPayload = {
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            subcategory: p.subcategory || 'General',
+            price: Number(p.price) || 0,
+            stock: Number(p.stock) || 0,
+            sku: p.sku || `SKU-${p.id}`,
+            images: p.images || [],
+            description: p.description || ''
+          };
+          const retryRes2 = await supabase.from('products').upsert(basicPayload);
+          error = retryRes2.error;
+        }
       }
 
       if (error) {
