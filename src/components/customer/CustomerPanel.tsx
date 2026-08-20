@@ -42,6 +42,14 @@ export const CustomerPanel: React.FC = () => {
   const [profilePhone, setProfilePhone] = useState(customer.phone);
   const [profileStore, setProfileStore] = useState(customer.favoriteStore);
 
+  // Sincronizar campos cuando el cliente cambia o se carga
+  React.useEffect(() => {
+    setProfileName(customer.name || '');
+    setProfileEmail(customer.email || '');
+    setProfilePhone(customer.phone || '');
+    setProfileStore(customer.favoriteStore || 'Armario Virtual');
+  }, [customer]);
+
   // Address form state
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [newAddr, setNewAddr] = useState({

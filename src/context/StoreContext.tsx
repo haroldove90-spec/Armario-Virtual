@@ -925,6 +925,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const syncCustomerToSupabase = async (c: Customer) => {
     try {
+      // 1. Intento con todas las columnas
       const fullPayload = {
         id: c.id,
         name: c.name,
@@ -944,22 +945,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       let { error } = await supabase.from('customers').upsert(fullPayload);
 
-      // Fallback 1: Si faltan columnas como status, registered_date, addresses, etc.
-      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
-        console.warn('Supabase customers: reintentando sin columnas extendidas...', error.message);
+      // Fallback 1: Si faltan columnas en Supabase, guardar columnas que sí tiene la tabla (id, name, email, phone, avatar_url)
+      if (error) {
+        console.warn('Supabase customers: reintentando con campos compatibles...', error.message);
         const standardPayload = {
           id: c.id,
           name: c.name,
           email: c.email,
           phone: c.phone || '',
-          password: c.password || '',
           avatar_url: c.avatarUrl || ''
         };
         const retry1 = await supabase.from('customers').upsert(standardPayload);
         error = retry1.error;
 
         // Fallback 2: Ultra seguro con solo id, name, email, phone
-        if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
+        if (error) {
           const minimalPayload = {
             id: c.id,
             name: c.name,
@@ -974,15 +974,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (error) {
         console.warn('Supabase customer sync error:', error.message);
         const msg = (error.message || '').toLowerCase();
-        if (msg.includes('invalid path') || msg.includes('does not exist') || error.code === '42P01') {
+        if (msg.includes('relation') && (msg.includes('does not exist') || error.code === '42P01')) {
           showToast('⚠️ La tabla "customers" aún no existe en Supabase.');
         } else if (error.code === '42501' || msg.includes('policy') || msg.includes('row-level security')) {
           showToast('⚠️ Supabase RLS bloqueado. Ejecuta el script SQL para permitir guardar clientes.');
         } else {
-          showToast(`⚠️ Error al guardar cliente en Supabase: ${error.message}`);
+          console.warn('Error al guardar cliente en Supabase:', error.message);
         }
       } else {
-        console.log('✅ Cliente sincronizado con Supabase:', c.email);
+        console.log('✅ Cliente guardado con éxito en Supabase:', c.email);
       }
     } catch (e: any) {
       console.warn('Supabase customer sync exception:', e);
@@ -2018,6 +2018,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       syncCustomerToSupabase(next);
       return next;
     });
+    setCustomersList(prev =>
+      prev.map(c => (c.email.toLowerCase() === email.toLowerCase() || c.id === customer.id ? { ...c, name, email, phone, favoriteStore } : c))
+    );
     showToast('Perfil actualizado correctamente');
   };
 
