@@ -260,9 +260,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isAdminLoggedIn]);
 
   const adminLogin = (email?: string, password?: string): boolean => {
-    setIsAdminLoggedIn(true);
-    showToast('🛡️ Sesión de Administrador iniciada correctamente');
-    return true;
+    if (!email || !password) {
+      showToast('⚠️ Ingresa correo y contraseña de administrador');
+      return false;
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    // 1. Validar si es el administrador principal (por correo o credenciales de admin por defecto)
+    const isAdminEmail = 
+      cleanEmail === adminProfile.email.toLowerCase() ||
+      cleanEmail === 'softwareai569@gmail.com' ||
+      cleanEmail === 'admin@armariovirtual.com';
+    
+    // Contraseñas válidas para admin
+    const isValidAdminPass = 
+      cleanPass === 'admin123' ||
+      cleanPass === 'password123' ||
+      cleanPass === 'admin' ||
+      cleanPass === 'Adrian2026';
+
+    if (isAdminEmail && isValidAdminPass) {
+      setIsAdminLoggedIn(true);
+      showToast('🛡️ Sesión de Administrador iniciada correctamente');
+      return true;
+    }
+
+    // 2. Validar si es un empleado registrado
+    const emp = employees.find(
+      e => (e.email.toLowerCase() === cleanEmail || e.username.toLowerCase() === cleanEmail) &&
+           e.password === cleanPass &&
+           e.status === 'activo'
+    );
+
+    if (emp) {
+      setIsAdminLoggedIn(true);
+      showToast(`👨‍💼 Bienvenido, ${emp.name} (${emp.role})`);
+      return true;
+    }
+
+    showToast('❌ Credenciales de administrador o empleado incorrectas');
+    return false;
   };
 
   const adminLogout = () => {
@@ -1706,10 +1744,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     if (existing) {
-      setCustomer(existing);
-      setIsCustomerLoggedIn(true);
-      showToast(`👋 ¡Hola de nuevo, ${existing.name}! Sesión iniciada.`);
-      return { success: true, customer: existing };
+      return {
+        success: false,
+        error: 'Ya existe una cuenta registrada con este correo electrónico. Por favor ve a la pestaña "Iniciar Sesión".'
+      };
     }
 
     const newAddresses: ShippingAddress[] = data.address ? [{
@@ -1747,9 +1785,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const customerLogin = async (email?: string, password?: string): Promise<{ success: boolean; error?: string }> => {
     if (!email || !email.trim()) {
-      return { success: false, error: 'Ingresa tu correo electrónico.' };
+      return { success: false, error: 'Por favor ingresa tu correo electrónico.' };
+    }
+    if (!password || !password.trim()) {
+      return { success: false, error: 'Por favor ingresa tu contraseña.' };
     }
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     // 1. Search in local state
     let found = customersList.find(c => c.email.toLowerCase() === cleanEmail);
@@ -1764,6 +1806,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             name: dbCust.name,
             email: dbCust.email,
             phone: dbCust.phone || '',
+            password: dbCust.password || '',
             avatarUrl: dbCust.avatar_url || '',
             favoriteStore: dbCust.favorite_store || 'Armario Virtual',
             wishlistProductIds: typeof dbCust.wishlist_product_ids === 'string' ? JSON.parse(dbCust.wishlist_product_ids) : (dbCust.wishlist_product_ids || []),
@@ -1784,36 +1827,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (found.status === 'suspendido') {
         return { success: false, error: 'Esta cuenta se encuentra temporalmente suspendida. Contacta a soporte.' };
       }
+      
+      // Validación estricta de contraseña
+      if (found.password && found.password !== cleanPassword) {
+        return { success: false, error: 'Contraseña incorrecta. Verifica tus datos e intenta nuevamente.' };
+      }
+
       setCustomer(found);
       setIsCustomerLoggedIn(true);
       showToast(`🔑 ¡Hola de nuevo, ${found.name}!`);
       return { success: true };
     }
 
-    // Auto-create customer account on the fly if not existing
-    const generatedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').toUpperCase();
-    const newCust: Customer = {
-      id: `cust-${Date.now()}`,
-      name: generatedName,
-      email: cleanEmail,
-      phone: '',
-      password: password || '',
-      avatarUrl: '',
-      favoriteStore: 'Armario Virtual',
-      wishlistProductIds: [],
-      registeredAt: new Date().toISOString().split('T')[0],
-      status: 'activo',
-      totalOrders: 0,
-      totalSpent: 0,
-      addresses: []
+    // Si el usuario no existe, NO crear cuenta automáticamente en login
+    return {
+      success: false,
+      error: 'No se encontró ninguna cuenta registrada con este correo electrónico. Por favor regístrate primero en la pestaña "Crear Cuenta".'
     };
-
-    setCustomer(newCust);
-    setIsCustomerLoggedIn(true);
-    setCustomersList(prev => [newCust, ...prev]);
-    await syncCustomerToSupabase(newCust);
-    showToast(`✨ ¡Bienvenido(a) a Armario Virtual!`);
-    return { success: true };
   };
 
   const customerLogout = () => {

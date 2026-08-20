@@ -147,6 +147,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
       setAuthError('Por favor ingresa tu correo electrónico.');
       return;
     }
+    if (!authPassword || authPassword.length < 4) {
+      setAuthError('Por favor ingresa una contraseña de al menos 4 caracteres.');
+      return;
+    }
 
     setAuthLoading(true);
     try {
@@ -175,6 +179,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
     if (!authEmail.trim()) {
       setAuthError('Por favor ingresa tu correo electrónico.');
+      return;
+    }
+    if (!authPassword.trim()) {
+      setAuthError('Por favor ingresa tu contraseña.');
       return;
     }
 

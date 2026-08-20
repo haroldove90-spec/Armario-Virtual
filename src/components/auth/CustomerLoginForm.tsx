@@ -28,6 +28,10 @@ export const CustomerLoginForm: React.FC = () => {
       setError('Por favor ingresa tu correo electrónico.');
       return;
     }
+    if (!loginPassword.trim()) {
+      setError('Por favor ingresa tu contraseña.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -56,11 +60,11 @@ export const CustomerLoginForm: React.FC = () => {
       setError('Por favor ingresa un correo electrónico válido.');
       return;
     }
-    if (regPassword && regPassword.length < 4) {
-      setError('La contraseña debe contener al menos 4 caracteres.');
+    if (!regPassword || regPassword.length < 4) {
+      setError('Por favor ingresa una contraseña de al menos 4 caracteres.');
       return;
     }
-    if (regPassword && regPassword !== regConfirmPassword) {
+    if (regPassword !== regConfirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
     }
