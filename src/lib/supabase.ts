@@ -1,9 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://aouvpbvjrsbtufhrmwaj.supabase.co';
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvdXZwYnZqcnNidHVmaHJtd2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0OTI3NTgsImV4cCI6MjEwMTA2ODc1OH0.Vhp1pHIGIbWyRxNgvHOSBGi98WlFbGqoMnGiNdeHbtU';
+function sanitizeSupabaseUrl(rawUrl?: string): string {
+  let url = (rawUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co').trim();
+  // Remove wrapping quotes if any
+  url = url.replace(/^["']|["']$/g, '').trim();
+  // Strip trailing paths like /rest/v1 or trailing slashes
+  url = url.replace(/\/rest\/v1\/?$/i, '');
+  url = url.replace(/\/auth\/v1\/?$/i, '');
+  url = url.replace(/\/+$/, '');
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
+  }
+  return url;
+}
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function sanitizeSupabaseKey(rawKey?: string): string {
+  let key = (rawKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvdXZwYnZqcnNidHVmaHJtd2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0OTI3NTgsImV4cCI6MjEwMTA2ODc1OH0.Vhp1pHIGIbWyRxNgvHOSBGi98WlFbGqoMnGiNdeHbtU').trim();
+  return key.replace(/^["']|["']$/g, '').trim();
+}
+
+export const SUPABASE_URL = sanitizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
+export const SUPABASE_ANON_KEY = sanitizeSupabaseKey(import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true
+  }
+});
 
 export const SUPABASE_PROJECT_ID = 'aouvpbvjrsbtufhrmwaj';
 export const SUPABASE_URL_ENDPOINT = 'https://aouvpbvjrsbtufhrmwaj.supabase.co/rest/v1/';

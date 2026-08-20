@@ -969,9 +969,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const syncCustomerToSupabase = async (c: Customer): Promise<{ success: boolean; error?: string }> => {
     try {
+      const custId = c.id || `cust-${Date.now()}`;
       // 1. Intento con todas las columnas
-      const fullPayload = {
-        id: c.id,
+      const fullPayload: any = {
+        id: custId,
         name: c.name,
         email: c.email,
         phone: c.phone || '',
@@ -989,38 +990,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       let { error } = await supabase.from('customers').upsert(fullPayload);
 
-      // Fallback 1: Si faltan columnas en Supabase, guardar columnas que sí tiene la tabla (id, name, email, phone, avatar_url)
-      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
-        console.warn('Supabase customers: reintentando con campos compatibles...', error.message);
+      // Fallback 1: Si faltan columnas avanzadas en Supabase, reintentar con las 5 columnas básicas
+      if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message.toLowerCase().includes('column') || error.message.toLowerCase().includes('schema'))) {
+        console.warn('Supabase customers: reintentando con campos básicos...', error.message);
         const standardPayload = {
-          id: c.id,
+          id: custId,
           name: c.name,
           email: c.email,
           phone: c.phone || '',
-          favorite_store: c.favoriteStore || 'Armario Virtual',
-          status: c.status || 'activo',
           avatar_url: c.avatarUrl || ''
         };
         const retry1 = await supabase.from('customers').upsert(standardPayload);
         error = retry1.error;
-
-        // Fallback 2: Ultra seguro con solo id, name, email, phone
-        if (error) {
-          const minimalPayload = {
-            id: c.id,
-            name: c.name,
-            email: c.email,
-            phone: c.phone || ''
-          };
-          const retry2 = await supabase.from('customers').upsert(minimalPayload);
-          error = retry2.error;
-        }
       }
 
-      // También sincronizar opcionalmente con Supabase Auth para que aparezca en Authentication > Users
+      // 2. Sincronizar también con Supabase Auth si tiene credenciales
       if (c.password && c.email) {
         try {
-          await supabase.auth.signUp({
+          const authRes = await supabase.auth.signUp({
             email: c.email.trim().toLowerCase(),
             password: c.password.length >= 6 ? c.password : `${c.password}123`,
             options: {
@@ -1031,8 +1018,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               }
             }
           });
+          if (authRes.error) {
+            console.log('Supabase Auth sync notice:', authRes.error.message);
+          }
         } catch (authErr) {
-          // Si ya existe en auth o tiene restricción de email confirmation, continuamos normalmente
           console.log('Supabase Auth sync notice:', authErr);
         }
       }
@@ -1041,7 +1030,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.warn('Supabase customer sync error:', error.message);
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('relation') && (msg.includes('does not exist') || error.code === '42P01')) {
-          showToast('⚠️ La tabla "customers" aún no existe en Supabase. Abre el Diagnóstico SQL.');
+          showToast('⚠️ La tabla "customers" aún no existe en Supabase.');
         } else if (error.code === '42501' || msg.includes('policy') || msg.includes('row-level security')) {
           showToast('⚠️ Supabase RLS activo. Ejecuta el script SQL en Supabase para permitir guardar clientes.');
         } else {
