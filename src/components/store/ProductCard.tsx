@@ -146,12 +146,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             {product.name}
           </h3>
 
-          {product.description && (
-            <p className="text-[10px] text-slate-500 line-clamp-1 mt-1 hidden sm:block font-normal">
-              {product.description}
-            </p>
-          )}
-
           {/* Color Swatches */}
           {product.colors && product.colors.length > 0 && (
             <div className="mt-1.5 flex items-center gap-1 overflow-x-auto py-0.5" onClick={e => e.stopPropagation()}>
