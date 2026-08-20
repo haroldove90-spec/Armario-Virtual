@@ -442,7 +442,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       stock: finalStock,
       sku: sku.trim() || `SKU-${Date.now().toString().slice(-4)}`,
       images: images.length > 0 ? images : ['https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/playera01.jpg'],
-      sizes: productType === 'variable' ? selectedSizes : [],
+      sizes: (selectedSizes && selectedSizes.length > 0) ? selectedSizes : (productType === 'variable' ? selectedSizes : []),
       colors: productType === 'variable' ? selectedColors : [],
       colorImages: productType === 'variable' ? colorImages : {},
       variantStock: variantStockList,

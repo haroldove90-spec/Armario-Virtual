@@ -81,11 +81,11 @@ export const CustomersModule: React.FC = () => {
   const totalActive = customersList.filter(c => (c.status || 'activo') === 'activo').length;
   const totalSpentAll = customersList.reduce((acc, curr) => acc + (curr.totalSpent || 0), 0);
 
-  const handleCreateCustomer = (e: React.FormEvent) => {
+  const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
-    addCustomerAccount({
+    await addCustomerAccount({
       name,
       email,
       phone,

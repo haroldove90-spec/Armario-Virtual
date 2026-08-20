@@ -1147,13 +1147,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(LS_CUSTOMERS_LIST, JSON.stringify(customersList));
   }, [customersList]);
 
-  const addCustomerAccount = (data: Omit<Customer, 'id'>) => {
+  const addCustomerAccount = async (data: Omit<Customer, 'id'>) => {
     const newCust: Customer = {
       ...data,
       id: `cust-${Date.now()}`
     };
     setCustomersList(prev => [newCust, ...prev]);
-    syncCustomerToSupabase(newCust);
+    await syncCustomerToSupabase(newCust);
     showToast(`👤 Cliente "${newCust.name}" registrado`);
   };
 
