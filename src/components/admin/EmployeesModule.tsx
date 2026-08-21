@@ -9,6 +9,8 @@ export const EmployeesModule: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   // New Employee Form State
   const [name, setName] = useState('');
@@ -170,14 +172,24 @@ export const EmployeesModule: React.FC = () => {
                 <Lock className="w-3.5 h-3.5 text-[#9E0D0D]" />
                 Contraseña de Asignación *
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full p-3 border border-slate-200 rounded-xl font-mono text-slate-900 font-bold focus:border-[#9E0D0D] outline-hidden"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-3 pr-10 border border-slate-200 rounded-xl font-mono text-slate-900 font-bold focus:border-[#9E0D0D] outline-hidden"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                  title={showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="sm:col-span-2">
@@ -419,13 +431,23 @@ export const EmployeesModule: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Contraseña</label>
-                <input
-                  type="text"
-                  value={editingEmployee.password || ''}
-                  onChange={e => setEditingEmployee({ ...editingEmployee, password: e.target.value })}
-                  className="w-full p-2.5 border border-slate-200 rounded-xl font-mono font-bold"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? 'text' : 'password'}
+                    value={editingEmployee.password || ''}
+                    onChange={e => setEditingEmployee({ ...editingEmployee, password: e.target.value })}
+                    className="w-full p-2.5 pr-10 border border-slate-200 rounded-xl font-mono font-bold"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                    title={showEditPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  >
+                    {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 

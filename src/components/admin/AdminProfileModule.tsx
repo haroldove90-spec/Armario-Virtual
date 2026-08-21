@@ -41,6 +41,8 @@ export const AdminProfileModule: React.FC = () => {
 
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
   const [passSuccess, setPassSuccess] = useState(false);
 
   // PAC & Fiscal States
@@ -66,6 +68,7 @@ export const AdminProfileModule: React.FC = () => {
 
   const [fiscal, setFiscal] = useState<FiscalConfig>(defaultFiscal);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showPacPass, setShowPacPass] = useState(false);
   const [showCsdPass, setShowCsdPass] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{
@@ -404,24 +407,44 @@ export const AdminProfileModule: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Contraseña Actual</label>
-                  <input
-                    type="password"
-                    value={currentPass}
-                    onChange={e => setCurrentPass(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full p-3 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPass ? 'text' : 'password'}
+                      value={currentPass}
+                      onChange={e => setCurrentPass(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full p-3 pr-10 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                      title={showCurrentPass ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    >
+                      {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Nueva Contraseña</label>
-                  <input
-                    type="password"
-                    value={newPass}
-                    onChange={e => setNewPass(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full p-3 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPass ? 'text' : 'password'}
+                      value={newPass}
+                      onChange={e => setNewPass(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="w-full p-3 pr-10 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                      title={showNewPass ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    >
+                      {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -626,13 +649,23 @@ export const AdminProfileModule: React.FC = () => {
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Contraseña del PAC</label>
-                    <input
-                      type="password"
-                      value={fiscal.pacPassword || ''}
-                      onChange={e => setFiscal(prev => ({ ...prev, pacPassword: e.target.value }))}
-                      placeholder="••••••••••••"
-                      className="w-full p-3 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPacPass ? 'text' : 'password'}
+                        value={fiscal.pacPassword || ''}
+                        onChange={e => setFiscal(prev => ({ ...prev, pacPassword: e.target.value }))}
+                        placeholder="••••••••••••"
+                        className="w-full p-3 pr-10 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPacPass(!showPacPass)}
+                        className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                        title={showPacPass ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      >
+                        {showPacPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -692,26 +725,27 @@ export const AdminProfileModule: React.FC = () => {
                 {/* Password input */}
                 <div className="p-4 border border-slate-200 rounded-2xl bg-white space-y-2 text-left flex flex-col justify-between">
                   <div>
-                    <label className="block font-bold text-slate-800 mb-1 flex items-center justify-between">
-                      <span className="flex items-center gap-1">
-                        <Lock className="w-3.5 h-3.5 text-slate-600" />
-                        Contraseña del CSD
-                      </span>
+                    <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                      <Lock className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Contraseña del CSD</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCsdPass ? 'text' : 'password'}
+                        value={fiscal.csdPassword || ''}
+                        onChange={e => setFiscal(prev => ({ ...prev, csdPassword: e.target.value }))}
+                        placeholder="Contraseña del SAT"
+                        className="w-full p-2.5 pr-8 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden text-xs"
+                      />
                       <button
                         type="button"
                         onClick={() => setShowCsdPass(!showCsdPass)}
-                        className="text-[#9E0D0D] text-[10px] hover:underline"
+                        className="absolute right-2 top-2 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                        title={showCsdPass ? 'Ocultar contraseña' : 'Ver contraseña'}
                       >
-                        {showCsdPass ? 'Ocultar' : 'Ver'}
+                        {showCsdPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
-                    </label>
-                    <input
-                      type={showCsdPass ? 'text' : 'password'}
-                      value={fiscal.csdPassword || ''}
-                      onChange={e => setFiscal(prev => ({ ...prev, csdPassword: e.target.value }))}
-                      placeholder="Contraseña del SAT"
-                      className="w-full p-2.5 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden text-xs"
-                    />
+                    </div>
                   </div>
                   <p className="text-[10px] text-slate-400">
                     Es la contraseña que creaste en el programa Certifica del SAT al generar el CSD.

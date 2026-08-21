@@ -23,7 +23,9 @@ import {
   Phone,
   UserPlus,
   LogIn,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -59,6 +61,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
   const [authTab, setAuthTab] = useState<'register' | 'login'>('register');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authError, setAuthError] = useState('');
@@ -366,13 +369,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                       <label className="block text-xs font-bold text-slate-700 mb-1">Contraseña</label>
                       <div className="relative">
                         <input
-                          type="password"
+                          type={showAuthPassword ? 'text' : 'password'}
                           value={authPassword}
                           onChange={e => setAuthPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full pl-8 pr-2.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-[#9E0D0D] outline-hidden"
+                          className="w-full pl-8 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-[#9E0D0D] outline-hidden"
                         />
                         <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+                        <button
+                          type="button"
+                          onClick={() => setShowAuthPassword(!showAuthPassword)}
+                          className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                          title={showAuthPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                        >
+                          {showAuthPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -408,14 +419,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                     <label className="block text-xs font-bold text-slate-700 mb-1">Contraseña *</label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showAuthPassword ? 'text' : 'password'}
                         value={authPassword}
                         onChange={e => setAuthPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-[#9E0D0D] outline-hidden"
+                        className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-[#9E0D0D] outline-hidden"
                         required
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthPassword(!showAuthPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                        title={showAuthPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      >
+                        {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
