@@ -96,34 +96,34 @@ export const ProductGrid: React.FC = () => {
   }, [selectedCategory, searchQuery, activeCategoryObj]);
 
   return (
-    <section id="catalogo" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 font-sans">
+    <section id="catalogo" className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 font-sans overflow-hidden">
       {/* Search active notice */}
       {searchQuery.trim() && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between flex-wrap gap-2 animate-fadeIn">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#9E0D0D]">
-            <Search className="w-4 h-4 text-[#E05A1B]" />
-            <span>Buscando en todo el catálogo: "{searchQuery.trim()}"</span>
-            <span className="bg-[#9E0D0D] text-white px-2 py-0.5 rounded-full text-[10px]">
-              {filteredProducts.length} encontrados
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between flex-wrap gap-2 animate-fadeIn w-full overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#9E0D0D] min-w-0">
+            <Search className="w-4 h-4 text-[#E05A1B] shrink-0" />
+            <span className="truncate">Buscando: "{searchQuery.trim()}"</span>
+            <span className="bg-[#9E0D0D] text-white px-2 py-0.5 rounded-full text-[10px] shrink-0">
+              {filteredProducts.length}
             </span>
           </div>
           <button
             onClick={() => setSearchQuery('')}
-            className="text-xs font-black text-slate-600 hover:text-[#9E0D0D] underline cursor-pointer"
+            className="text-xs font-black text-slate-600 hover:text-[#9E0D0D] underline cursor-pointer shrink-0"
           >
-            Limpiar búsqueda y ver todo
+            Limpiar búsqueda
           </button>
         </div>
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-200">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-200 w-full overflow-hidden">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-[10px] font-black text-[#9E0D0D] uppercase tracking-widest mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-[#E05A1B]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#E05A1B] shrink-0" />
             <span>Catálogo Tienda en Línea</span>
           </div>
-          <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">
+          <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase truncate">
             {categoryTitle}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -132,9 +132,9 @@ export const ProductGrid: React.FC = () => {
         </div>
 
         {/* Filter Controls & Sort */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Max Price Range */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs">
             <span className="text-slate-500 font-bold uppercase text-[10px]">Hasta:</span>
             <input
               type="range"
@@ -143,18 +143,18 @@ export const ProductGrid: React.FC = () => {
               step={50}
               value={priceFilter}
               onChange={e => setPriceFilter(Number(e.target.value))}
-              className="w-20 sm:w-24 accent-[#9E0D0D]"
+              className="w-16 sm:w-24 accent-[#9E0D0D]"
             />
             <span className="font-extrabold text-[#9E0D0D] font-mono text-xs">${priceFilter}</span>
           </div>
 
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value as any)}
-              className="bg-transparent font-bold text-slate-800 outline-hidden cursor-pointer"
+              className="bg-transparent font-bold text-slate-800 outline-hidden cursor-pointer text-xs"
             >
               <option value="destacados">Destacados</option>
               <option value="precio-asc">Menor Precio</option>
@@ -173,7 +173,7 @@ export const ProductGrid: React.FC = () => {
               }}
               className="flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 px-2.5 py-1.5 rounded-xl border border-pink-200 transition-colors uppercase tracking-wider cursor-pointer"
             >
-              <FilterX className="w-3.5 h-3.5" />
+              <FilterX className="w-3.5 h-3.5 shrink-0" />
               <span>Limpiar</span>
             </button>
           )}

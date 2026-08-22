@@ -32,7 +32,7 @@ const MainAppContent: React.FC = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-gray-900 flex flex-col justify-between selection:bg-purple-200 selection:text-purple-900">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 font-sans text-gray-900 flex flex-col justify-between selection:bg-purple-200 selection:text-purple-900">
       {/* Top Role Switcher Bar */}
       <RoleSwitcher />
 
@@ -53,8 +53,8 @@ const MainAppContent: React.FC = () => {
 
       {/* ROLE 1: TIENDA EN LÍNEA (Public Catalog & Storefront) */}
       {activeRole === 'tienda' && (
-        <div className="flex-1 flex flex-col justify-between">
-          <div>
+        <div className="flex-1 w-full max-w-full overflow-x-hidden flex flex-col justify-between">
+          <div className="w-full max-w-full">
             <Header />
 
             {selectedProduct ? (
@@ -94,8 +94,8 @@ const MainAppContent: React.FC = () => {
 
       {/* ROLE 2: PANEL DEL CLIENTE (Customer Account Portal) */}
       {activeRole === 'cliente' && (
-        <div className="flex-1 flex flex-col justify-between">
-          <div>
+        <div className="flex-1 w-full max-w-full overflow-x-hidden flex flex-col justify-between">
+          <div className="w-full max-w-full">
             <Header />
 
             <div className="py-6">
@@ -123,8 +123,8 @@ const MainAppContent: React.FC = () => {
 
       {/* ROLE 3: PANEL DE ADMINISTRACIÓN (Admin Dashboard) */}
       {activeRole === 'admin' && (
-        <div className="flex-1 flex flex-col justify-between bg-slate-100">
-          <div>
+        <div className="flex-1 w-full max-w-full overflow-x-hidden flex flex-col justify-between bg-slate-100">
+          <div className="w-full max-w-full">
             {isAdminLoggedIn ? (
               <AdminLayout />
             ) : (

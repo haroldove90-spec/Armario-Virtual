@@ -125,15 +125,15 @@ export const Header: React.FC = () => {
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-[100] shadow-xs font-sans">
+    <header className="w-full max-w-full bg-white border-b border-slate-200 sticky top-0 z-[100] shadow-xs font-sans overflow-x-clip">
       {/* 1. Top Announcement Bar */}
       {storeDesign.announcementBarActive && (
-        <div className="bg-[#9E0D0D] text-white text-[10px] py-1.5 px-6 flex items-center justify-between uppercase tracking-wider font-medium">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-            <span>{storeDesign.announcementBarText}</span>
+        <div className="w-full bg-[#9E0D0D] text-white text-[10px] py-1.5 px-3 sm:px-6 flex items-center justify-between uppercase tracking-wider font-medium overflow-hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 truncate">
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse shrink-0" />
+            <span className="truncate">{storeDesign.announcementBarText}</span>
           </div>
-          <div className="hidden sm:flex items-center gap-4 text-[10px]">
+          <div className="hidden sm:flex items-center gap-4 text-[10px] shrink-0">
             <span className="hover:underline cursor-pointer">Atención a Clientes</span>
             <span className="hover:underline cursor-pointer">Localizar Tiendas</span>
             <span className="bg-[#E05A1B] text-white px-2 py-0.5 rounded font-bold uppercase">Envío Gratis &gt; $499</span>
@@ -142,13 +142,13 @@ export const Header: React.FC = () => {
       )}
 
       {/* 2. Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-        <div className="flex items-center justify-between gap-4">
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-2.5 sm:py-3.5">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
           
           {/* Mobile hamburger menu toggle */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 text-slate-700 hover:text-[#9E0D0D] focus:outline-hidden flex items-center gap-1"
+            className="lg:hidden p-1.5 sm:p-2 text-slate-700 hover:text-[#9E0D0D] focus:outline-hidden flex items-center shrink-0 cursor-pointer"
             title="Abrir menú de navegación"
           >
             <Menu className="w-6 h-6 text-[#9E0D0D]" />
@@ -160,18 +160,18 @@ export const Header: React.FC = () => {
               setActiveRole('tienda');
               setSelectedCategory('todas');
             }}
-            className="cursor-pointer flex items-center gap-2.5 group shrink-0"
+            className="cursor-pointer flex items-center gap-1.5 sm:gap-2.5 group shrink min-w-0"
           >
             <img
               src={storeDesign.logoUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg'}
               alt={storeDesign.storeName || 'Armario Virtual'}
-              className="h-10 sm:h-12 w-auto object-contain rounded-md group-hover:scale-105 transition-transform"
+              className="h-8 sm:h-12 w-auto object-contain rounded-md group-hover:scale-105 transition-transform shrink-0"
             />
-            <div className="flex flex-col justify-center">
-              <span className="text-base sm:text-2xl font-black text-[#9E0D0D] tracking-tight uppercase leading-none font-sans">
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="text-sm sm:text-2xl font-black text-[#9E0D0D] tracking-tight uppercase leading-none font-sans truncate">
                 {storeDesign.logoText || 'ARMARIO VIRTUAL'}
               </span>
-              <span className="text-[9px] sm:text-[11px] font-black text-[#E05A1B] tracking-wider uppercase leading-none mt-1 font-sans">
+              <span className="text-[8px] sm:text-[11px] font-black text-[#E05A1B] tracking-wider uppercase leading-none mt-0.5 sm:mt-1 font-sans truncate">
                 {storeDesign.logoSubtext || 'TU ESTILO LIBRE'}
               </span>
             </div>
@@ -281,7 +281,7 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-3 sm:gap-5 text-xs font-medium">
+          <div className="flex items-center gap-1.5 sm:gap-3 text-xs font-medium shrink-0">
             {/* Preferred Store Selector */}
             <div className="hidden xl:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl border border-slate-200 cursor-pointer">
               <MapPin className="w-4 h-4 text-[#9E0D0D]" />
@@ -297,7 +297,7 @@ export const Header: React.FC = () => {
                 setActiveRole('cliente');
                 setCustomerTab('favoritos');
               }}
-              className="relative p-2 text-slate-700 hover:text-[#9E0D0D] rounded-full hover:bg-red-50 transition-colors flex flex-col items-center"
+              className="relative p-1.5 sm:p-2 text-slate-700 hover:text-[#9E0D0D] rounded-full hover:bg-red-50 transition-colors flex flex-col items-center cursor-pointer shrink-0"
               title="Mis Favoritos"
             >
               <Heart className="w-5 h-5 text-[#9E0D0D]" />
@@ -310,15 +310,15 @@ export const Header: React.FC = () => {
             </button>
 
             {/* Account / User Profile */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="relative flex items-center gap-2 p-1.5 text-slate-700 hover:text-[#9E0D0D] rounded-xl hover:bg-red-50 transition-colors cursor-pointer"
+                className="relative flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 text-slate-700 hover:text-[#9E0D0D] rounded-xl hover:bg-red-50 transition-colors cursor-pointer"
               >
                 {customer.avatarUrl ? (
-                  <img src={customer.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-red-200" />
+                  <img src={customer.avatarUrl} alt="Avatar" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-red-200" />
                 ) : (
-                  <div className="w-8 h-8 bg-red-100 text-[#9E0D0D] rounded-full flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-red-100 text-[#9E0D0D] rounded-full flex items-center justify-center font-bold text-xs">
                     <User className="w-4 h-4" />
                   </div>
                 )}
@@ -440,7 +440,8 @@ export const Header: React.FC = () => {
             {/* Cart Button */}
             <button
               onClick={() => setCartOpen(true)}
-              className="flex items-center gap-2 bg-[#9E0D0D] hover:bg-red-900 text-white px-4 py-2 rounded-full shadow-xs transition-all active:scale-95"
+              className="flex items-center gap-1.5 bg-[#9E0D0D] hover:bg-red-900 text-white p-2 sm:px-4 sm:py-2 rounded-full shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+              title="Ver Bolsa de Compras"
             >
               <div className="relative">
                 <ShoppingBasket className="w-4 h-4" />
@@ -456,16 +457,24 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Search Bar on Mobile */}
-        <div className="mt-3 md:hidden">
+        <div className="mt-2.5 md:hidden w-full">
           <div className="relative w-full flex items-center">
             <input
               type="text"
               placeholder="Buscar ropa, vestidos, calzado..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-100 text-xs text-slate-900 rounded-full py-2.5 pl-9 pr-8 border border-slate-200"
+              className="w-full bg-slate-100 text-xs text-slate-900 rounded-full py-2 pl-9 pr-8 border border-slate-200 focus:bg-white focus:border-[#9E0D0D] outline-hidden transition-all"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3" />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </div>

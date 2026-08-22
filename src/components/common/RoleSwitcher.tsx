@@ -31,14 +31,14 @@ export const RoleSwitcher: React.FC = () => {
   }, [orders, customer]);
 
   return (
-    <div className="bg-slate-900 text-white text-xs py-2 px-3 sm:px-4 shadow-md sticky top-0 z-50 border-b border-slate-800 font-sans">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+    <div className="w-full max-w-full bg-slate-900 text-white text-xs py-1.5 sm:py-2 px-2 sm:px-4 shadow-md sticky top-0 z-50 border-b border-slate-800 font-sans overflow-x-clip">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-2.5 overflow-hidden">
         
         {/* Left: Open Sidebar Button + Active Mode Badge */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex items-center gap-1.5 bg-[#9E0D0D] hover:bg-red-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition-all shadow-xs border border-red-400/30 active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 bg-[#9E0D0D] hover:bg-red-800 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-bold transition-all shadow-xs border border-red-400/30 active:scale-95 cursor-pointer"
             title="Abrir Menú Lateral de Navegación"
           >
             <Menu className="w-4 h-4 text-[#E05A1B]" />
@@ -55,7 +55,7 @@ export const RoleSwitcher: React.FC = () => {
 
         {/* Center: Admin Module Quick Tabs if Admin is active & logged in */}
         {activeRole === 'admin' && isAdminLoggedIn && (
-          <div className="hidden xl:flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+          <div className="hidden xl:flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 shrink-0">
             {[
               { id: 'metricas', label: '📊 Métricas' },
               { id: 'productos', label: '📦 Productos' },
@@ -87,27 +87,29 @@ export const RoleSwitcher: React.FC = () => {
         )}
 
         {/* Right: 3 Role Selector Buttons + Session Indicator & Log Out */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Active Session Logout Buttons */}
           {activeRole === 'admin' && isAdminLoggedIn && (
             <button
               onClick={() => adminLogout()}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-red-900/80 hover:bg-red-800 text-red-100 border border-red-500/50 rounded-md font-bold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-red-900/80 hover:bg-red-800 text-red-100 border border-red-500/50 rounded-md font-bold text-[10px] sm:text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
               title="Cerrar sesión de administrador"
             >
               <LogOut className="w-3.5 h-3.5 text-red-300" />
-              <span>Cerrar Sesión Admin</span>
+              <span className="hidden sm:inline">Cerrar Sesión Admin</span>
+              <span className="sm:hidden">Salir</span>
             </button>
           )}
 
           {activeRole === 'cliente' && isCustomerLoggedIn && (
             <button
               onClick={() => customerLogout()}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-pink-950/80 hover:bg-pink-900 text-pink-100 border border-pink-500/50 rounded-md font-bold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-pink-950/80 hover:bg-pink-900 text-pink-100 border border-pink-500/50 rounded-md font-bold text-[10px] sm:text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
               title="Cerrar sesión de cliente"
             >
               <LogOut className="w-3.5 h-3.5 text-pink-300" />
-              <span>Cerrar Sesión ({customer.name.split(' ')[0]})</span>
+              <span className="hidden sm:inline">Cerrar Sesión ({customer.name.split(' ')[0]})</span>
+              <span className="sm:hidden">Salir</span>
             </button>
           )}
 
@@ -140,27 +142,27 @@ export const RoleSwitcher: React.FC = () => {
             {/* Tienda en Línea Button */}
             <button
               onClick={() => setActiveRole('tienda')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition-all font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'tienda'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <ShoppingBag className="w-3.5 h-3.5 text-[#E05A1B]" />
-              <span className="hidden md:inline">Tienda</span>
+              <span className="hidden sm:inline">Tienda</span>
             </button>
 
             {/* Cliente Button */}
             <button
               onClick={() => setActiveRole('cliente')}
-              className={`relative flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
+              className={`relative flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition-all font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'cliente'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <UserCheck className="w-3.5 h-3.5 text-red-400" />
-              <span className="hidden md:inline">Cliente</span>
+              <span className="hidden sm:inline">Cliente</span>
               {customerActiveOrdersCount > 0 && (
                 <span className="bg-[#E05A1B] text-white text-[9px] font-black rounded-full px-1.5 py-0.2 ml-0.5 animate-pulse">
                   {customerActiveOrdersCount}
@@ -171,14 +173,14 @@ export const RoleSwitcher: React.FC = () => {
             {/* Admin Button */}
             <button
               onClick={() => setActiveRole('admin')}
-              className={`relative flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
+              className={`relative flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition-all font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'admin'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="hidden md:inline">Admin</span>
+              <span className="hidden sm:inline">Admin</span>
               {unreadSalesCount > 0 && (
                 <span className="bg-red-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 ml-0.5 animate-bounce shadow-sm">
                   {unreadSalesCount}
@@ -190,7 +192,7 @@ export const RoleSwitcher: React.FC = () => {
           <button
             onClick={resetToDefaultData}
             title="Restablecer datos predeterminados"
-            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-all cursor-pointer"
+            className="p-1 sm:p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-all cursor-pointer shrink-0"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
