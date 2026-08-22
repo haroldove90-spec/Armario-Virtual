@@ -112,6 +112,7 @@ export interface ShippingAddress {
 export interface Order {
   id: string;
   orderNumber: string;
+  customerId?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -146,6 +147,7 @@ export interface Customer {
   wishlistProductIds: string[];
   registeredAt: string;
   status?: 'activo' | 'suspendido' | 'inactivo';
+  role?: 'cliente' | 'admin' | 'gerente' | 'empleado' | 'soporte' | string;
   totalOrders?: number;
   totalSpent?: number;
 }

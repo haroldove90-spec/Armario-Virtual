@@ -38,8 +38,20 @@ export const Header: React.FC = () => {
     isCustomerLoggedIn,
     isAdminLoggedIn,
     customerLogout,
-    adminLogout
+    adminLogout,
+    unreadSalesCount,
+    orders
   } = useStore();
+
+  const customerActiveOrdersCount = React.useMemo(() => {
+    if (!customer?.email && !customer?.id) return 0;
+    return orders.filter(
+      o =>
+        ((customer.id && o.customerId === customer.id) ||
+          (customer.email && o.customerEmail?.toLowerCase() === customer.email.toLowerCase())) &&
+        (o.status === 'en_preparacion' || o.status === 'enviado' || o.status === 'pendiente')
+    ).length;
+  }, [orders, customer]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [storeLocation] = useState('Perisur, CDMX');
@@ -301,7 +313,7 @@ export const Header: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2 p-1.5 text-slate-700 hover:text-[#9E0D0D] rounded-xl hover:bg-red-50 transition-colors"
+                className="relative flex items-center gap-2 p-1.5 text-slate-700 hover:text-[#9E0D0D] rounded-xl hover:bg-red-50 transition-colors cursor-pointer"
               >
                 {customer.avatarUrl ? (
                   <img src={customer.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-red-200" />
@@ -309,6 +321,11 @@ export const Header: React.FC = () => {
                   <div className="w-8 h-8 bg-red-100 text-[#9E0D0D] rounded-full flex items-center justify-center font-bold text-xs">
                     <User className="w-4 h-4" />
                   </div>
+                )}
+                {(unreadSalesCount > 0 || customerActiveOrdersCount > 0) && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center animate-bounce shadow-xs">
+                    {unreadSalesCount > 0 ? unreadSalesCount : customerActiveOrdersCount}
+                  </span>
                 )}
                 <div className="hidden lg:flex flex-col text-left">
                   <span className="text-[10px] text-slate-400 leading-none">Mi Cuenta</span>
@@ -334,10 +351,17 @@ export const Header: React.FC = () => {
                       setCustomerTab('compras');
                       setUserDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center gap-2 font-medium cursor-pointer"
+                    className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-red-50 hover:text-[#9E0D0D] flex items-center justify-between font-medium cursor-pointer"
                   >
-                    <ShoppingBag className="w-4 h-4 text-[#9E0D0D]" />
-                    Mis Compras / Pedidos
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-[#9E0D0D]" />
+                      <span>Mis Compras / Pedidos</span>
+                    </div>
+                    {customerActiveOrdersCount > 0 && (
+                      <span className="bg-[#E05A1B] text-white text-[9px] font-black rounded-full px-1.5 py-0.2 animate-pulse">
+                        {customerActiveOrdersCount}
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -370,10 +394,17 @@ export const Header: React.FC = () => {
                         setActiveRole('admin');
                         setUserDropdownOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-[#9E0D0D] hover:bg-red-50 flex items-center gap-2 font-bold cursor-pointer"
+                      className="w-full text-left px-4 py-2 text-[#9E0D0D] hover:bg-red-50 flex items-center justify-between font-bold cursor-pointer"
                     >
-                      <ShieldCheck className="w-4 h-4 text-[#9E0D0D]" />
-                      Panel de Administración
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-[#9E0D0D]" />
+                        <span>Panel de Administración</span>
+                      </div>
+                      {unreadSalesCount > 0 && (
+                        <span className="bg-red-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 animate-bounce shadow-sm">
+                          {unreadSalesCount}
+                        </span>
+                      )}
                     </button>
 
                     {isCustomerLoggedIn && (

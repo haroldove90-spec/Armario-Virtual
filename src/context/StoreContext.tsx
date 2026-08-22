@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Product,
   Order,
@@ -32,6 +32,7 @@ import {
 } from '../data/initialData';
 import { getProductEffectivePrice, getProductColorImage } from '../utils/cartHelpers';
 import { supabase } from '../lib/supabase';
+import { playNotificationSound } from '../utils/audioNotification';
 
 interface StoreContextType {
   // Role & Navigation Persistence
@@ -97,6 +98,7 @@ interface StoreContextType {
   addCustomerAccount: (customerData: Omit<Customer, 'id'>) => void;
   toggleCustomerStatus: (id: string) => void;
   deleteCustomerAccount: (id: string) => void;
+  updateCustomerRole: (customerId: string, newRole: string) => Promise<{ success: boolean; error?: string }>;
   syncCustomerToSupabase: (customer: Customer) => Promise<{ success: boolean; error?: string }>;
 
   // Store Data
@@ -129,6 +131,7 @@ interface StoreContextType {
 
   // Admin Product Operations
   addProduct: (product: Omit<Product, 'id' | 'dateAdded'>) => void;
+  duplicateProduct: (id: string) => Promise<Product | null>;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   clearSampleProducts: () => Promise<void>;
@@ -151,6 +154,18 @@ interface StoreContextType {
   addPromoFlyer: (flyer: Omit<StoreDesignConfig['promotionalFlyers'][0], 'id'>) => void;
   updatePromoFlyer: (id: string, flyer: Partial<StoreDesignConfig['promotionalFlyers'][0]>) => void;
   deletePromoFlyer: (id: string) => void;
+
+  // Live Notifications, Audio & Popups
+  newSalePopupOrder: Order | null;
+  dismissNewSalePopup: () => void;
+  customerStatusPopup: { order: Order; oldStatus: string; newStatus: string } | null;
+  dismissCustomerStatusPopup: () => void;
+  triggerTestNewSaleNotification: () => void;
+  triggerTestCustomerStatusNotification: (status?: OrderStatus) => void;
+  pendingOrdersCount: number;
+  customerActiveOrdersCount: number;
+  unreadSalesCount: number;
+  clearUnreadSalesCount: () => void;
 
   // Toast / Feedback
   toastMessage: string | null;
@@ -359,40 +374,58 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 2. Products
     try {
       const { data: dbProducts, error } = await supabase.from('products').select('*');
-      if (!error && dbProducts && dbProducts.length > 0) {
-        const mapped: Product[] = dbProducts.map(p => ({
-          id: p.id,
-          name: p.name,
-          productType: p.product_type || 'sencillo',
-          category: p.category,
-          subcategory: p.subcategory || 'General',
-          price: Number(p.price),
-          originalPrice: p.original_price ? Number(p.original_price) : undefined,
-          isOffer: Boolean(p.is_offer),
-          offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
-          discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
-          stock: Number(p.stock),
-          sku: p.sku || '',
-          images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
-          sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
-          colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
-          colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
-          variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
-          sizeGuide: typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined),
-          sizeGuideTemplateId: p.size_guide_template_id || undefined,
-          description: p.description || '',
-          tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
-          isFeatured: Boolean(p.is_featured),
-          isPublished: p.is_published !== false,
-          youtubeUrl: p.youtube_url || '',
-          dateAdded: p.date_added
-        }));
-        // Merge Supabase products with local products so locally created ones are never lost
-        setProducts(prev => {
-          const dbIds = new Set(mapped.map(m => m.id));
-          const localOnly = prev.filter(p => !dbIds.has(p.id));
-          return [...mapped, ...localOnly];
-        });
+      if (!error && dbProducts) {
+        if (dbProducts.length > 0) {
+          const mapped: Product[] = dbProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            productType: p.product_type || 'sencillo',
+            category: p.category,
+            subcategory: p.subcategory || 'General',
+            price: Number(p.price),
+            originalPrice: p.original_price ? Number(p.original_price) : undefined,
+            isOffer: Boolean(p.is_offer),
+            offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
+            discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
+            stock: Number(p.stock),
+            sku: p.sku || '',
+            images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
+            sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
+            colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
+            colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
+            variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
+            sizeGuide: typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined),
+            sizeGuideTemplateId: p.size_guide_template_id || undefined,
+            description: p.description || '',
+            tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
+            isFeatured: Boolean(p.is_featured),
+            isPublished: p.is_published !== false,
+            youtubeUrl: p.youtube_url || '',
+            dateAdded: p.date_added
+          }));
+          // Merge Supabase products with local products so locally created ones are never lost
+          setProducts(prev => {
+            const dbIds = new Set(mapped.map(m => m.id));
+            const localOnly = prev.filter(p => !dbIds.has(p.id));
+            // Also sync localOnly products to Supabase in the background
+            localOnly.forEach(lp => syncProductToSupabase(lp));
+            return [...mapped, ...localOnly];
+          });
+        } else {
+          // Table exists but is empty: automatically push any local products to Supabase
+          const savedProductsRaw = localStorage.getItem('tienda_products_v3');
+          if (savedProductsRaw) {
+            try {
+              const localList: Product[] = JSON.parse(savedProductsRaw);
+              if (Array.isArray(localList) && localList.length > 0) {
+                console.log('Pushing local products to empty Supabase products table...', localList.length);
+                localList.forEach(lp => syncProductToSupabase(lp));
+              }
+            } catch (e) {
+              console.warn('Error reading local products for auto-sync', e);
+            }
+          }
+        }
       }
     } catch (e) {
       console.log('Supabase products read skipped, using local fallback');
@@ -442,6 +475,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           totalSpent: Number(c.total_spent || 0),
           favoriteStore: c.favorite_store || '',
           status: (c.status === 'activo' || c.status === 'suspendido' || c.status === 'inactivo') ? c.status : 'activo',
+          role: c.role || 'cliente',
           addresses: typeof c.addresses === 'string' ? JSON.parse(c.addresses) : (c.addresses || []),
           wishlistProductIds: typeof c.wishlist_product_ids === 'string' ? JSON.parse(c.wishlist_product_ids) : (c.wishlist_product_ids || []),
           avatarUrl: c.avatar_url || ''
@@ -554,7 +588,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
-    loadAllFromSupabase();
+    loadAllFromSupabase().then(() => {
+      setTimeout(() => {
+        isInitialLoadCompleted.current = true;
+      }, 800);
+    });
 
     // Supabase Realtime Channel Subscription
     const channel = supabase
@@ -589,21 +627,48 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               if (prev.some(x => x.id === mappedOrder.id)) return prev;
               return [mappedOrder, ...prev];
             });
+
+            if (isInitialLoadCompleted.current) {
+              playNotificationSound();
+              setNewSalePopupOrder(mappedOrder);
+              setUnreadSalesCount(prev => prev + 1);
+            }
           } else if (payload.eventType === 'UPDATE') {
             const o = payload.new as any;
-            setOrders(prev =>
-              prev.map(x =>
-                x.id === o.id
-                  ? {
-                      ...x,
-                      status: o.status,
-                      shippingProvider: o.shipping_provider || x.shippingProvider,
-                      trackingNumber: o.tracking_number || x.trackingNumber,
-                      statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || x.statusHistory)
-                    }
-                  : x
-              )
-            );
+            const existingOrder = ordersRef.current.find(x => x.id === o.id);
+            const oldStatus = existingOrder ? existingOrder.status : '';
+
+            const mappedUpdated: Order = {
+              id: o.id,
+              orderNumber: o.order_number || existingOrder?.orderNumber || '',
+              customerName: o.customer_name || existingOrder?.customerName || '',
+              customerEmail: o.customer_email || existingOrder?.customerEmail || '',
+              customerPhone: o.customer_phone || existingOrder?.customerPhone || '',
+              shippingAddress: typeof o.shipping_address === 'string' ? JSON.parse(o.shipping_address) : (o.shipping_address || existingOrder?.shippingAddress || {}),
+              items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || existingOrder?.items || []),
+              subtotal: Number(o.subtotal ?? existingOrder?.subtotal ?? 0),
+              shippingCost: Number(o.shipping_cost ?? existingOrder?.shippingCost ?? 0),
+              discountAmount: Number(o.discount_amount ?? existingOrder?.discountAmount ?? 0),
+              total: Number(o.total ?? existingOrder?.total ?? 0),
+              status: o.status,
+              paymentMethod: o.payment_method || existingOrder?.paymentMethod || '',
+              shippingProvider: o.shipping_provider || existingOrder?.shippingProvider || '',
+              trackingNumber: o.tracking_number || existingOrder?.trackingNumber || '',
+              createdAt: o.created_at || existingOrder?.createdAt || '',
+              estimatedDelivery: o.estimated_delivery || existingOrder?.estimatedDelivery || '',
+              statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || existingOrder?.statusHistory || [])
+            };
+
+            setOrders(prev => prev.map(x => (x.id === o.id ? mappedUpdated : x)));
+
+            if (isInitialLoadCompleted.current && oldStatus && oldStatus !== o.status) {
+              playNotificationSound();
+              setCustomerStatusPopup({
+                order: mappedUpdated,
+                oldStatus,
+                newStatus: o.status
+              });
+            }
           }
         }
       )
@@ -723,7 +788,71 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       )
       .subscribe();
 
+    // Background live poller (every 4s) to ensure zero-refresh detection across tabs & devices
+    const pollTimer = setInterval(async () => {
+      if (!isInitialLoadCompleted.current) return;
+      try {
+        const { data: dbOrders, error } = await supabase.from('orders').select('*');
+        if (!error && Array.isArray(dbOrders) && dbOrders.length > 0) {
+          const currentKnownIds = new Set(ordersRef.current.map(o => o.id));
+          const currentOrdersMap = new Map(ordersRef.current.map(o => [o.id, o]));
+
+          let foundNewOrder: Order | null = null;
+          const mappedOrdersList: Order[] = [];
+
+          for (const o of dbOrders) {
+            const mappedOrder: Order = {
+              id: o.id,
+              orderNumber: o.order_number,
+              customerName: o.customer_name || '',
+              customerEmail: o.customer_email || '',
+              customerPhone: o.customer_phone || '',
+              shippingAddress: typeof o.shipping_address === 'string' ? JSON.parse(o.shipping_address) : (o.shipping_address || {}),
+              items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+              subtotal: Number(o.subtotal || 0),
+              shippingCost: Number(o.shipping_cost || 0),
+              discountAmount: Number(o.discount_amount || 0),
+              total: Number(o.total || 0),
+              status: o.status,
+              paymentMethod: o.payment_method || '',
+              shippingProvider: o.shipping_provider || '',
+              trackingNumber: o.tracking_number || '',
+              createdAt: o.created_at,
+              estimatedDelivery: o.estimated_delivery || '',
+              statusHistory: typeof o.status_history === 'string' ? JSON.parse(o.status_history) : (o.status_history || [])
+            };
+
+            if (!currentKnownIds.has(o.id)) {
+              foundNewOrder = mappedOrder;
+            } else {
+              const prev = currentOrdersMap.get(o.id);
+              if (prev && prev.status !== o.status) {
+                // Status changed in DB!
+                playNotificationSound();
+                setCustomerStatusPopup({
+                  order: mappedOrder,
+                  oldStatus: prev.status,
+                  newStatus: o.status
+                });
+              }
+            }
+            mappedOrdersList.push(mappedOrder);
+          }
+
+          if (foundNewOrder) {
+            playNotificationSound();
+            setNewSalePopupOrder(foundNewOrder);
+            setUnreadSalesCount(prev => prev + 1);
+            setOrders(mappedOrdersList);
+          }
+        }
+      } catch (e) {
+        // Silent poll error
+      }
+    }, 4000);
+
     return () => {
+      clearInterval(pollTimer);
       supabase.removeChannel(channel);
     };
   }, [loadAllFromSupabase]);
@@ -983,6 +1112,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         total_spent: Number(c.totalSpent || 0),
         favorite_store: c.favoriteStore || 'Armario Virtual',
         status: c.status || 'activo',
+        role: c.role || 'cliente',
         addresses: c.addresses || [],
         wishlist_product_ids: c.wishlistProductIds || [],
         avatar_url: c.avatarUrl || ''
@@ -1053,32 +1183,52 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {}
   };
 
-  const syncOrderToSupabase = async (ord: Order) => {
+  const syncOrderToSupabase = async (ord: Order): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { error } = await supabase.from('orders').upsert({
+      // Ensure shipping_address and items are properly formatted for Supabase JSON/JSONB
+      const sanitizedAddress = ord.shippingAddress || {
+        recipientName: ord.customerName || 'Cliente',
+        street: 'Av. Insurgentes Sur',
+        exteriorNumber: '1602',
+        neighborhood: 'Crédito Constructor',
+        city: 'CDMX',
+        state: 'CDMX',
+        postalCode: '03940',
+        phone: ord.customerPhone || '5500000000'
+      };
+
+      const payload = {
         id: ord.id,
         order_number: ord.orderNumber,
-        customer_name: ord.customerName || '',
-        customer_email: ord.customerEmail || '',
-        customer_phone: ord.customerPhone || '',
-        shipping_address: ord.shippingAddress || {},
+        customer_name: ord.customerName || 'Cliente',
+        customer_email: ord.customerEmail || 'cliente@armariovirtual.com',
+        customer_phone: ord.customerPhone || '5500000000',
+        shipping_address: sanitizedAddress,
         items: ord.items || [],
         subtotal: Number(ord.subtotal || 0),
         shipping_cost: Number(ord.shippingCost || 0),
         discount_amount: Number(ord.discountAmount || 0),
         total: Number(ord.total || 0),
         status: ord.status,
-        payment_method: ord.paymentMethod || '',
-        shipping_provider: ord.shippingProvider || '',
+        payment_method: ord.paymentMethod || 'Modo Compra Ficticia (Sandbox)',
+        shipping_provider: ord.shippingProvider || 'Envío Express',
         tracking_number: ord.trackingNumber || '',
         created_at: ord.createdAt || new Date().toISOString(),
-        estimated_delivery: ord.estimatedDelivery || '',
+        estimated_delivery: ord.estimatedDelivery || '3 a 5 días hábiles',
         status_history: ord.statusHistory || []
-      });
+      };
+
+      const { error } = await supabase.from('orders').upsert(payload);
       if (error) {
         console.warn('Supabase order sync error:', error.message);
+        return { success: false, error: error.message };
       }
-    } catch (e) {}
+      console.log('✅ Pedido guardado y sincronizado con éxito en Supabase:', ord.orderNumber);
+      return { success: true };
+    } catch (e: any) {
+      console.warn('Supabase order sync exception:', e);
+      return { success: false, error: e.message || String(e) };
+    }
   };
 
   const syncShippingConfigToSupabase = async (cfg: ShippingConfig) => {
@@ -1253,6 +1403,73 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Usuario cliente eliminado');
   };
 
+  const updateCustomerRole = async (customerId: string, newRole: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      let targetName = 'Usuario';
+      let targetCust: Customer | undefined;
+      setCustomersList(prev =>
+        prev.map(c => {
+          if (c.id === customerId) {
+            targetName = c.name;
+            targetCust = { ...c, role: newRole };
+            return targetCust;
+          }
+          return c;
+        })
+      );
+
+      // Si es el cliente logueado actualmente, actualizar su sesión
+      if (customer.id === customerId) {
+        setCustomer(prev => {
+          const next = { ...prev, role: newRole };
+          try {
+            localStorage.setItem(LS_CUSTOMER, JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
+      }
+
+      // Sincronizar actualización en Supabase
+      if (targetCust) {
+        await syncCustomerToSupabase(targetCust);
+      } else {
+        await supabase.from('customers').update({ role: newRole }).eq('id', customerId);
+      }
+
+      // Si se promueve a rol administrativo / empleado, sincronizar con equipo de empleados
+      if (targetCust && (newRole === 'admin' || newRole === 'gerente' || newRole === 'empleado' || newRole === 'soporte')) {
+        const existingEmp = employees.find(e => e.email.toLowerCase() === targetCust!.email.toLowerCase());
+        if (!existingEmp) {
+          const roleTitleMap: Record<string, string> = {
+            admin: 'Administrador General',
+            gerente: 'Gerente de Tienda',
+            empleado: 'Ventas / Mostrador',
+            soporte: 'Atención al Cliente'
+          };
+          const newEmp: Employee = {
+            id: `emp-${Date.now()}`,
+            name: targetCust.name,
+            email: targetCust.email,
+            username: targetCust.email.split('@')[0],
+            role: roleTitleMap[newRole] || 'Colaborador',
+            status: 'activo',
+            permissions: newRole === 'admin' ? ['products', 'orders', 'customers', 'design', 'settings', 'metrics', 'shipping'] : ['products', 'orders', 'customers'],
+            createdAt: new Date().toISOString().split('T')[0],
+            avatarUrl: targetCust.avatarUrl
+          };
+          addEmployee(newEmp);
+        }
+      }
+
+      showToast(`👑 Rol de "${targetName}" actualizado a "${newRole.toUpperCase()}" en Supabase`);
+      return { success: true };
+    } catch (err: any) {
+      console.error('Error al actualizar rol de usuario:', err);
+      showToast(`⚠️ Error al actualizar rol: ${err.message || err}`);
+      return { success: false, error: err.message || String(err) };
+    }
+  };
+
   // Main state with localStorage lazy init
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem(LS_PRODUCTS);
@@ -1305,6 +1522,145 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Live Notifications, Audio & Realtime state
+  const [newSalePopupOrder, setNewSalePopupOrder] = useState<Order | null>(null);
+  const [customerStatusPopup, setCustomerStatusPopup] = useState<{ order: Order; oldStatus: string; newStatus: string } | null>(null);
+  const [unreadSalesCount, setUnreadSalesCount] = useState<number>(0);
+  const isInitialLoadCompleted = useRef<boolean>(false);
+  const ordersRef = useRef<Order[]>(orders);
+  const customerRef = useRef<Customer>(customer);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  useEffect(() => {
+    customerRef.current = customer;
+  }, [customer]);
+
+  const dismissNewSalePopup = useCallback(() => {
+    setNewSalePopupOrder(null);
+  }, []);
+
+  const dismissCustomerStatusPopup = useCallback(() => {
+    setCustomerStatusPopup(null);
+  }, []);
+
+  const clearUnreadSalesCount = useCallback(() => {
+    setUnreadSalesCount(0);
+  }, []);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  }, []);
+
+  // Pending and active orders badge counters
+  const pendingOrdersCount = orders.filter(o => o.status === 'pendiente' || o.status === 'en_preparacion').length;
+  const customerActiveOrdersCount = orders.filter(
+    o => o.customerEmail?.toLowerCase() === customer.email?.toLowerCase() && o.status !== 'entregado' && o.status !== 'cancelado'
+  ).length;
+
+  // Test triggers for Admin & Customer notifications
+  const triggerTestNewSaleNotification = useCallback(() => {
+    const demoOrder: Order = ordersRef.current[0] || {
+      id: `ord-test-${Date.now()}`,
+      orderNumber: `SUB-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: 'Cynthia Roque De Lucio',
+      customerEmail: 'cynthia90@hotmail.com',
+      customerPhone: '5624222449',
+      shippingAddress: {
+        id: 'addr-demo',
+        recipientName: 'Cynthia Roque De Lucio',
+        street: 'Av. Insurgentes Sur',
+        exteriorNumber: '1602',
+        interiorNumber: 'Piso 4',
+        neighborhood: 'Crédito Constructor',
+        city: 'Benito Juárez',
+        state: 'CDMX',
+        postalCode: '03940',
+        phone: '5624222449',
+        isDefault: true
+      },
+      items: [
+        {
+          productId: 'prod-demo-1',
+          productName: 'Vestido Midi Floral Primavera',
+          productImage: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=300&auto=format&fit=crop&q=60',
+          price: 649,
+          quantity: 1,
+          size: 'M',
+          color: 'Floral'
+        }
+      ],
+      subtotal: 649,
+      shippingCost: 79,
+      discountAmount: 0,
+      total: 728,
+      status: 'en_preparacion',
+      paymentMethod: 'Modo Compra Ficticia (Sandbox)',
+      shippingProvider: 'SubuEntrega Exprés',
+      trackingNumber: 'SE-789012-MX',
+      createdAt: new Date().toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }),
+      estimatedDelivery: '3 a 5 días hábiles',
+      statusHistory: [
+        {
+          status: 'en_preparacion',
+          timestamp: new Date().toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }),
+          note: 'Venta de prueba creada para verificar alertas y sonido'
+        }
+      ]
+    };
+    playNotificationSound();
+    setNewSalePopupOrder(demoOrder);
+    setUnreadSalesCount(prev => prev + 1);
+    showToast('🔔 ¡Sonido y Notificación de Nueva Venta activados!');
+  }, [showToast]);
+
+  const triggerTestCustomerStatusNotification = useCallback((targetStatus: OrderStatus = 'enviado') => {
+    const demoOrder: Order = ordersRef.current[0] || {
+      id: `ord-test-${Date.now()}`,
+      orderNumber: `SUB-2026-9042`,
+      customerName: customerRef.current.name || 'Cynthia Roque De Lucio',
+      customerEmail: customerRef.current.email || 'cynthia90@hotmail.com',
+      customerPhone: '5624222449',
+      shippingAddress: {
+        id: 'addr-demo',
+        recipientName: 'Cynthia Roque De Lucio',
+        street: 'Av. Insurgentes Sur',
+        exteriorNumber: '1602',
+        interiorNumber: 'Piso 4',
+        neighborhood: 'Crédito Constructor',
+        city: 'Benito Juárez',
+        state: 'CDMX',
+        postalCode: '03940',
+        phone: '5624222449',
+        isDefault: true
+      },
+      items: [],
+      subtotal: 649,
+      shippingCost: 0,
+      discountAmount: 0,
+      total: 649,
+      status: targetStatus,
+      paymentMethod: 'Tarjeta de Crédito / Ficticia',
+      shippingProvider: 'SubuEntrega Exprés',
+      trackingNumber: 'SE-893021-MX',
+      createdAt: new Date().toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }),
+      estimatedDelivery: '2 a 3 días hábiles',
+      statusHistory: []
+    };
+    playNotificationSound();
+    setCustomerStatusPopup({
+      order: { ...demoOrder, status: targetStatus, trackingNumber: 'SE-893021-MX', shippingProvider: 'SubuEntrega Exprés' },
+      oldStatus: 'en_preparacion',
+      newStatus: targetStatus
+    });
+    showToast(`🔔 Notificación sonora de Estatus de Pedido (${targetStatus.toUpperCase()}) enviada`);
+  }, [showToast]);
 
   // Safe localStorage Syncing
   useEffect(() => {
@@ -1567,6 +1923,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           total_spent: Number(c.totalSpent || 0),
           favorite_store: c.favoriteStore || '',
           status: c.status || 'activo',
+          role: c.role || 'cliente',
           addresses: c.addresses || [],
           wishlist_product_ids: c.wishlistProductIds || [],
           avatar_url: c.avatarUrl || ''
@@ -1869,13 +2226,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Sesión de cliente cerrada');
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  };
-
   // Cart operations
   const addToCart = (product: Product, size?: string, color?: string, qty: number = 1) => {
     const chosenSize = size || (product.sizes.length > 0 ? product.sizes[0] : 'Única');
@@ -1955,12 +2305,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const orderNum = `SUB-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const randomTracking = `${carrierName.slice(0, 3).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}-MX`;
 
+    const isSandboxPayment = paymentMethod.toLowerCase().includes('ficticia') || 
+                             paymentMethod.toLowerCase().includes('sandbox') || 
+                             paymentMethod.toLowerCase().includes('prueba');
+
+    const initialStatus: OrderStatus = isSandboxPayment ? 'en_preparacion' : 'pendiente';
+
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       orderNumber: orderNum,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
+      customerName: customer.name || address.recipientName || 'Cliente de Prueba',
+      customerEmail: customer.email || 'cliente@armariovirtual.com',
+      customerPhone: customer.phone || address.phone || '5512345678',
       shippingAddress: address,
       items: cart.map(item => ({
         productId: item.product.id,
@@ -1975,7 +2331,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       shippingCost,
       discountAmount: 0,
       total: subtotal + shippingCost,
-      status: 'pendiente',
+      status: initialStatus,
       paymentMethod,
       shippingProvider: carrierName,
       trackingNumber: randomTracking,
@@ -1983,15 +2339,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       estimatedDelivery: '3 a 5 días hábiles',
       statusHistory: [
         {
-          status: 'pendiente',
+          status: initialStatus,
           timestamp: new Date().toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }),
-          note: 'Pedido registrado correctamente en el sistema de Ropa en Línea'
+          note: isSandboxPayment
+            ? 'Pedido de prueba registrado exitosamente en Modo Compra Ficticia (Sandbox) y sincronizado en Supabase'
+            : 'Pedido registrado correctamente en el sistema de Ropa en Línea'
         }
       ]
     };
 
     setOrders(prev => [newOrder, ...prev]);
     syncOrderToSupabase(newOrder);
+
+    // Trigger instant real-time sound and new sale popup
+    playNotificationSound();
+    setNewSalePopupOrder(newOrder);
+    setUnreadSalesCount(prev => prev + 1);
 
     // Update product stock and variant stock
     setProducts(prevProducts => {
@@ -2108,6 +2471,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`✅ Producto "${newProd.name}" registrado en inventario y Supabase`);
   };
 
+  const duplicateProduct = async (id: string): Promise<Product | null> => {
+    const original = products.find(p => p.id === id);
+    if (!original) {
+      showToast('⚠️ No se encontró el producto a duplicar');
+      return null;
+    }
+
+    const timestamp = Date.now();
+    const newSku = original.sku ? `${original.sku}-COPIA` : `SKU-${timestamp.toString().slice(-6)}`;
+    const duplicated: Product = {
+      ...original,
+      id: `prod-${timestamp}`,
+      name: `${original.name} (Copia)`,
+      sku: newSku,
+      dateAdded: new Date().toISOString().split('T')[0],
+      isPublished: false // Creado como borrador para revisión antes de publicar
+    };
+
+    setProducts(prev => [duplicated, ...prev]);
+    await syncProductToSupabase(duplicated);
+    showToast(`📋 Producto duplicado exitosamente: "${duplicated.name}" (Borrador)`);
+    return duplicated;
+  };
+
   const updateProduct = async (id: string, updated: Partial<Product>) => {
     let target: Product | undefined;
     setProducts(prev => {
@@ -2180,9 +2567,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Admin Order Operations
   const updateOrderStatus = (orderId: string, newStatus: OrderStatus, note?: string) => {
+    let updatedOrderRef: Order | null = null;
+    let oldStatusRef: string = '';
+
     setOrders(prev => {
       const next = prev.map(ord => {
         if (ord.id === orderId) {
+          oldStatusRef = ord.status;
           const timestamp = new Date().toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
           const newHistory = [
             ...ord.statusHistory,
@@ -2197,6 +2588,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             status: newStatus,
             statusHistory: newHistory
           };
+          updatedOrderRef = updatedOrd;
           syncOrderToSupabase(updatedOrd);
           return updatedOrd;
         }
@@ -2204,19 +2596,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       return next;
     });
+
+    playNotificationSound();
+    if (updatedOrderRef) {
+      setCustomerStatusPopup({
+        order: updatedOrderRef,
+        oldStatus: oldStatusRef,
+        newStatus
+      });
+    }
     showToast(`Pedido #${orderId} modificado a ${newStatus.toUpperCase()}`);
   };
 
   const assignOrderTracking = (orderId: string, provider: string, trackingNum: string) => {
+    let updatedOrderRef: Order | null = null;
+    let oldStatusRef: string = '';
+
     setOrders(prev => {
       const next = prev.map(ord => {
         if (ord.id === orderId) {
+          oldStatusRef = ord.status;
+          const newStatus: OrderStatus = ord.status === 'pendiente' ? 'enviado' : ord.status;
           const updatedOrd: Order = {
             ...ord,
             shippingProvider: provider,
             trackingNumber: trackingNum,
-            status: ord.status === 'pendiente' ? 'enviado' : ord.status
+            status: newStatus
           };
+          updatedOrderRef = updatedOrd;
           syncOrderToSupabase(updatedOrd);
           return updatedOrd;
         }
@@ -2224,6 +2631,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       return next;
     });
+
+    playNotificationSound();
+    if (updatedOrderRef) {
+      setCustomerStatusPopup({
+        order: updatedOrderRef,
+        oldStatus: oldStatusRef,
+        newStatus: (updatedOrderRef as Order).status
+      });
+    }
     showToast('Guía de rastreo asignada al pedido');
   };
 
@@ -2396,6 +2812,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addCustomerAccount,
         toggleCustomerStatus,
         deleteCustomerAccount,
+        updateCustomerRole,
         syncCustomerToSupabase,
         products,
         orders,
@@ -2415,6 +2832,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addCustomerAddress,
         updateCustomerProfile,
         addProduct,
+        duplicateProduct,
         updateProduct,
         deleteProduct,
         clearSampleProducts,
@@ -2433,6 +2851,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deletePromoFlyer,
         toastMessage,
         showToast,
+        newSalePopupOrder,
+        dismissNewSalePopup,
+        customerStatusPopup,
+        dismissCustomerStatusPopup,
+        unreadSalesCount,
+        clearUnreadSalesCount,
+        pendingOrdersCount,
+        customerActiveOrdersCount,
+        triggerTestNewSaleNotification,
+        triggerTestCustomerStatusNotification,
         seedAllDataToSupabase,
         reloadFromSupabase,
         resetToDefaultData

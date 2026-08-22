@@ -14,6 +14,8 @@ import { ProductDetailPage } from './components/store/ProductDetailPage';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminLoginForm } from './components/auth/AdminLoginForm';
 import { Footer } from './components/common/Footer';
+import { NewSalePopup } from './components/common/NewSalePopup';
+import { CustomerOrderStatusPopup } from './components/common/CustomerOrderStatusPopup';
 import { Sparkles } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -36,6 +38,10 @@ const MainAppContent: React.FC = () => {
 
       {/* Left Navigation Sidebar Drawer (Mobile, Tablet, Desktop) */}
       <SidebarNav />
+
+      {/* Global Real-time Popups */}
+      <NewSalePopup />
+      <CustomerOrderStatusPopup />
 
       {/* Toast Notification Popup */}
       {toastMessage && (

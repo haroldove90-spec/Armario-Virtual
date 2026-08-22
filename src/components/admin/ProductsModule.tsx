@@ -20,13 +20,15 @@ import {
   X,
   Sparkles,
   Database,
-  UploadCloud
+  UploadCloud,
+  Copy
 } from 'lucide-react';
 
 export const ProductsModule: React.FC = () => {
   const {
     products,
     addProduct,
+    duplicateProduct,
     updateProduct,
     deleteProduct,
     clearSampleProducts,
@@ -523,6 +525,19 @@ export const ProductsModule: React.FC = () => {
                       </td>
 
                       <td className="p-4 text-right space-x-1 whitespace-nowrap">
+                        <button
+                          onClick={async () => {
+                            const copy = await duplicateProduct(p.id);
+                            if (copy) {
+                              showToast(`📋 Copia creada de "${p.name}". Abrir para editar.`);
+                            }
+                          }}
+                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 rounded-xl font-bold transition-all inline-flex items-center gap-1 cursor-pointer border border-blue-200 hover:border-blue-600"
+                          title="Duplicar Producto y Fotos (Crea un borrador idéntico)"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Duplicar</span>
+                        </button>
                         <button
                           onClick={() => handleStartEdit(p)}
                           className="px-3 py-1.5 bg-slate-100 hover:bg-[#9E0D0D] hover:text-white text-slate-700 rounded-xl font-bold transition-all inline-flex items-center gap-1 cursor-pointer"

@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
-  const { products, adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile, setSidebarOpen } = useStore();
+  const { products, adminTab, setAdminTab, setActiveRole, adminLogout, adminProfile, setSidebarOpen, unreadSalesCount } = useStore();
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const lowStockCount = products.filter(p => p.stock <= 3).length;
 
@@ -56,10 +56,15 @@ export const AdminLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-3 bg-red-950/90 hover:bg-slate-950 rounded-xl border border-red-400 hover:border-amber-400 shadow-md transition-all cursor-pointer group"
+              className="relative p-3 bg-red-950/90 hover:bg-slate-950 rounded-xl border border-red-400 hover:border-amber-400 shadow-md transition-all cursor-pointer group"
               title="Abrir Menú de Módulos"
             >
               <Menu className="w-6 h-6 text-[#E05A1B] group-hover:text-amber-300 transition-colors" />
+              {unreadSalesCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-[10px] px-1.5 py-0.2 rounded-full animate-bounce shadow-md border-2 border-slate-950">
+                  {unreadSalesCount}
+                </span>
+              )}
             </button>
             <div>
               <div className="flex items-center gap-2">
@@ -69,6 +74,14 @@ export const AdminLayout: React.FC = () => {
                 <span className="text-[10px] bg-red-950/80 text-amber-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-red-800">
                   {currentTabLabel}
                 </span>
+                {unreadSalesCount > 0 && (
+                  <button
+                    onClick={() => setAdminTab('ventas')}
+                    className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider border border-red-400 animate-pulse cursor-pointer"
+                  >
+                    🔥 {unreadSalesCount} Nueva{unreadSalesCount > 1 ? 's' : ''} Venta{unreadSalesCount > 1 ? 's' : ''}
+                  </button>
+                )}
               </div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight uppercase mt-0.5">
                 Panel de Control - {adminProfile?.storeName || 'Armario Virtual'}

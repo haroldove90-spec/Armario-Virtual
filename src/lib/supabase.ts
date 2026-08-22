@@ -313,6 +313,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
     email TEXT NOT NULL,
     phone TEXT,
     password TEXT,
+    role TEXT DEFAULT 'cliente',
     registered_at TEXT,
     registered_date TEXT,
     total_orders NUMERIC DEFAULT 0,
@@ -326,6 +327,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
 );
 
 -- Garantizar que existan todas las columnas en customers
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'cliente';
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS registered_at TEXT;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS registered_date TEXT;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS password TEXT;
@@ -400,11 +402,34 @@ ALTER TABLE public.shipping_config DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_design DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_profile DISABLE ROW LEVEL SECURITY;
 
--- 3. GARANTIZAR PERMISOS TOTALES AL ROL ANON Y AUTHENTICATED
+-- 3. HABILITAR SUPABASE REALTIME (Para detección instantánea de ventas y cambios sin refrescar)
+-- Asegura que Supabase emita eventos INSERT, UPDATE y DELETE a los clientes conectados
+DO $$
+BEGIN
+  -- Verificar y agregar publicaciones de realtime si la publicación existe
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.customers;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.categories;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.shipping_config;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.store_design;
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN OTHERS THEN NULL;
+END $$;
+
+-- Configurar Replica Identity FULL para recibir datos completos en eventos UPDATE
+ALTER TABLE public.orders REPLICA IDENTITY FULL;
+ALTER TABLE public.products REPLICA IDENTITY FULL;
+ALTER TABLE public.customers REPLICA IDENTITY FULL;
+
+-- 4. GARANTIZAR PERMISOS TOTALES AL ROL ANON Y AUTHENTICATED
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON SCHEMA public TO anon, authenticated, service_role;
 
--- 4. RECARGAR ESQUEMA EN LA API REST
+-- 5. RECARGAR ESQUEMA EN LA API REST
 NOTIFY pgrst, 'reload schema';
 `;

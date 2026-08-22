@@ -15,8 +15,20 @@ export const RoleSwitcher: React.FC = () => {
     customerLogout,
     adminLogout,
     customer,
-    adminProfile
+    adminProfile,
+    unreadSalesCount,
+    orders
   } = useStore();
+
+  const customerActiveOrdersCount = React.useMemo(() => {
+    if (!customer?.email && !customer?.id) return 0;
+    return orders.filter(
+      o =>
+        ((customer.id && o.customerId === customer.id) ||
+          (customer.email && o.customerEmail?.toLowerCase() === customer.email.toLowerCase())) &&
+        (o.status === 'en_preparacion' || o.status === 'enviado' || o.status === 'pendiente')
+    ).length;
+  }, [orders, customer]);
 
   return (
     <div className="bg-slate-900 text-white text-xs py-2 px-3 sm:px-4 shadow-md sticky top-0 z-50 border-b border-slate-800 font-sans">
@@ -48,7 +60,7 @@ export const RoleSwitcher: React.FC = () => {
               { id: 'metricas', label: '📊 Métricas' },
               { id: 'productos', label: '📦 Productos' },
               { id: 'categorias', label: '🏷️ Categorías' },
-              { id: 'ventas', label: '📋 Pedidos' },
+              { id: 'ventas', label: '📋 Pedidos', badge: unreadSalesCount > 0 ? unreadSalesCount : undefined },
               { id: 'envio', label: '🚚 Envíos' },
               { id: 'perfil', label: '👤 Perfil' },
               { id: 'usuarios', label: '👥 Usuarios' },
@@ -57,13 +69,18 @@ export const RoleSwitcher: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setAdminTab(tab.id as any)}
-                className={`px-2.5 py-1 rounded-md transition-all font-bold text-[11px] cursor-pointer ${
+                className={`relative px-2.5 py-1 rounded-md transition-all font-bold text-[11px] cursor-pointer flex items-center gap-1.5 ${
                   adminTab === tab.id
                     ? 'bg-[#9E0D0D] text-white shadow-xs border border-red-500'
                     : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
                 }`}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.2 rounded-full animate-bounce">
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -136,7 +153,7 @@ export const RoleSwitcher: React.FC = () => {
             {/* Cliente Button */}
             <button
               onClick={() => setActiveRole('cliente')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
+              className={`relative flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'cliente'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -144,12 +161,17 @@ export const RoleSwitcher: React.FC = () => {
             >
               <UserCheck className="w-3.5 h-3.5 text-red-400" />
               <span className="hidden md:inline">Cliente</span>
+              {customerActiveOrdersCount > 0 && (
+                <span className="bg-[#E05A1B] text-white text-[9px] font-black rounded-full px-1.5 py-0.2 ml-0.5 animate-pulse">
+                  {customerActiveOrdersCount}
+                </span>
+              )}
             </button>
 
             {/* Admin Button */}
             <button
               onClick={() => setActiveRole('admin')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
+              className={`relative flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-extrabold text-[11px] uppercase tracking-wider cursor-pointer ${
                 activeRole === 'admin'
                   ? 'bg-[#9E0D0D] text-white shadow-xs ring-1 ring-red-400/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -157,6 +179,11 @@ export const RoleSwitcher: React.FC = () => {
             >
               <ShieldCheck className="w-3.5 h-3.5 text-yellow-400" />
               <span className="hidden md:inline">Admin</span>
+              {unreadSalesCount > 0 && (
+                <span className="bg-red-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 ml-0.5 animate-bounce shadow-sm">
+                  {unreadSalesCount}
+                </span>
+              )}
             </button>
           </div>
 

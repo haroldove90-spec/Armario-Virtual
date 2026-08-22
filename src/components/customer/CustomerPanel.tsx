@@ -319,62 +319,115 @@ export const CustomerPanel: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl relative border border-gray-100">
                 <h3 className="text-lg font-black text-gray-900 mb-4">Registrar Nuevo Domicilio</h3>
                 <form onSubmit={handleSaveAddress} className="space-y-3 text-xs">
-                  <input
-                    type="text"
-                    placeholder="Nombre de quien recibe"
-                    value={newAddr.recipientName}
-                    onChange={e => setNewAddr({ ...newAddr, recipientName: e.target.value })}
-                    className="w-full p-2.5 border rounded-xl"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Calle"
-                    value={newAddr.street}
-                    onChange={e => setNewAddr({ ...newAddr, street: e.target.value })}
-                    className="w-full p-2.5 border rounded-xl"
-                    required
-                  />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Nombre de quien recibe *
+                    </label>
                     <input
                       type="text"
-                      placeholder="Num Ext"
-                      value={newAddr.exteriorNumber}
-                      onChange={e => setNewAddr({ ...newAddr, exteriorNumber: e.target.value })}
-                      className="w-full p-2.5 border rounded-xl"
+                      placeholder="Nombre completo"
+                      value={newAddr.recipientName}
+                      onChange={e => setNewAddr({ ...newAddr, recipientName: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
                       required
-                    />
-                    <input
-                      type="text"
-                      placeholder="Num Int (Opcional)"
-                      value={newAddr.interiorNumber}
-                      onChange={e => setNewAddr({ ...newAddr, interiorNumber: e.target.value })}
-                      className="w-full p-2.5 border rounded-xl"
                     />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Colonia / Fraccionamiento"
-                    value={newAddr.neighborhood}
-                    onChange={e => setNewAddr({ ...newAddr, neighborhood: e.target.value })}
-                    className="w-full p-2.5 border rounded-xl"
-                    required
-                  />
-                  <div className="grid grid-cols-2 gap-2">
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Calle y número *
+                    </label>
                     <input
                       type="text"
-                      placeholder="Código Postal (5 dígitos)"
-                      value={newAddr.postalCode}
-                      onChange={e => setNewAddr({ ...newAddr, postalCode: e.target.value })}
-                      className="w-full p-2.5 border rounded-xl"
+                      placeholder="Ej. Av. Insurgentes Sur"
+                      value={newAddr.street}
+                      onChange={e => setNewAddr({ ...newAddr, street: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
                       required
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Núm. Exterior *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. 1602"
+                        value={newAddr.exteriorNumber}
+                        onChange={e => setNewAddr({ ...newAddr, exteriorNumber: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Núm. Interior (Opc.)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. 302"
+                        value={newAddr.interiorNumber}
+                        onChange={e => setNewAddr({ ...newAddr, interiorNumber: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Colonia *
+                    </label>
                     <input
                       type="text"
-                      placeholder="Alcaldía / Municipio"
-                      value={newAddr.city}
-                      onChange={e => setNewAddr({ ...newAddr, city: e.target.value })}
-                      className="w-full p-2.5 border rounded-xl"
+                      placeholder="Ej. Del Valle, Centro"
+                      value={newAddr.neighborhood}
+                      onChange={e => setNewAddr({ ...newAddr, neighborhood: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Código Postal *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. 03940"
+                        value={newAddr.postalCode}
+                        onChange={e => setNewAddr({ ...newAddr, postalCode: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Municipio / Alcaldía *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Benito Juárez"
+                        value={newAddr.city}
+                        onChange={e => setNewAddr({ ...newAddr, city: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Estado *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. CDMX, Jalisco, Nuevo León"
+                      value={newAddr.state}
+                      onChange={e => setNewAddr({ ...newAddr, state: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-hidden"
                       required
                     />
                   </div>

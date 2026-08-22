@@ -24,7 +24,8 @@ import {
   HelpCircle,
   RefreshCw,
   Save,
-  ExternalLink
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 
 interface ProductFormPageProps {
@@ -162,7 +163,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const [bulkStockInput, setBulkStockInput] = useState<number>(10);
 
   // Store Context for size guide templates & navigation
-  const { sizeGuideTemplates, setAdminTab } = useStore();
+  const { sizeGuideTemplates, setAdminTab, duplicateProduct } = useStore();
 
   // Helper to calculate total variant stock dynamically
   const calculateTotalVariantStock = (): number => {
@@ -577,6 +578,23 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
             >
               <Eye className="w-3.5 h-3.5" />
               <span>Ver Guía de Tallas</span>
+            </button>
+          )}
+
+          {editingProduct && (
+            <button
+              type="button"
+              onClick={async () => {
+                const copy = await duplicateProduct(editingProduct.id);
+                if (copy) {
+                  onCancel(); // Go back to products list where copy is ready
+                }
+              }}
+              className="bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 text-xs font-black px-3.5 py-2.5 rounded-xl border border-blue-200 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Crear una copia exacta de este producto como borrador"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Duplicar</span>
             </button>
           )}
 

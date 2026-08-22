@@ -42,8 +42,21 @@ export const SidebarNav: React.FC = () => {
     customerLogout,
     adminLogout,
     resetToDefaultData,
-    storeDesign
+    storeDesign,
+    unreadSalesCount,
+    orders,
+    customer
   } = useStore();
+
+  const customerActiveOrdersCount = React.useMemo(() => {
+    if (!customer?.email && !customer?.id) return 0;
+    return orders.filter(
+      o =>
+        ((customer.id && o.customerId === customer.id) ||
+          (customer.email && o.customerEmail?.toLowerCase() === customer.email.toLowerCase())) &&
+        (o.status === 'en_preparacion' || o.status === 'enviado' || o.status === 'pendiente')
+    ).length;
+  }, [orders, customer]);
 
   const handleSelectRole = (role: ActiveRole) => {
     setActiveRole(role);
@@ -149,15 +162,22 @@ export const SidebarNav: React.FC = () => {
                   <User className="w-4 h-4 text-red-400" />
                   <span>Panel del Cliente</span>
                 </div>
-                <span
-                  className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                    isCustomerLoggedIn
-                      ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
-                      : 'bg-amber-900/60 text-amber-300 border border-amber-700'
-                  }`}
-                >
-                  {isCustomerLoggedIn ? 'SESIÓN ACTIVA' : 'ACCESO'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {customerActiveOrdersCount > 0 && (
+                    <span className="bg-[#E05A1B] text-white text-[9px] font-black rounded-full px-1.5 py-0.2 animate-pulse">
+                      {customerActiveOrdersCount}
+                    </span>
+                  )}
+                  <span
+                    className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                      isCustomerLoggedIn
+                        ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
+                        : 'bg-amber-900/60 text-amber-300 border border-amber-700'
+                    }`}
+                  >
+                    {isCustomerLoggedIn ? 'SESIÓN ACTIVA' : 'ACCESO'}
+                  </span>
+                </div>
               </button>
 
               {/* Panel admin button */}
@@ -173,15 +193,22 @@ export const SidebarNav: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-yellow-400" />
                   <span>Panel Administrador</span>
                 </div>
-                <span
-                  className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                    isAdminLoggedIn
-                      ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
-                      : 'bg-pink-900/80 text-pink-300 border border-pink-700'
-                  }`}
-                >
-                  {isAdminLoggedIn ? 'ADMIN ACTIVO' : 'ACCESO'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {unreadSalesCount > 0 && (
+                    <span className="bg-red-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 animate-bounce shadow-sm">
+                      {unreadSalesCount}
+                    </span>
+                  )}
+                  <span
+                    className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                      isAdminLoggedIn
+                        ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
+                        : 'bg-pink-900/80 text-pink-300 border border-pink-700'
+                    }`}
+                  >
+                    {isAdminLoggedIn ? 'ADMIN ACTIVO' : 'ACCESO'}
+                  </span>
+                </div>
               </button>
             </div>
           </div>
@@ -269,14 +296,21 @@ export const SidebarNav: React.FC = () => {
                         setCustomerTab('compras');
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                      className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-medium transition-colors ${
                         customerTab === 'compras'
                           ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
                           : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
                       }`}
                     >
-                      <ShoppingBag className="w-4 h-4 text-purple-400" />
-                      <span>Mis Compras y Pedidos</span>
+                      <div className="flex items-center gap-2.5">
+                        <ShoppingBag className="w-4 h-4 text-purple-400" />
+                        <span>Mis Compras y Pedidos</span>
+                      </div>
+                      {customerActiveOrdersCount > 0 && (
+                        <span className="bg-[#E05A1B] text-white text-[9px] font-black rounded-full px-1.5 py-0.2 animate-pulse">
+                          {customerActiveOrdersCount}
+                        </span>
+                      )}
                     </button>
 
                     <button
@@ -417,14 +451,21 @@ export const SidebarNav: React.FC = () => {
                         setAdminTab('ventas');
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium transition-colors ${
+                      className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-medium transition-colors ${
                         adminTab === 'ventas'
                           ? 'bg-purple-900/60 text-purple-200 font-bold border-l-2 border-pink-500'
                           : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
                       }`}
                     >
-                      <ShoppingBag className="w-4 h-4 text-yellow-400" />
-                      <span>Gestión de Pedidos</span>
+                      <div className="flex items-center gap-2.5">
+                        <ShoppingBag className="w-4 h-4 text-yellow-400" />
+                        <span>Gestión de Pedidos</span>
+                      </div>
+                      {unreadSalesCount > 0 && (
+                        <span className="bg-red-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 animate-bounce shadow-sm">
+                          {unreadSalesCount}
+                        </span>
+                      )}
                     </button>
 
                     <button
