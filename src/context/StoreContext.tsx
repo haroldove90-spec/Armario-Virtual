@@ -376,40 +376,80 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const { data: dbProducts, error } = await supabase.from('products').select('*');
       if (!error && dbProducts) {
         if (dbProducts.length > 0) {
-          const mapped: Product[] = dbProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            productType: p.product_type || 'sencillo',
-            category: p.category,
-            subcategory: p.subcategory || 'General',
-            price: Number(p.price),
-            originalPrice: p.original_price ? Number(p.original_price) : undefined,
-            isOffer: Boolean(p.is_offer),
-            offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
-            discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
-            stock: Number(p.stock),
-            sku: p.sku || '',
-            images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
-            sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes || [],
-            colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
-            colorImages: typeof p.color_images === 'string' ? JSON.parse(p.color_images) : p.color_images || {},
-            variantStock: typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []),
-            sizeGuide: typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined),
-            sizeGuideTemplateId: p.size_guide_template_id || undefined,
-            description: p.description || '',
-            tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags || [],
-            isFeatured: Boolean(p.is_featured),
-            isPublished: p.is_published !== false,
-            youtubeUrl: p.youtube_url || '',
-            dateAdded: p.date_added
-          }));
-          // Merge Supabase products with local products so locally created ones are never lost
+          const mapped: Product[] = dbProducts.map(p => {
+            let parsedImages = [];
+            try { parsedImages = typeof p.images === 'string' ? JSON.parse(p.images) : (Array.isArray(p.images) ? p.images : []); } catch (e) {}
+            let parsedSizes = [];
+            try { parsedSizes = typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (Array.isArray(p.sizes) ? p.sizes : []); } catch (e) {}
+            let parsedColors = [];
+            try { parsedColors = typeof p.colors === 'string' ? JSON.parse(p.colors) : (Array.isArray(p.colors) ? p.colors : []); } catch (e) {}
+            let parsedColorImages = {};
+            try { parsedColorImages = typeof p.color_images === 'string' ? JSON.parse(p.color_images) : (p.color_images || {}); } catch (e) {}
+            let parsedVariantStock = [];
+            try { parsedVariantStock = typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : []); } catch (e) {}
+            let parsedSizeGuide = undefined;
+            try { parsedSizeGuide = typeof p.size_guide === 'string' ? JSON.parse(p.size_guide) : (p.size_guide || undefined); } catch (e) {}
+            let parsedTags = [];
+            try { parsedTags = typeof p.tags === 'string' ? JSON.parse(p.tags) : (Array.isArray(p.tags) ? p.tags : []); } catch (e) {}
+
+            return {
+              id: p.id,
+              name: p.name,
+              productType: p.product_type || (parsedSizes.length > 0 || parsedColors.length > 0 ? 'variable' : 'sencillo'),
+              category: p.category,
+              subcategory: p.subcategory || 'General',
+              price: Number(p.price),
+              originalPrice: p.original_price ? Number(p.original_price) : undefined,
+              isOffer: Boolean(p.is_offer),
+              offerPrice: p.offer_price ? Number(p.offer_price) : undefined,
+              discountPercentage: p.discount_percentage ? Number(p.discount_percentage) : 0,
+              stock: Number(p.stock),
+              sku: p.sku || '',
+              images: parsedImages.length > 0 ? parsedImages : (p.image ? [p.image] : []),
+              sizes: parsedSizes,
+              colors: parsedColors,
+              colorImages: parsedColorImages,
+              variantStock: parsedVariantStock,
+              sizeGuide: parsedSizeGuide,
+              sizeGuideTemplateId: p.size_guide_template_id || undefined,
+              description: p.description || '',
+              tags: parsedTags,
+              isFeatured: Boolean(p.is_featured),
+              isPublished: p.is_published !== false,
+              youtubeUrl: p.youtube_url || '',
+              dateAdded: p.date_added
+            };
+          });
+          // Merge Supabase products with local products so locally created ones or locally stored sizes are never lost
           setProducts(prev => {
+            const localMap = new Map(prev.map(p => [p.id, p]));
+            const mergedFromDb = mapped.map(dbProd => {
+              const localProd = localMap.get(dbProd.id);
+              if (localProd) {
+                // If DB had empty sizes but local had sizes, preserve local sizes and variantStock
+                const finalSizes = (dbProd.sizes && dbProd.sizes.length > 0) ? dbProd.sizes : (localProd.sizes || []);
+                const finalColors = (dbProd.colors && dbProd.colors.length > 0) ? dbProd.colors : (localProd.colors || []);
+                const finalVariantStock = (dbProd.variantStock && dbProd.variantStock.length > 0) ? dbProd.variantStock : (localProd.variantStock || []);
+                const finalStock = dbProd.stock > 0 ? dbProd.stock : (localProd.stock || 0);
+
+                const merged: Product = {
+                  ...dbProd,
+                  sizes: finalSizes,
+                  colors: finalColors,
+                  variantStock: finalVariantStock,
+                  stock: finalStock,
+                  productType: (finalSizes.length > 0 || finalColors.length > 0) ? 'variable' : dbProd.productType
+                };
+                return merged;
+              }
+              return dbProd;
+            });
+
             const dbIds = new Set(mapped.map(m => m.id));
             const localOnly = prev.filter(p => !dbIds.has(p.id));
-            // Also sync localOnly products to Supabase in the background
+            // Sync any local products or upgraded products to Supabase in the background
             localOnly.forEach(lp => syncProductToSupabase(lp));
-            return [...mapped, ...localOnly];
+            return [...mergedFromDb, ...localOnly];
           });
         } else {
           // Table exists but is empty: automatically push any local products to Supabase
@@ -713,20 +753,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
           } else if (payload.eventType === 'UPDATE') {
             const p = payload.new as any;
+            let parsedSizes = p.sizes !== undefined ? (typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (Array.isArray(p.sizes) ? p.sizes : [])) : undefined;
+            let parsedColors = p.colors !== undefined ? (typeof p.colors === 'string' ? JSON.parse(p.colors) : (Array.isArray(p.colors) ? p.colors : [])) : undefined;
+            let parsedVariantStock = p.variant_stock !== undefined ? (typeof p.variant_stock === 'string' ? JSON.parse(p.variant_stock) : (Array.isArray(p.variant_stock) ? p.variant_stock : [])) : undefined;
+
             setProducts(prev =>
-              prev.map(x =>
-                x.id === p.id
-                  ? {
-                      ...x,
-                      name: p.name,
-                      price: Number(p.price),
-                      stock: Number(p.stock),
-                      isPublished: p.is_published !== false,
-                      isOffer: Boolean(p.is_offer),
-                      offerPrice: p.offer_price ? Number(p.offer_price) : undefined
-                    }
-                  : x
-              )
+              prev.map(x => {
+                if (x.id !== p.id) return x;
+                return {
+                  ...x,
+                  name: p.name !== undefined ? p.name : x.name,
+                  price: p.price !== undefined ? Number(p.price) : x.price,
+                  stock: p.stock !== undefined ? Number(p.stock) : x.stock,
+                  isPublished: p.is_published !== undefined ? (p.is_published !== false) : x.isPublished,
+                  isOffer: p.is_offer !== undefined ? Boolean(p.is_offer) : x.isOffer,
+                  offerPrice: p.offer_price !== undefined ? (p.offer_price ? Number(p.offer_price) : undefined) : x.offerPrice,
+                  sizes: (parsedSizes && parsedSizes.length > 0) ? parsedSizes : x.sizes,
+                  colors: (parsedColors && parsedColors.length > 0) ? parsedColors : x.colors,
+                  variantStock: (parsedVariantStock && parsedVariantStock.length > 0) ? parsedVariantStock : x.variantStock
+                };
+              })
             );
           } else if (payload.eventType === 'DELETE') {
             const p = payload.old as any;

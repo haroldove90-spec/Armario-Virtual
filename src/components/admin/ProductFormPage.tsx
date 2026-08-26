@@ -151,11 +151,27 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   });
 
   const [variantStockMap, setVariantStockMap] = useState<Record<string, number>>(() => {
-    if (!editingProduct?.variantStock) return {};
+    if (!editingProduct?.variantStock || editingProduct.variantStock.length === 0) {
+      // If editing an existing product with sizes but no explicit variantStock array, initialize with current product.stock or 0
+      if (editingProduct?.sizes && editingProduct.sizes.length > 0) {
+        const map: Record<string, number> = {};
+        const colors = editingProduct.colors && editingProduct.colors.length > 0 ? editingProduct.colors : [{ name: '' }];
+        const defaultPerSize = Math.max(0, Math.floor((editingProduct.stock || 0) / (editingProduct.sizes.length * colors.length))) || 0;
+        editingProduct.sizes.forEach(sz => {
+          colors.forEach(col => {
+            const cName = typeof col === 'string' ? col : col.name;
+            const key = `${sz}_${cName || ''}`;
+            map[key] = defaultPerSize;
+          });
+        });
+        return map;
+      }
+      return {};
+    }
     const map: Record<string, number> = {};
     editingProduct.variantStock.forEach(v => {
       const key = `${v.size || ''}_${v.color || ''}`;
-      map[key] = v.stock;
+      map[key] = Math.max(0, Number(v.stock) || 0);
     });
     return map;
   });
@@ -184,7 +200,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     return sum;
   };
 
-  // Auto-initialize default stock (e.g. 5) for newly selected sizes or colors
+  // Safe initialize stock for newly added sizes (without overwriting existing stocks to 5!)
   useEffect(() => {
     if (productType === 'variable') {
       const sizesToIterate = selectedSizes.length > 0 ? selectedSizes : [''];
@@ -197,7 +213,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           for (const col of colorsToIterate) {
             const key = `${sz}_${col.name}`;
             if (next[key] === undefined) {
-              next[key] = 5;
+              // Set to 0 or base stock instead of hardcoding 5
+              next[key] = 0;
               changed = true;
             }
           }
