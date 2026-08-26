@@ -373,8 +373,41 @@ export const ProductsModule: React.FC = () => {
             <tbody className="divide-y divide-gray-100 font-medium">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-gray-400 italic">
-                    No se encontraron productos coincidentes con los filtros.
+                  <td colSpan={8} className="p-12 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+                        <Package className="w-6 h-6" />
+                      </div>
+                      <h5 className="font-black text-slate-800 text-sm">
+                        {products.length === 0
+                          ? 'No hay productos registrados en el inventario actual'
+                          : 'No se encontraron productos coincidentes con los filtros seleccionados'}
+                      </h5>
+                      <p className="text-xs text-slate-500">
+                        {products.length === 0
+                          ? 'Puedes cargar los 14 productos del catálogo oficial de Armario Virtual o registrar uno nuevo.'
+                          : 'Intenta cambiar los filtros de búsqueda, categoría o estado para ver tus artículos.'}
+                      </p>
+                      {products.length === 0 && (
+                        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                          <button
+                            onClick={handleReloadFromSupabase}
+                            disabled={isReloadingSupabase}
+                            className="px-4 py-2 bg-[#9E0D0D] hover:bg-red-900 text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isReloadingSupabase ? 'animate-spin' : ''}`} />
+                            <span>{isReloadingSupabase ? 'Cargando catálogo...' : 'Restaurar / Cargar Catálogo (14 Productos)'}</span>
+                          </button>
+                          <button
+                            onClick={handleStartCreate}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Crear Producto Manual</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (

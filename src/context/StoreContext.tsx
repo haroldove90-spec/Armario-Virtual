@@ -474,6 +474,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else {
           // Table exists but is empty (0 records): automatically push products to Supabase!
           console.log('Pushing initial products to empty Supabase products table...');
+          setProducts(prev => (prev && prev.length > 0 ? prev : INITIAL_PRODUCTS));
           INITIAL_PRODUCTS.forEach(lp => syncProductToSupabase(lp));
         }
       }
@@ -1532,8 +1533,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(p => !['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8'].includes(p.id));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter(p => !['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8'].includes(p.id));
+          if (filtered.length > 0) return filtered;
         }
       } catch (e) {}
     }
