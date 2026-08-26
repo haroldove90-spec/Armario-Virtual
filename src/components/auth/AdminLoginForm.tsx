@@ -113,7 +113,82 @@ export const AdminLoginForm: React.FC = () => {
       </form>
 
       {/* Admin Modules Preview */}
-      <div className="mt-8 pt-5 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-[10px] text-slate-400">
+      <div className="mt-6 pt-5 border-t border-slate-800">
+        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Credenciales Rápidas de Acceso:</span>
+          <span className="text-[10px] text-emerald-400 font-normal">Toca para autocompletar</span>
+        </div>
+        
+        <div className="space-y-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('harold.anguiano@armariovirtual.com');
+              setPassword('Chevropar#1970');
+              setError('');
+            }}
+            className="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
+                Harold Anguiano Morales
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                harold.anguiano@armariovirtual.com • Chevropar#1970
+              </div>
+            </div>
+            <span className="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-800 font-bold">
+              ADMIN
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('armario_virtual@armariovirtual.com');
+              setPassword('ArmarioVirtual#2026!Key');
+              setError('');
+            }}
+            className="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
+                Armario Virtual Master
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                armario_virtual@armariovirtual.com • ArmarioVirtual#2026!Key
+              </div>
+            </div>
+            <span className="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-800 font-bold">
+              MASTER
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('admin');
+              setPassword('admin123');
+              setError('');
+            }}
+            className="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
+                Acceso Rápido Desarrollador
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                admin • admin123
+              </div>
+            </div>
+            <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-bold">
+              DEV
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-6 pt-4 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-[10px] text-slate-400">
         <div className="flex flex-col items-center">
           <BarChart3 className="w-4 h-4 text-[#E05A1B] mb-1" />
           <span>Ventas & KPI</span>
