@@ -32,6 +32,127 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 export const SUPABASE_PROJECT_ID = 'aouvpbvjrsbtufhrmwaj';
 export const SUPABASE_URL_ENDPOINT = 'https://aouvpbvjrsbtufhrmwaj.supabase.co/rest/v1/';
 
+export interface PostgresErrorTranslation {
+  code: string;
+  title: string;
+  description: string;
+  solution: string;
+}
+
+export function translatePostgresError(err: any): PostgresErrorTranslation {
+  if (!err) {
+    return {
+      code: 'OK',
+      title: 'Operación Exitosa',
+      description: 'No se detectaron errores en la ejecución.',
+      solution: 'Todo está funcionando correctamente.'
+    };
+  }
+
+  const rawCode = err.code || (err.error && err.error.code) || '';
+  const rawMsg = (err.message || (err.error && err.error.message) || String(err)).toLowerCase();
+
+  if (rawCode === '42501' || rawMsg.includes('row-level security') || rawMsg.includes('policy') || rawMsg.includes('permission denied')) {
+    return {
+      code: '42501',
+      title: 'Políticas RLS Bloqueadas (Row-Level Security)',
+      description: 'Supabase bloqueó la escritura o lectura porque la tabla tiene activada la seguridad por filas sin una política pública permisiva.',
+      solution: 'Ejecuta el script SQL para desactivar RLS (ALTER TABLE ... DISABLE ROW LEVEL SECURITY) o define una política permitiendo INSERT/UPDATE al rol anon.'
+    };
+  }
+
+  if (rawCode === '42P01' || rawCode === 'PGRST204' || rawCode === 'PGRST200' || rawMsg.includes('does not exist') || rawMsg.includes('relation')) {
+    return {
+      code: '42P01',
+      title: 'Tabla Inexistente en Base de Datos',
+      description: 'La tabla solicitada no ha sido creada en el esquema public de Supabase.',
+      solution: 'Ejecuta el script SQL maestro desde la pestaña de SQL Editor para crear las tablas necesarias e índices correspondientes.'
+    };
+  }
+
+  if (rawCode === '42703' || rawMsg.includes('column') && rawMsg.includes('does not exist')) {
+    return {
+      code: '42703',
+      title: 'Columna Inexistente en la Tabla',
+      description: 'La tabla existe pero le falta una o más columnas requeridas por el frontend (ej. permissions, created_at, sizes, etc.).',
+      solution: 'Aplica los comandos ALTER TABLE ... ADD COLUMN IF NOT EXISTS incluidos en el script SQL maestro.'
+    };
+  }
+
+  if (rawCode === '23502' || rawMsg.includes('not-null constraint') || rawMsg.includes('null value in column')) {
+    return {
+      code: '23502',
+      title: 'Violación de Restricción NOT NULL',
+      description: 'Un campo obligatorio no tiene valor por defecto y se intentó guardar como nulo (ej. created_at).',
+      solution: 'Asigna valores por defecto en la base de datos (ej. ALTER TABLE ... ALTER COLUMN created_at SET DEFAULT now()).'
+    };
+  }
+
+  if (rawCode === '23505' || rawMsg.includes('duplicate key') || rawMsg.includes('unique constraint')) {
+    return {
+      code: '23505',
+      title: 'Registro Duplicado (Violación de Clave Única)',
+      description: 'Se intentó crear un registro con un identificador o correo electrónico que ya existe en la base de datos.',
+      solution: 'Utiliza UPSERT (ON CONFLICT DO UPDATE) o verifica que el ID o correo no estén previamente registrados.'
+    };
+  }
+
+  if (rawCode === 'PGRST301' || rawMsg.includes('jwt') || rawMsg.includes('token') || rawMsg.includes('unauthorized')) {
+    return {
+      code: 'PGRST301',
+      title: 'Credencial o Token Inválido / Expirado',
+      description: 'La clave pública de Supabase (anon key) o el token de sesión no son reconocidos.',
+      solution: 'Verifica la configuración de VITE_SUPABASE_ANON_KEY y VITE_SUPABASE_URL en tu entorno.'
+    };
+  }
+
+  if (rawCode === '08001' || rawCode === '08006' || rawMsg.includes('failed to fetch') || rawMsg.includes('networkerror') || rawMsg.includes('timeout')) {
+    return {
+      code: 'NET_ERR',
+      title: 'Error de Red o Servidor Inalcanzable',
+      description: 'No se pudo establecer conexión con el endpoint de Supabase (posible bloqueo de red o proyecto en pausa).',
+      solution: 'Comprueba que el proyecto de Supabase esté en estado Active en el dashboard y que tu navegador tenga conexión a internet.'
+    };
+  }
+
+  return {
+    code: rawCode || 'ERR_GENERIC',
+    title: 'Excepción PostgreSQL / Supabase',
+    description: err.message || String(err),
+    solution: 'Revisa los registros en el SQL Editor de Supabase y ejecuta el script de corrección integral.'
+  };
+}
+
+export async function pingSupabase(): Promise<{ ok: boolean; latencyMs: number; error?: string; code?: string }> {
+  const start = performance.now();
+  try {
+    const { data, error } = await supabase.from('products').select('id').limit(1);
+    const latencyMs = Math.round(performance.now() - start);
+    if (error) {
+      // If products table doesn't exist, try categories as fallback
+      const { error: catErr } = await supabase.from('categories').select('id').limit(1);
+      if (!catErr) {
+        return { ok: true, latencyMs };
+      }
+      return {
+        ok: false,
+        latencyMs,
+        error: error.message,
+        code: error.code
+      };
+    }
+    return { ok: true, latencyMs };
+  } catch (err: any) {
+    const latencyMs = Math.round(performance.now() - start);
+    return {
+      ok: false,
+      latencyMs,
+      error: err.message || 'Error de red con Supabase',
+      code: 'NET_ERR'
+    };
+  }
+}
+
 export interface TableDiagnostic {
   tableName: string;
   exists: boolean;
@@ -342,13 +463,86 @@ ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'activ
 CREATE TABLE IF NOT EXISTS public.employees (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    role TEXT,
-    department TEXT,
-    phone TEXT,
+    email TEXT UNIQUE NOT NULL,
+    username TEXT,
+    password TEXT,
+    role TEXT DEFAULT 'Administrador General',
     status TEXT DEFAULT 'activo',
-    date_joined TEXT,
-    permissions JSONB DEFAULT '[]'::jsonb,
+    permissions JSONB DEFAULT '["metricas","productos","categorias","ventas","clientes","empleados","diseno","guias_tallas","envio","ajustes"]'::jsonb,
+    avatar_url TEXT,
+    last_access TEXT DEFAULT 'En línea',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Asegurar columnas si la tabla employees ya existía
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS password TEXT;
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'Administrador General';
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'activo';
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '["metricas","productos","categorias","ventas","clientes","empleados","diseno","guias_tallas","envio","ajustes"]'::jsonb;
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS last_access TEXT DEFAULT 'En línea';
+ALTER TABLE public.employees ALTER COLUMN created_at SET DEFAULT now();
+
+-- Insertar / Actualizar a los Administradores
+INSERT INTO public.employees (
+    id,
+    name,
+    email,
+    username,
+    password,
+    role,
+    status,
+    permissions,
+    avatar_url,
+    last_access,
+    created_at
+) VALUES (
+    'emp-admin-armario',
+    'Armario Virtual Admin',
+    'armario_virtual@armariovirtual.com',
+    'armario_virtual',
+    'ArmarioVirtual#2026!Key',
+    'Administrador General',
+    'activo',
+    '["metricas","productos","categorias","ventas","clientes","empleados","diseno","guias_tallas","envio","ajustes"]'::jsonb,
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+    'En línea',
+    now()
+),
+(
+    'emp-admin-harold',
+    'Harold Anguiano Morales',
+    'harold.anguiano@armariovirtual.com',
+    'harold.anguiano',
+    'Chevropar#1970',
+    'Administrador General',
+    'activo',
+    '["metricas","productos","categorias","ventas","clientes","empleados","diseno","guias_tallas","envio","ajustes"]'::jsonb,
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80',
+    'En línea',
+    now()
+)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    password = EXCLUDED.password,
+    role = EXCLUDED.role,
+    status = EXCLUDED.status,
+    permissions = EXCLUDED.permissions,
+    last_access = EXCLUDED.last_access;
+
+-- TABLA DE BITÁCORA Y REGISTRO DE ACCESOS / VISITAS
+CREATE TABLE IF NOT EXISTS public.access_logs (
+    id TEXT PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    actor_name TEXT,
+    actor_role TEXT,
+    target_info TEXT,
+    ip_address TEXT,
+    device_info TEXT,
+    status TEXT DEFAULT 'autorizado',
+    details JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 

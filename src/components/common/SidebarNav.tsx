@@ -22,6 +22,7 @@ import {
   Ruler
 } from 'lucide-react';
 import { ActiveRole, AdminTab, CustomerTab, Category } from '../../types';
+import { SupabaseSmartButton } from './SupabaseSmartButton';
 
 export const SidebarNav: React.FC = () => {
   const {
@@ -542,6 +543,14 @@ export const SidebarNav: React.FC = () => {
                       <User className="w-4 h-4 text-yellow-400" />
                       <span>Empleados & Credenciales</span>
                     </button>
+
+                    {/* Supabase Smart Monitor in Sidebar */}
+                    <div className="pt-2 border-t border-slate-800/80">
+                      <div className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 px-1">
+                        Base de Datos Supabase
+                      </div>
+                      <SupabaseSmartButton variant="compact" />
+                    </div>
 
                     <button
                       onClick={() => {

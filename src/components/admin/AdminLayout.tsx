@@ -11,7 +11,7 @@ import { AdminProfileModule } from './AdminProfileModule';
 import { CustomersModule } from './CustomersModule';
 import { EmployeesModule } from './EmployeesModule';
 import { SizeGuidesModule } from './SizeGuidesModule';
-import { SupabaseDiagnosticModal } from './SupabaseDiagnosticModal';
+import { SupabaseSmartButton } from '../common/SupabaseSmartButton';
 import {
   BarChart3,
   Package,
@@ -100,14 +100,10 @@ export const AdminLayout: React.FC = () => {
               <Menu className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#E05A1B]" />
               <span>Módulos</span>
             </button>
-            <button
-              onClick={() => setDiagnosticOpen(true)}
-              className="inline-flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-900 text-emerald-400 font-black text-[11px] sm:text-xs uppercase tracking-wider px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md active:scale-95 border border-emerald-500/40 cursor-pointer"
-              title="Comprobar conexión a Supabase y subir datos"
-            >
-              <Database className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-400 animate-pulse" />
-              <span>Supabase</span>
-            </button>
+            
+            {/* Supabase Intelligent Button */}
+            <SupabaseSmartButton />
+
             <button
               onClick={() => setActiveRole('tienda')}
               className="inline-flex items-center gap-1.5 bg-white text-slate-900 hover:bg-red-50 font-black text-[11px] sm:text-xs uppercase tracking-wider px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
@@ -141,12 +137,6 @@ export const AdminLayout: React.FC = () => {
         {adminTab === 'usuarios' && <CustomersModule />}
         {adminTab === 'empleados' && <EmployeesModule />}
       </main>
-
-      {/* Supabase Diagnostic & Sync Modal */}
-      <SupabaseDiagnosticModal
-        isOpen={diagnosticOpen}
-        onClose={() => setDiagnosticOpen(false)}
-      />
     </div>
   );
 };

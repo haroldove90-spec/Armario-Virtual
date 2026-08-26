@@ -317,6 +317,19 @@ export const INITIAL_ADMIN_PROFILE: AdminProfile = {
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   {
+    id: 'emp-admin-armario',
+    name: 'Armario Virtual Admin',
+    email: 'armario_virtual@armariovirtual.com',
+    username: 'armario_virtual',
+    password: 'ArmarioVirtual#2026!Key',
+    role: 'Administrador General',
+    status: 'activo',
+    permissions: ['metricas', 'productos', 'categorias', 'ventas', 'clientes', 'empleados', 'diseno', 'guias_tallas', 'envio', 'ajustes'],
+    createdAt: '2026-08-26',
+    lastAccess: 'En línea',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80'
+  },
+  {
     id: 'emp-admin-harold',
     name: 'Harold Anguiano Morales',
     email: 'harold.anguiano@armariovirtual.com',

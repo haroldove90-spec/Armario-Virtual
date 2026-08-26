@@ -19,6 +19,7 @@ import {
   LogOut,
   LogIn
 } from 'lucide-react';
+import { SupabaseSmartButton } from './SupabaseSmartButton';
 
 export const Header: React.FC = () => {
   const {
@@ -436,6 +437,9 @@ export const Header: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Supabase Smart Button for Authorized Roles */}
+            <SupabaseSmartButton variant="header" />
 
             {/* Cart Button */}
             <button
