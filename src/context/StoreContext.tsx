@@ -286,11 +286,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 1. Validar si es el administrador principal (por correo o credenciales de admin por defecto)
     const isAdminEmail = 
       cleanEmail === adminProfile.email.toLowerCase() ||
+      cleanEmail === 'harold.anguiano@armariovirtual.com' ||
+      cleanEmail === 'harold.anguiano' ||
       cleanEmail === 'softwareai569@gmail.com' ||
-      cleanEmail === 'admin@armariovirtual.com';
+      cleanEmail === 'admin@armariovirtual.com' ||
+      cleanEmail === 'admin';
     
     // Contraseñas válidas para admin
     const isValidAdminPass = 
+      cleanPass === 'Chevropar#1970' ||
       cleanPass === 'admin123' ||
       cleanPass === 'password123' ||
       cleanPass === 'admin' ||
