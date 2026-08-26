@@ -57,17 +57,17 @@ export const AdminLoginForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-            Correo de Administrador
+            Usuario o Correo de Administrador
           </label>
           <div className="relative">
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={e => {
                 setEmail(e.target.value);
                 setError('');
               }}
-              placeholder="tu-correo@admin.com"
+              placeholder="armario_virtual ó admin@armariovirtual.com"
               className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl text-xs font-medium focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-hidden transition-all"
               required
             />

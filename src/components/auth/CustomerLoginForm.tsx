@@ -156,14 +156,14 @@ export const CustomerLoginForm: React.FC = () => {
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Correo Electrónico
+              Usuario o Correo Electrónico
             </label>
             <div className="relative">
               <input
-                type="email"
+                type="text"
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
-                placeholder="tu.correo@ejemplo.com"
+                placeholder="tu usuario o tu.correo@ejemplo.com"
                 className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-[#9E0D0D] focus:ring-1 focus:ring-[#9E0D0D] outline-hidden transition-all"
                 required
               />

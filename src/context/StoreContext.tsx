@@ -275,26 +275,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(LS_AUTH_ADMIN, JSON.stringify(isAdminLoggedIn));
   }, [isAdminLoggedIn]);
 
-  const adminLogin = (email?: string, password?: string): boolean => {
-    if (!email || !password) {
-      showToast('⚠️ Ingresa correo y contraseña de administrador');
+  const adminLogin = (identifier?: string, password?: string): boolean => {
+    if (!identifier || !password) {
+      showToast('⚠️ Ingresa usuario o correo y contraseña');
       return false;
     }
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    // 1. Validar si es el administrador principal (por correo o credenciales de admin por defecto)
-    const isAdminEmail = 
-      cleanEmail === adminProfile.email.toLowerCase() ||
-      cleanEmail === 'armario_virtual' ||
-      cleanEmail === 'armario_virtual@armariovirtual.com' ||
-      cleanEmail === 'harold.anguiano@armariovirtual.com' ||
-      cleanEmail === 'harold.anguiano' ||
-      cleanEmail === 'softwareai569@gmail.com' ||
-      cleanEmail === 'admin@armariovirtual.com' ||
-      cleanEmail === 'admin';
+    // 1. Validar si es el administrador general principal (por usuario o correo)
+    const isAdminIdentifier = 
+      cleanId === 'armario_virtual' ||
+      cleanId === 'armario_virtual@armariovirtual.com' ||
+      cleanId === adminProfile.email.toLowerCase() ||
+      cleanId === 'harold.anguiano@armariovirtual.com' ||
+      cleanId === 'harold.anguiano' ||
+      cleanId === 'softwareai569@gmail.com' ||
+      cleanId === 'admin@armariovirtual.com' ||
+      cleanId === 'admin';
     
-    // Contraseñas válidas para admin
+    // Contraseñas maestras
     const isValidAdminPass = 
       cleanPass === 'ArmarioVirtual#2026!Key' ||
       cleanPass === 'Chevropar#1970' ||
@@ -303,26 +303,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       cleanPass === 'admin' ||
       cleanPass === 'Adrian2026';
 
-    if (isAdminEmail && isValidAdminPass) {
+    if (isAdminIdentifier && isValidAdminPass) {
       setIsAdminLoggedIn(true);
       showToast('🛡️ Sesión de Administrador iniciada correctamente');
       return true;
     }
 
-    // 2. Validar si es un empleado registrado
+    // 2. Validar en la lista de empleados (por username o por email)
     const emp = employees.find(
-      e => (e.email.toLowerCase() === cleanEmail || e.username.toLowerCase() === cleanEmail) &&
+      e => ((e.email && e.email.toLowerCase() === cleanId) || (e.username && e.username.toLowerCase() === cleanId)) &&
            e.password === cleanPass &&
            e.status === 'activo'
     );
 
     if (emp) {
       setIsAdminLoggedIn(true);
-      showToast(`👨‍💼 Bienvenido, ${emp.name} (${emp.role})`);
+      showToast(`👨‍💼 Bienvenido, ${emp.name} (${emp.role || 'Administrador'})`);
       return true;
     }
 
-    showToast('❌ Credenciales de administrador o empleado incorrectas');
+    showToast('❌ Credenciales incorrectas. Verifica tu usuario/correo y contraseña');
     return false;
   };
 
@@ -2208,23 +2208,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return { success: true, customer: newCust };
   };
 
-  const customerLogin = async (email?: string, password?: string): Promise<{ success: boolean; error?: string }> => {
-    if (!email || !email.trim()) {
-      return { success: false, error: 'Por favor ingresa tu correo electrónico.' };
+  const customerLogin = async (identifier?: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!identifier || !identifier.trim()) {
+      return { success: false, error: 'Por favor ingresa tu usuario o correo electrónico.' };
     }
     if (!password || !password.trim()) {
       return { success: false, error: 'Por favor ingresa tu contraseña.' };
     }
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanId = identifier.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // 1. Search in local state
-    let found = customersList.find(c => c.email.toLowerCase() === cleanEmail);
+    // 1. Search in local state (by email or name/phone)
+    let found = customersList.find(
+      c => c.email.toLowerCase() === cleanId || 
+           c.name.toLowerCase() === cleanId ||
+           (c.phone && c.phone.trim() === cleanId)
+    );
 
     // 2. Search in Supabase
     if (!found) {
       try {
-        const { data: dbCust, error } = await supabase.from('customers').select('*').eq('email', cleanEmail).maybeSingle();
+        // Try searching by email
+        let { data: dbCust, error } = await supabase.from('customers').select('*').eq('email', cleanId).maybeSingle();
+        
+        // If not found by email, try searching by name
+        if (!dbCust) {
+          const { data: dbCustByName } = await supabase.from('customers').select('*').ilike('name', cleanId).maybeSingle();
+          if (dbCustByName) dbCust = dbCustByName;
+        }
+
         if (!error && dbCust) {
           found = {
             id: dbCust.id,
@@ -2267,7 +2279,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Si el usuario no existe, NO crear cuenta automáticamente en login
     return {
       success: false,
-      error: 'No se encontró ninguna cuenta registrada con este correo electrónico. Por favor regístrate primero en la pestaña "Crear Cuenta".'
+      error: 'No se encontró ninguna cuenta registrada con este usuario o correo. Por favor regístrate primero en la pestaña "Crear Cuenta".'
     };
   };
 
