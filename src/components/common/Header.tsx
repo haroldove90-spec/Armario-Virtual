@@ -16,6 +16,7 @@ import {
   ShoppingBasket,
   Layers,
   ChevronRight,
+  ArrowRight,
   LogOut,
   LogIn
 } from 'lucide-react';
@@ -66,14 +67,18 @@ export const Header: React.FC = () => {
   const handleCategoriesMouseEnter = () => {
     if (closeCategoriesTimeoutRef.current) {
       clearTimeout(closeCategoriesTimeoutRef.current);
+      closeCategoriesTimeoutRef.current = null;
     }
     setCategoriesDropdownOpen(true);
   };
 
   const handleCategoriesMouseLeave = () => {
+    if (closeCategoriesTimeoutRef.current) {
+      clearTimeout(closeCategoriesTimeoutRef.current);
+    }
     closeCategoriesTimeoutRef.current = setTimeout(() => {
       setCategoriesDropdownOpen(false);
-    }, 300);
+    }, 450);
   };
 
   const normalize = (str: string) =>
@@ -514,55 +519,99 @@ export const Header: React.FC = () => {
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${categoriesDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Unencapsulated Wide Mega Menu Across Screen */}
+            {/* Unencapsulated Wide Mega Menu Across Screen with Viewport Boundaries */}
             {categoriesDropdownOpen && (
               <div
-                className="absolute left-0 top-full mt-1 w-[92vw] max-w-6xl bg-white/98 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-slate-200/90 p-6 z-[999] animate-fadeIn font-sans cursor-default before:absolute before:-top-4 before:left-0 before:right-0 before:h-4 before:content-['']"
+                className="absolute left-0 top-full pt-1.5 w-[680px] max-w-[calc(100vw-2rem)] sm:max-w-[700px] z-[999] animate-fadeIn font-sans cursor-default"
                 onMouseEnter={handleCategoriesMouseEnter}
                 onMouseLeave={handleCategoriesMouseLeave}
                 onClick={e => e.stopPropagation()}
               >
-                {/* Mega Menu Top Info Bar */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-red-50 text-[#9E0D0D] rounded-2xl border border-red-100">
-                      <Layers className="w-5 h-5" />
+                <div className="bg-white rounded-2xl shadow-2xl border-2 border-slate-200/90 p-5 sm:p-6 overflow-hidden">
+                  {/* Mega Menu Top Info Bar */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4 gap-2 flex-wrap">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-red-50 text-[#9E0D0D] rounded-xl border border-red-100 shrink-0">
+                        <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                          <span>Departamentos y Categorías</span>
+                          <span className="text-[10px] sm:text-xs bg-[#E05A1B] text-white px-2 py-0.5 rounded-full font-mono">
+                            {categories.length} Disponibles
+                          </span>
+                        </h3>
+                        <p className="text-[10px] sm:text-[11px] text-slate-500 font-normal mt-0.5 line-clamp-1">
+                          Selecciona cualquier categoría o subcategoría para explorar las prendas y productos
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-base font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-                        <span>Departamentos y Categorías</span>
-                        <span className="text-xs bg-[#E05A1B] text-white px-2 py-0.5 rounded-full font-mono">
-                          {categories.length} Disponibles
-                        </span>
-                      </h3>
-                      <p className="text-xs text-slate-500 font-normal mt-0.5">
-                        Selecciona cualquier categoría o subcategoría para explorar las prendas y productos
-                      </p>
-                    </div>
+
+                    <button
+                      onClick={() => {
+                        setSelectedCategory('todas');
+                        setSearchQuery('');
+                        setActiveRole('tienda');
+                        setCategoriesDropdownOpen(false);
+                      }}
+                      className="bg-[#9E0D0D] hover:bg-red-800 text-white font-black text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
+                    >
+                      Ver Todo
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setSelectedCategory('todas');
-                      setSearchQuery('');
-                      setActiveRole('tienda');
-                      setCategoriesDropdownOpen(false);
-                    }}
-                    className="bg-[#9E0D0D] hover:bg-red-800 text-white font-black text-xs px-4 py-2 rounded-xl transition-all shadow-xs"
-                  >
-                    Ver Todo el Catálogo
-                  </button>
-                </div>
+                  {/* Open Multi-Column Grid of Categories & Subcategories */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
+                    {categories.map(cat => (
+                      <div
+                        key={cat.id}
+                        className="bg-slate-50/90 hover:bg-red-50/40 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 hover:border-red-200 transition-all flex flex-col justify-between group"
+                      >
+                        <div>
+                          {/* Main Category Header Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedCategory(cat.slug);
+                              setSearchQuery('');
+                              setActiveRole('tienda');
+                              setCategoriesDropdownOpen(false);
+                            }}
+                            className="w-full text-left flex items-center justify-between pb-2 border-b border-slate-200/80 group-hover:border-red-200 cursor-pointer"
+                          >
+                            <span className="font-black text-slate-900 text-xs uppercase tracking-tight group-hover:text-[#9E0D0D] transition-colors flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-[#E05A1B] group-hover:scale-125 transition-transform" />
+                              {cat.name}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#9E0D0D] group-hover:translate-x-1 transition-all" />
+                          </button>
 
-                {/* Open Multi-Column Grid of Categories & Subcategories */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-h-[65vh] overflow-y-auto pr-2">
-                  {categories.map(cat => (
-                    <div
-                      key={cat.id}
-                      className="bg-slate-50/80 hover:bg-red-50/40 p-4 rounded-2xl border border-slate-200/80 hover:border-red-200 transition-all flex flex-col justify-between group"
-                    >
-                      <div>
-                        {/* Main Category Header Button */}
+                          {/* Subcategories List */}
+                          <div className="mt-2.5 space-y-1">
+                            {cat.subcategories && cat.subcategories.length > 0 ? (
+                              cat.subcategories.map(sub => (
+                                <button
+                                  key={sub.id}
+                                  onClick={() => {
+                                    setSelectedCategory(cat.slug);
+                                    setSearchQuery(sub.name);
+                                    setActiveRole('tienda');
+                                    setCategoriesDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left text-[11px] font-semibold text-slate-600 hover:text-[#9E0D0D] hover:translate-x-1 transition-all py-1 px-2 rounded-lg hover:bg-white flex items-center justify-between cursor-pointer"
+                                >
+                                  <span>{sub.name}</span>
+                                  <span className="text-[9px] text-slate-400 opacity-0 group-hover:opacity-100 font-mono">→</span>
+                                </button>
+                              ))
+                            ) : (
+                              <p className="text-[11px] text-slate-400 italic py-1 px-2">
+                                Ver prendas de {cat.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bottom Quick Filter Link */}
                         <button
                           onClick={() => {
                             setSelectedCategory(cat.slug);
@@ -570,63 +619,14 @@ export const Header: React.FC = () => {
                             setActiveRole('tienda');
                             setCategoriesDropdownOpen(false);
                           }}
-                          className="w-full text-left flex items-center justify-between pb-2 border-b border-slate-200/80 group-hover:border-red-200"
+                          className="mt-3 pt-2 text-[10px] font-black text-[#E05A1B] group-hover:text-[#9E0D0D] uppercase tracking-wider flex items-center justify-end gap-1 border-t border-slate-200/50 hover:underline cursor-pointer"
                         >
-                          <span className="font-black text-slate-900 text-xs uppercase tracking-tight group-hover:text-[#9E0D0D] transition-colors flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#E05A1B] group-hover:scale-125 transition-transform" />
-                            {cat.name}
-                          </span>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#9E0D0D] group-hover:translate-x-1 transition-all" />
+                          <span>Explorar {cat.name}</span>
+                          <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                         </button>
-
-                        {/* Subcategories List */}
-                        <div className="mt-3 space-y-1.5">
-                          {cat.subcategories && cat.subcategories.length > 0 ? (
-                            cat.subcategories.map(sub => (
-                              <button
-                                key={sub.id}
-                                onClick={() => {
-                                  setSelectedCategory(cat.slug);
-                                  setSearchQuery(sub.name);
-                                  setActiveRole('tienda');
-                                  setCategoriesDropdownOpen(false);
-                                }}
-                                className="w-full text-left text-[11px] font-semibold text-slate-600 hover:text-[#9E0D0D] hover:translate-x-1 transition-all py-1 px-2 rounded-lg hover:bg-white flex items-center justify-between"
-                              >
-                                <span>{sub.name}</span>
-                                <span className="text-[9px] text-slate-400 opacity-0 group-hover:opacity-100 font-mono">→</span>
-                              </button>
-                            ))
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setSelectedCategory(cat.slug);
-                                setSearchQuery('');
-                                setActiveRole('tienda');
-                                setCategoriesDropdownOpen(false);
-                              }}
-                              className="text-[11px] text-slate-400 hover:text-[#9E0D0D] italic py-1 block"
-                            >
-                              Ver prendas de {cat.name}
-                            </button>
-                          )}
-                        </div>
                       </div>
-
-                      {/* Bottom Quick Filter Link */}
-                      <button
-                        onClick={() => {
-                          setSelectedCategory(cat.slug);
-                          setSearchQuery('');
-                          setActiveRole('tienda');
-                          setCategoriesDropdownOpen(false);
-                        }}
-                        className="mt-3 text-[10px] font-black text-[#E05A1B] group-hover:text-[#9E0D0D] uppercase tracking-wider text-right block hover:underline"
-                      >
-                        Explorar {cat.name} &rarr;
-                      </button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

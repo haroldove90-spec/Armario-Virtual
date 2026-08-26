@@ -373,6 +373,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           subcategories: typeof c.subcategories === 'string' ? JSON.parse(c.subcategories) : (Array.isArray(c.subcategories) ? c.subcategories : [])
         }));
         setCategories(mapped);
+      } else if (!error && dbCategories && dbCategories.length === 0) {
+        // Table exists in Supabase but is empty: automatically populate it with initial categories
+        const catPayload = INITIAL_CATEGORIES.map(c => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          description: c.description || '',
+          icon_name: c.iconName || 'Tag',
+          subcategories: c.subcategories || []
+        }));
+        supabase.from('categories').upsert(catPayload).then(() => {
+          console.log('✅ Categorías iniciales auto-sincronizadas a Supabase');
+        });
       }
     } catch (e) {
       console.log('Supabase categories read skipped, using local fallback');
@@ -459,19 +472,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return [...mergedFromDb, ...localOnly];
           });
         } else {
-          // Table exists but is empty: automatically push any local products to Supabase
-          const savedProductsRaw = localStorage.getItem('tienda_products_v3');
-          if (savedProductsRaw) {
-            try {
-              const localList: Product[] = JSON.parse(savedProductsRaw);
-              if (Array.isArray(localList) && localList.length > 0) {
-                console.log('Pushing local products to empty Supabase products table...', localList.length);
-                localList.forEach(lp => syncProductToSupabase(lp));
-              }
-            } catch (e) {
-              console.warn('Error reading local products for auto-sync', e);
-            }
-          }
+          // Table exists but is empty (0 records): automatically push products to Supabase!
+          console.log('Pushing initial products to empty Supabase products table...');
+          INITIAL_PRODUCTS.forEach(lp => syncProductToSupabase(lp));
         }
       }
     } catch (e) {

@@ -126,7 +126,7 @@ export const SupabaseDiagnosticModal: React.FC<SupabaseDiagnosticModalProps> = (
   const totalLocalRecords = products.length + categories.length + orders.length + customersList.length + employees.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200 font-sans">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200 font-sans">
       <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
         
         {/* Modal Header */}
