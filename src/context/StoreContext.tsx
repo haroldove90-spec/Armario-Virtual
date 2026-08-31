@@ -63,7 +63,7 @@ interface StoreContextType {
     address?: Omit<ShippingAddress, 'id'>;
   }) => Promise<{ success: boolean; error?: string; customer?: Customer }>;
   customerLogout: () => void;
-  adminLogin: (email?: string, password?: string) => boolean;
+  adminLogin: (identifier?: string, password?: string) => Promise<boolean> | boolean;
   adminLogout: () => void;
 
   // Admin Profile
@@ -275,7 +275,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(LS_AUTH_ADMIN, JSON.stringify(isAdminLoggedIn));
   }, [isAdminLoggedIn]);
 
-  const adminLogin = (identifier?: string, password?: string): boolean => {
+  const adminLogin = async (identifier?: string, password?: string): Promise<boolean> => {
     if (!identifier || !password) {
       showToast('⚠️ Ingresa usuario o correo y contraseña');
       return false;
@@ -287,7 +287,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const isAdminIdentifier = 
       cleanId === 'armario_virtual' ||
       cleanId === 'armario_virtual@armariovirtual.com' ||
-      cleanId === adminProfile.email.toLowerCase() ||
+      cleanId === (adminProfile?.email || '').toLowerCase() ||
       cleanId === 'haroldo90@hotmail.com' ||
       cleanId === 'haroldo90' ||
       cleanId === 'harold.anguiano@armariovirtual.com' ||
@@ -311,17 +311,52 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return true;
     }
 
-    // 2. Validar en la lista de empleados (por username o por email)
+    // 2. Validar en la lista de empleados en memoria (por username o por email)
     const emp = employees.find(
-      e => ((e.email && e.email.toLowerCase() === cleanId) || (e.username && e.username.toLowerCase() === cleanId)) &&
-           e.password === cleanPass &&
-           e.status === 'activo'
+      e => ((e.email && e.email.trim().toLowerCase() === cleanId) || (e.username && e.username.trim().toLowerCase() === cleanId)) &&
+           (e.password?.trim() === cleanPass) &&
+           (e.status !== 'suspendido' && e.status !== 'inactivo')
     );
 
     if (emp) {
       setIsAdminLoggedIn(true);
       showToast(`👨‍💼 Bienvenido, ${emp.name} (${emp.role || 'Administrador'})`);
       return true;
+    }
+
+    // 3. Consulta directa en Supabase a la tabla employees en tiempo real (por si localmente aún no se había descargado)
+    try {
+      const { data: dbEmployees } = await supabase.from('employees').select('*');
+      if (dbEmployees && dbEmployees.length > 0) {
+        const foundDbEmp = dbEmployees.find((e: any) => {
+          const dbEmail = (e.email || '').trim().toLowerCase();
+          const dbUser = (e.username || '').trim().toLowerCase();
+          const dbPass = (e.password || '').trim();
+          const isMatch = (dbEmail === cleanId || dbUser === cleanId) && dbPass === cleanPass;
+          return isMatch && e.status !== 'suspendido';
+        });
+
+        if (foundDbEmp) {
+          setIsAdminLoggedIn(true);
+          setEmployees(dbEmployees.map((e: any) => ({
+            id: e.id,
+            name: e.name,
+            email: e.email,
+            username: e.username || e.email?.split('@')[0] || '',
+            password: e.password || '',
+            role: e.role || 'Administrador General',
+            status: e.status || 'activo',
+            createdAt: e.created_at || new Date().toISOString().split('T')[0],
+            lastAccess: 'En línea',
+            avatarUrl: e.avatar_url || '',
+            permissions: typeof e.permissions === 'string' ? JSON.parse(e.permissions) : (e.permissions || [])
+          })));
+          showToast(`👨‍💼 Bienvenido, ${foundDbEmp.name} (${foundDbEmp.role || 'Administrador'})`);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Error validando login contra Supabase:', err);
     }
 
     showToast('❌ Credenciales incorrectas. Verifica tu usuario/correo y contraseña');
