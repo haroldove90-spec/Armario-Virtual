@@ -376,18 +376,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }));
         setCategories(mapped);
       } else if (!error && dbCategories && dbCategories.length === 0) {
-        // Table exists in Supabase but is empty: automatically populate it with initial categories
-        const catPayload = INITIAL_CATEGORIES.map(c => ({
-          id: c.id,
-          name: c.name,
-          slug: c.slug,
-          description: c.description || '',
-          icon_name: c.iconName || 'Tag',
-          subcategories: c.subcategories || []
-        }));
-        supabase.from('categories').upsert(catPayload).then(() => {
-          console.log('✅ Categorías iniciales auto-sincronizadas a Supabase');
-        });
+        // Table exists in Supabase and is empty: keep it clean
+        setCategories([]);
       }
     } catch (e) {
       console.log('Supabase categories read skipped, using local fallback');
@@ -467,17 +457,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               return dbProd;
             });
 
-            const dbIds = new Set(mapped.map(m => m.id));
-            const localOnly = prev.filter(p => !dbIds.has(p.id));
-            // Sync any local products or upgraded products to Supabase in the background
-            localOnly.forEach(lp => syncProductToSupabase(lp));
-            return [...mergedFromDb, ...localOnly];
+            return mergedFromDb;
           });
         } else {
-          // Table exists but is empty (0 records): automatically push products to Supabase!
-          console.log('Pushing initial products to empty Supabase products table...');
-          setProducts(prev => (prev && prev.length > 0 ? prev : INITIAL_PRODUCTS));
-          INITIAL_PRODUCTS.forEach(lp => syncProductToSupabase(lp));
+          // Table exists and is empty: keep catalog clean
+          setProducts([]);
         }
       }
     } catch (e) {

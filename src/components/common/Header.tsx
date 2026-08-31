@@ -561,7 +561,21 @@ export const Header: React.FC = () => {
                   </div>
 
                   {/* Open Multi-Column Grid of Categories & Subcategories */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
+                  {categories.length === 0 ? (
+                    <div className="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <p className="text-xs text-slate-500 font-medium">No hay categorías configuradas aún.</p>
+                      <button
+                        onClick={() => {
+                          setActiveRole('admin');
+                          setCategoriesDropdownOpen(false);
+                        }}
+                        className="mt-2 text-xs font-black text-[#9E0D0D] hover:underline"
+                      >
+                        Ir al panel de administración para agregarlas →
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
                     {categories.map(cat => (
                       <div
                         key={cat.id}
@@ -627,6 +641,7 @@ export const Header: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
               </div>
             )}
