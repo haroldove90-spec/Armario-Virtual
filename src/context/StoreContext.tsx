@@ -286,20 +286,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 1. Validar si es el administrador general principal (por usuario o correo)
     const isAdminIdentifier = 
       cleanId === 'armario_virtual' ||
+      cleanId === 'armariovirtual' ||
       cleanId === 'armario_virtual@armariovirtual.com' ||
       cleanId === (adminProfile?.email || '').toLowerCase() ||
       cleanId === 'haroldo90@hotmail.com' ||
       cleanId === 'haroldo90' ||
+      cleanId === 'harold' ||
       cleanId === 'harold.anguiano@armariovirtual.com' ||
       cleanId === 'harold.anguiano' ||
       cleanId === 'softwareai569@gmail.com' ||
       cleanId === 'admin@armariovirtual.com' ||
       cleanId === 'admin';
     
-    // Contraseñas maestras
+    // Contraseñas maestras admitidas
     const isValidAdminPass = 
+      cleanPass === 'ArmarioVirtual#2026!' ||
       cleanPass === 'ArmarioVirtual#2026!Key' ||
+      cleanPass === 'ArmarioVirtual#2026' ||
       cleanPass === 'Chevropar#1970' ||
+      cleanPass === 'Chevropar1970' ||
       cleanPass === 'admin123' ||
       cleanPass === 'password123' ||
       cleanPass === 'admin' ||

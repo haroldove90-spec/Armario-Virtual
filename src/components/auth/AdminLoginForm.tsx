@@ -72,7 +72,7 @@ export const AdminLoginForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-            Usuario o Correo de Administrador
+            Usuario o Correo Electrónico
           </label>
           <div className="relative">
             <input
@@ -83,7 +83,7 @@ export const AdminLoginForm: React.FC = () => {
                 setEmail(e.target.value);
                 setError('');
               }}
-              placeholder="haroldo90@hotmail.com ó armario_virtual"
+              placeholder="armario_virtual ó haroldo90@hotmail.com"
               className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl text-xs font-medium focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-hidden transition-all disabled:opacity-60"
               required
             />
@@ -138,6 +138,23 @@ export const AdminLoginForm: React.FC = () => {
           )}
         </button>
       </form>
+
+      {/* Botón para limpiar caché local del navegador si hay problemas */}
+      <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm('¿Deseas limpiar el caché local y reiniciar la conexión?')) {
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.reload();
+            }
+          }}
+          className="text-[11px] text-slate-400 hover:text-amber-400 transition-colors font-medium cursor-pointer inline-flex items-center gap-1.5"
+        >
+          <span>🧹 Limpiar Caché Local del Navegador</span>
+        </button>
+      </div>
 
       {/* Admin Modules Footer Features */}
       <div className="mt-6 pt-4 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-[10px] text-slate-400">
