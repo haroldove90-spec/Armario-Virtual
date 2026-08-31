@@ -320,7 +320,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const emp = employees.find(
       e => ((e.email && e.email.trim().toLowerCase() === cleanId) || (e.username && e.username.trim().toLowerCase() === cleanId)) &&
            (e.password?.trim() === cleanPass) &&
-           (e.status !== 'suspendido' && e.status !== 'inactivo')
+           (e.status === 'activo')
     );
 
     if (emp) {
@@ -415,9 +415,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           subcategories: typeof c.subcategories === 'string' ? JSON.parse(c.subcategories) : (Array.isArray(c.subcategories) ? c.subcategories : [])
         }));
         setCategories(mapped);
-      } else if (!error && dbCategories && dbCategories.length === 0) {
-        // Table exists in Supabase and is empty: keep it clean
-        setCategories([]);
       }
     } catch (e) {
       console.log('Supabase categories read skipped, using local fallback');

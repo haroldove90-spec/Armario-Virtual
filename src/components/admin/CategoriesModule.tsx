@@ -1,13 +1,35 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { CategoryItem, SubcategoryItem } from '../../types';
-import { Layers, Plus, Trash2, Edit2, Check, X, Tag, Sparkles, ChevronRight, FolderPlus } from 'lucide-react';
+import { supabase, SUPABASE_COMPLETE_SQL_FIX, pingSupabase } from '../../lib/supabase';
+import {
+  Layers,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  Tag,
+  Sparkles,
+  ChevronRight,
+  FolderPlus,
+  RefreshCw,
+  Database,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Code2
+} from 'lucide-react';
+import { SupabaseDiagnosticModal } from './SupabaseDiagnosticModal';
 
 export const CategoriesModule: React.FC = () => {
-  const { categories, addCategory, updateCategory, deleteCategory, addSubcategory, deleteSubcategory } = useStore();
+  const { categories, addCategory, updateCategory, deleteCategory, addSubcategory, deleteSubcategory, showToast } = useStore();
 
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
 
   // Form states for New / Edit Category
   const [catName, setCatName] = useState('');
@@ -62,33 +84,114 @@ export const CategoriesModule: React.FC = () => {
     setSelectedCatForSub(null);
   };
 
+  const handleSyncAllCategoriesToSupabase = async () => {
+    setIsSyncing(true);
+    try {
+      const catPayload = categories.map(c => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description || '',
+        icon_name: c.iconName || 'Tag',
+        subcategories: c.subcategories || []
+      }));
+
+      let { error } = await supabase.from('categories').upsert(catPayload);
+
+      if (error && (error.code === '42703' || error.message.toLowerCase().includes('column'))) {
+        const basePayload = categories.map(c => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          description: c.description || '',
+          icon_name: c.iconName || 'Tag'
+        }));
+        const retryRes = await supabase.from('categories').upsert(basePayload);
+        error = retryRes.error;
+      }
+
+      if (error) {
+        if (error.code === '42501' || error.message.toLowerCase().includes('policy') || error.message.toLowerCase().includes('row-level security')) {
+          showToast('⚠️ Permiso denegado por RLS en Supabase. Ejecuta el Script SQL para habilitar permisos de escritura.');
+        } else if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
+          showToast('⚠️ La tabla "categories" no existe en Supabase. Ejecuta el Script SQL para crearla.');
+        } else {
+          showToast(`⚠️ Error al sincronizar con Supabase: ${error.message}`);
+        }
+      } else {
+        showToast(`✅ ¡${categories.length} categorías sincronizadas y guardadas con éxito en Supabase!`);
+      }
+    } catch (e: any) {
+      showToast(`⚠️ Error de conexión: ${e.message || 'Verifica tu red'}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(SUPABASE_COMPLETE_SQL_FIX);
+    setCopiedSql(true);
+    showToast('📋 Script SQL completo copiado al portapapeles');
+    setTimeout(() => setCopiedSql(false), 3000);
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
         <div>
-          <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#9E0D0D]" />
-            Módulo de Categorías y Subcategorías
-          </h3>
-          <p className="text-xs text-slate-500">
-            Administra las categorías principales de la tienda y sus subcategorías asociadas
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="p-2 bg-red-100 text-[#9E0D0D] rounded-xl font-bold">
+              <Layers className="w-5 h-5" />
+            </span>
+            <div>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                Gestión de Categorías & Subcategorías
+              </h3>
+              <p className="text-xs text-slate-500">
+                {categories.length} categoría{categories.length !== 1 ? 's' : ''} configurada{categories.length !== 1 ? 's' : ''} en la tienda
+              </p>
+            </div>
+          </div>
         </div>
 
-        <button
-          onClick={() => {
-            setIsAddingCategory(!isAddingCategory);
-            setEditingCategoryId(null);
-            setCatName('');
-            setCatSlug('');
-            setCatDesc('');
-          }}
-          className="flex items-center gap-2 bg-[#9E0D0D] hover:bg-red-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0"
-        >
-          <Plus className="w-4 h-4 text-[#E05A1B]" />
-          <span>{isAddingCategory ? 'Cancelar Nueva' : 'Nueva Categoría'}</span>
-        </button>
+        <div className="flex items-center flex-wrap gap-2">
+          {/* Sync with Supabase Button */}
+          <button
+            onClick={handleSyncAllCategoriesToSupabase}
+            disabled={isSyncing}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            title="Forzar guardado y sincronización de todas las categorías en la base de datos Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar con Supabase'}</span>
+          </button>
+
+          {/* Diagnostic & SQL Button */}
+          <button
+            onClick={() => setDiagnosticOpen(true)}
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-black text-amber-300 font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0 border border-amber-500/30"
+            title="Abrir diagnóstico de base de datos y script SQL"
+          >
+            <Database className="w-3.5 h-3.5 text-amber-400" />
+            <span>Diagnóstico & SQL</span>
+          </button>
+
+          {/* Add Category Button */}
+          <button
+            onClick={() => {
+              setIsAddingCategory(!isAddingCategory);
+              setEditingCategoryId(null);
+              setCatName('');
+              setCatSlug('');
+              setCatDesc('');
+            }}
+            className="flex items-center gap-2 bg-[#9E0D0D] hover:bg-red-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-[#E05A1B]" />
+            <span>{isAddingCategory ? 'Cancelar' : 'Nueva Categoría'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Form: Add New Category */}
@@ -99,7 +202,7 @@ export const CategoriesModule: React.FC = () => {
               <Sparkles className="w-4 h-4 text-[#E05A1B]" />
               Crear Nueva Categoría
             </h4>
-            <button type="button" onClick={() => setIsAddingCategory(false)} className="text-slate-400 hover:text-slate-600">
+            <button type="button" onClick={() => setIsAddingCategory(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -116,9 +219,10 @@ export const CategoriesModule: React.FC = () => {
                     setCatSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'));
                   }
                 }}
-                placeholder="Ej. Deportiva, Accesorios, Temporada"
+                placeholder="Ej. HOMBRE, MUJER, ACCESORIOS"
                 className="w-full p-3 border border-slate-200 rounded-xl font-bold text-slate-900 focus:border-[#9E0D0D] outline-hidden"
                 required
+                autoFocus
               />
             </div>
 
@@ -128,7 +232,7 @@ export const CategoriesModule: React.FC = () => {
                 type="text"
                 value={catSlug}
                 onChange={e => setCatSlug(e.target.value)}
-                placeholder="deportiva"
+                placeholder="hombre"
                 className="w-full p-3 border border-slate-200 rounded-xl font-mono text-slate-700 focus:border-[#9E0D0D] outline-hidden"
               />
             </div>
@@ -139,7 +243,7 @@ export const CategoriesModule: React.FC = () => {
                 type="text"
                 value={catDesc}
                 onChange={e => setCatDesc(e.target.value)}
-                placeholder="Descripción para sugerencias de búsqueda e información"
+                placeholder="Descripción para sugerencias y filtrado en la tienda"
                 className="w-full p-3 border border-slate-200 rounded-xl text-slate-800 focus:border-[#9E0D0D] outline-hidden"
               />
             </div>
@@ -149,13 +253,13 @@ export const CategoriesModule: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddingCategory(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl"
+              className="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-[#9E0D0D] text-white font-extrabold text-xs rounded-xl shadow-md hover:bg-red-800"
+              className="px-6 py-2 bg-[#9E0D0D] text-white font-extrabold text-xs rounded-xl shadow-md hover:bg-red-800 cursor-pointer"
             >
               Guardar Categoría
             </button>
@@ -169,11 +273,11 @@ export const CategoriesModule: React.FC = () => {
           <Layers className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h4 className="text-base font-bold text-slate-800">No hay categorías creadas aún</h4>
           <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-            Comienza a estructurar tu tienda creando tus propias categorías y departamentos.
+            Comienza a estructurar tu tienda creando tus propias categorías y departamentos (Ej. HOMBRE, MUJER, NIÑOS).
           </p>
           <button
             onClick={() => setIsAddingCategory(true)}
-            className="mt-4 bg-[#9E0D0D] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl hover:bg-red-800 transition-all inline-flex items-center gap-2"
+            className="mt-4 bg-[#9E0D0D] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl hover:bg-red-800 transition-all inline-flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4 text-[#E05A1B]" />
             <span>Crear Primera Categoría</span>
@@ -212,13 +316,13 @@ export const CategoriesModule: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUpdateCategory(cat.id)}
-                        className="bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1"
+                        className="bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" /> Guardar
                       </button>
                       <button
                         onClick={() => setEditingCategoryId(null)}
-                        className="bg-slate-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-lg"
+                        className="bg-slate-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer"
                       >
                         Cancelar
                       </button>
@@ -227,21 +331,21 @@ export const CategoriesModule: React.FC = () => {
                 ) : (
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="p-3 bg-red-50 text-[#9E0D0D] rounded-2xl font-black border border-red-100">
+                      <div className="p-3 bg-red-50 text-[#9E0D0D] rounded-2xl font-black border border-red-100 shrink-0">
                         <Tag className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-extrabold text-base text-slate-900 uppercase tracking-tight">{cat.name}</h4>
                           <span className="font-mono text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">
                             slug: {cat.slug}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5">{cat.description}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{cat.description || 'Sin descripción'}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => {
                           setEditingCategoryId(cat.id);
@@ -249,7 +353,7 @@ export const CategoriesModule: React.FC = () => {
                           setCatSlug(cat.slug);
                           setCatDesc(cat.description);
                         }}
-                        className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
+                        className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                         title="Editar Categoría"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -260,7 +364,7 @@ export const CategoriesModule: React.FC = () => {
                             deleteCategory(cat.id);
                           }
                         }}
-                        className="p-2 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+                        className="p-2 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all cursor-pointer"
                         title="Eliminar Categoría"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -275,7 +379,7 @@ export const CategoriesModule: React.FC = () => {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-slate-700 flex items-center gap-1.5">
                     <ChevronRight className="w-3.5 h-3.5 text-[#E05A1B]" />
-                    Subcategorías ({cat.subcategories.length})
+                    Subcategorías ({cat.subcategories?.length || 0})
                   </span>
 
                   <button
@@ -287,7 +391,7 @@ export const CategoriesModule: React.FC = () => {
                         setSubName('');
                       }
                     }}
-                    className="text-[11px] font-extrabold text-[#9E0D0D] hover:underline flex items-center gap-1"
+                    className="text-[11px] font-extrabold text-[#9E0D0D] hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <FolderPlus className="w-3.5 h-3.5" />
                     + Agregar Subcategoría
@@ -301,14 +405,20 @@ export const CategoriesModule: React.FC = () => {
                       type="text"
                       value={subName}
                       onChange={e => setSubName(e.target.value)}
-                      placeholder="Nombre de subcategoría"
+                      placeholder="Nombre de subcategoría (Ej. Camisas, Pantalones)"
                       className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 font-bold focus:border-[#9E0D0D] outline-hidden"
                       autoFocus
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSubcategorySubmit(cat.id);
+                        }
+                      }}
                     />
                     <button
                       type="button"
                       onClick={() => handleAddSubcategorySubmit(cat.id)}
-                      className="bg-[#9E0D0D] text-white font-bold px-3 py-2 rounded-lg hover:bg-red-800 shrink-0"
+                      className="bg-[#9E0D0D] text-white font-bold px-3 py-2 rounded-lg hover:bg-red-800 shrink-0 cursor-pointer"
                     >
                       Agregar
                     </button>
@@ -317,7 +427,7 @@ export const CategoriesModule: React.FC = () => {
 
                 {/* Subcategory List Badges */}
                 <div className="flex flex-wrap gap-1.5">
-                  {cat.subcategories.length === 0 ? (
+                  {(!cat.subcategories || cat.subcategories.length === 0) ? (
                     <span className="text-[11px] text-slate-400 italic">Sin subcategorías registradas aún.</span>
                   ) : (
                     cat.subcategories.map(sub => (
@@ -328,7 +438,7 @@ export const CategoriesModule: React.FC = () => {
                         <span>{sub.name}</span>
                         <button
                           onClick={() => deleteSubcategory(cat.id, sub.id)}
-                          className="text-slate-400 hover:text-red-600 ml-0.5"
+                          className="text-slate-400 hover:text-red-600 ml-0.5 cursor-pointer"
                           title="Eliminar subcategoría"
                         >
                           <X className="w-3 h-3" />
@@ -343,6 +453,12 @@ export const CategoriesModule: React.FC = () => {
         })}
       </div>
       )}
+
+      {/* Supabase Diagnostic Modal */}
+      <SupabaseDiagnosticModal
+        isOpen={diagnosticOpen}
+        onClose={() => setDiagnosticOpen(false)}
+      />
     </div>
   );
 };
