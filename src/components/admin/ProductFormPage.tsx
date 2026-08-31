@@ -529,7 +529,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   // Dummy product for size guide live preview
   const previewProduct: Product = {
     id: 'preview',
-    name: name || 'Producto de Muestra',
+    name: name || 'Vista Previa del Producto',
     category,
     subcategory,
     price,

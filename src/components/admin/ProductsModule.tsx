@@ -385,25 +385,17 @@ export const ProductsModule: React.FC = () => {
                       </h5>
                       <p className="text-xs text-slate-500">
                         {products.length === 0
-                          ? 'Puedes cargar los 14 productos del catálogo oficial de Armario Virtual o registrar uno nuevo.'
+                          ? 'Comienza agregando tu primer producto manualmente con imágenes, variantes y medidas.'
                           : 'Intenta cambiar los filtros de búsqueda, categoría o estado para ver tus artículos.'}
                       </p>
                       {products.length === 0 && (
                         <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                           <button
-                            onClick={handleReloadFromSupabase}
-                            disabled={isReloadingSupabase}
-                            className="px-4 py-2 bg-[#9E0D0D] hover:bg-red-900 text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer flex items-center gap-1.5"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isReloadingSupabase ? 'animate-spin' : ''}`} />
-                            <span>{isReloadingSupabase ? 'Cargando catálogo...' : 'Restaurar / Cargar Catálogo (14 Productos)'}</span>
-                          </button>
-                          <button
                             onClick={handleStartCreate}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                            className="px-5 py-2.5 bg-[#9E0D0D] hover:bg-red-900 text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer flex items-center gap-2"
                           >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Crear Producto Manual</span>
+                            <Plus className="w-4 h-4" />
+                            <span>Crear Producto</span>
                           </button>
                         </div>
                       )}
@@ -624,42 +616,15 @@ export const ProductsModule: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs">
-              {/* Option 1: Only Demo/Sample */}
-              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h5 className="font-black text-amber-950 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                    Opción 1: Borrar Solo Productos de Muestra (Demo)
-                  </h5>
-                </div>
-                <p className="text-amber-800 leading-relaxed text-[11px]">
-                  Elimina únicamente los 8 productos de ejemplo iniciales (Chamarra, Vestido, Jeans, etc.) de la tienda y de la base de datos de Supabase. Cualquier producto que tú hayas registrado manualmente se mantendrá intacto.
-                </p>
-                <button
-                  onClick={async () => {
-                    setIsCleaning(true);
-                    await clearSampleProducts();
-                    setIsCleaning(false);
-                    setShowCleanModal(false);
-                  }}
-                  disabled={isCleaning}
-                  className="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{isCleaning ? 'Eliminando...' : 'Borrar Solo Productos de Muestra'}</span>
-                </button>
-              </div>
-
-              {/* Option 2: Clear Entire Catalog */}
               <div className="p-4 bg-red-50 rounded-2xl border border-red-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <h5 className="font-black text-red-950 flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-[#9E0D0D]" />
-                    Opción 2: Vaciar Catálogo Completo (Empezar desde 0)
+                    Vaciar Catálogo Completo (Empezar desde 0)
                   </h5>
                 </div>
                 <p className="text-red-800 leading-relaxed text-[11px]">
-                  Elimina <strong>TODOS</strong> los productos registrados (tanto en la memoria de la tienda como en la tabla <code>products</code> de Supabase) dejando el catálogo completamente en blanco.
+                  Elimina <strong>TODOS</strong> los productos registrados (tanto en la memoria de la tienda como en la base de datos de Supabase) dejando el inventario completamente en blanco.
                 </p>
                 <button
                   onClick={async () => {
