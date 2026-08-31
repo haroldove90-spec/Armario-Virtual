@@ -1,9 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeSupabaseUrl(rawUrl?: string): string {
-  let url = (rawUrl || 'https://cgnieenzvgimdpoihipu.supabase.co').trim();
+  let url = (rawUrl || '').trim();
   // Remove wrapping quotes if any
   url = url.replace(/^["']|["']$/g, '').trim();
+
+  // If the provided url is actually a JWT token (starts with eyJ) or looks like an anon key
+  if (!url || url.startsWith('eyJ') || url.length > 80) {
+    return 'https://cgnieenzvgimdpoihipu.supabase.co';
+  }
+
+  // If someone passed just the project ID "cgnieenzvgimdpoihipu"
+  if (/^[a-z0-9]{20}$/i.test(url)) {
+    return `https://${url}.supabase.co`;
+  }
+
   // Strip trailing paths like /rest/v1 or trailing slashes
   url = url.replace(/\/rest\/v1\/?$/i, '');
   url = url.replace(/\/auth\/v1\/?$/i, '');
@@ -11,12 +22,25 @@ function sanitizeSupabaseUrl(rawUrl?: string): string {
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = `https://${url}`;
   }
+
+  // Check if it has a valid host or fallback
+  if (!url.includes('.supabase.co') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    return 'https://cgnieenzvgimdpoihipu.supabase.co';
+  }
+
   return url;
 }
 
 function sanitizeSupabaseKey(rawKey?: string): string {
-  let key = (rawKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnbmllZW56dmdpbWRwb2loaXB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDg2ODQsImV4cCI6MjEwMzc4NDY4NH0._PpC6MkxOUO6VtrCzL6II3fvfPBU9zsJ6-IkXIGaMio').trim();
-  return key.replace(/^["']|["']$/g, '').trim();
+  const defaultKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnbmllZW56dmdpbWRwb2loaXB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDg2ODQsImV4cCI6MjEwMzc4NDY4NH0._PpC6MkxOUO6VtrCzL6II3fvfPBU9zsJ6-IkXIGaMio';
+  let key = (rawKey || '').trim();
+  key = key.replace(/^["']|["']$/g, '').trim();
+
+  // If rawKey is empty or was mistakenly given a URL (starts with http), use default valid ANON key
+  if (!key || key.startsWith('http') || key.includes('.supabase.co') || !key.startsWith('eyJ')) {
+    return defaultKey;
+  }
+  return key;
 }
 
 export const SUPABASE_URL = sanitizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
