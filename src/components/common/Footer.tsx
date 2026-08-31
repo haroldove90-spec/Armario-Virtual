@@ -49,7 +49,7 @@ export const Footer: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <img
-              src={storeDesign.logoUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg'}
+              src={storeDesign.logoUrl || 'https://cgnieenzvgimdpoihipu.supabase.co/storage/v1/object/public/logo/armariovirtualogo.jpeg'}
               alt={storeDesign.storeName || 'Armario Virtual'}
               className="h-10 w-auto object-contain rounded-md"
             />

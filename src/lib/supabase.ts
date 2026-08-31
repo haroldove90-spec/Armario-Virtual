@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeSupabaseUrl(rawUrl?: string): string {
-  let url = (rawUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co').trim();
+  let url = (rawUrl || 'https://cgnieenzvgimdpoihipu.supabase.co').trim();
   // Remove wrapping quotes if any
   url = url.replace(/^["']|["']$/g, '').trim();
   // Strip trailing paths like /rest/v1 or trailing slashes
@@ -15,7 +15,7 @@ function sanitizeSupabaseUrl(rawUrl?: string): string {
 }
 
 function sanitizeSupabaseKey(rawKey?: string): string {
-  let key = (rawKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvdXZwYnZqcnNidHVmaHJtd2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0OTI3NTgsImV4cCI6MjEwMTA2ODc1OH0.Vhp1pHIGIbWyRxNgvHOSBGi98WlFbGqoMnGiNdeHbtU').trim();
+  let key = (rawKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnbmllZW56dmdpbWRwb2loaXB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDg2ODQsImV4cCI6MjEwMzc4NDY4NH0._PpC6MkxOUO6VtrCzL6II3fvfPBU9zsJ6-IkXIGaMio').trim();
   return key.replace(/^["']|["']$/g, '').trim();
 }
 
@@ -29,8 +29,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   }
 });
 
-export const SUPABASE_PROJECT_ID = 'aouvpbvjrsbtufhrmwaj';
-export const SUPABASE_URL_ENDPOINT = 'https://aouvpbvjrsbtufhrmwaj.supabase.co/rest/v1/';
+export const SUPABASE_PROJECT_ID = 'cgnieenzvgimdpoihipu';
+export const SUPABASE_URL_ENDPOINT = 'https://cgnieenzvgimdpoihipu.supabase.co/rest/v1/';
 
 export interface PostgresErrorTranslation {
   code: string;
@@ -329,7 +329,7 @@ export async function checkSupabaseConnection(): Promise<boolean> {
 
 export const SUPABASE_COMPLETE_SQL_FIX = `-- =========================================================================
 -- SCRIPT MAESTRO DE CONFIGURACIÓN Y PERMISOS COMPLETOS PARA SUPABASE
--- Proyecto: aouvpbvjrsbtufhrmwaj
+-- Proyecto: cgnieenzvgimdpoihipu (sistema@armariovirtual.com.mx's Project)
 -- =========================================================================
 
 -- 1. CREACIÓN O AJUSTE DE TABLAS
@@ -513,8 +513,8 @@ INSERT INTO public.employees (
 (
     'emp-admin-harold',
     'Harold Anguiano Morales',
-    'harold.anguiano@armariovirtual.com',
-    'harold.anguiano',
+    'haroldo90@hotmail.com',
+    'haroldo90',
     'Chevropar#1970',
     'Administrador General',
     'activo',

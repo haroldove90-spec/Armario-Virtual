@@ -169,7 +169,7 @@ export const Header: React.FC = () => {
             className="cursor-pointer flex items-center gap-1.5 sm:gap-2.5 group shrink min-w-0"
           >
             <img
-              src={storeDesign.logoUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg'}
+              src={storeDesign.logoUrl || 'https://cgnieenzvgimdpoihipu.supabase.co/storage/v1/object/public/logo/armariovirtualogo.jpeg'}
               alt={storeDesign.storeName || 'Armario Virtual'}
               className="h-8 sm:h-12 w-auto object-contain rounded-md group-hover:scale-105 transition-transform shrink-0"
             />

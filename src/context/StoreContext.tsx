@@ -288,6 +288,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       cleanId === 'armario_virtual' ||
       cleanId === 'armario_virtual@armariovirtual.com' ||
       cleanId === adminProfile.email.toLowerCase() ||
+      cleanId === 'haroldo90@hotmail.com' ||
+      cleanId === 'haroldo90' ||
       cleanId === 'harold.anguiano@armariovirtual.com' ||
       cleanId === 'harold.anguiano' ||
       cleanId === 'softwareai569@gmail.com' ||
@@ -1568,7 +1570,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [storeDesign, setStoreDesign] = useState<StoreDesignConfig>(() => {
     const saved = localStorage.getItem(LS_DESIGN);
     if (saved && saved.includes('#9E0D0D')) {
-      return JSON.parse(saved);
+      try {
+        const parsed = JSON.parse(saved);
+        if (!parsed.logoUrl || parsed.logoUrl.includes('aouvpbvjrsbtufhrmwaj') || parsed.logoUrl.includes('armariovirtual.jpeg')) {
+          parsed.logoUrl = INITIAL_STORE_DESIGN.logoUrl;
+        }
+        return parsed;
+      } catch (e) {}
     }
     return INITIAL_STORE_DESIGN;
   });

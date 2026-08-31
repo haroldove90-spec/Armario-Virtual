@@ -98,7 +98,7 @@ export const CustomerLoginForm: React.FC = () => {
       <div className="text-center mb-6">
         <div className="flex items-center justify-center mb-3">
           <img
-            src={storeDesign?.logoUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg'}
+            src={storeDesign?.logoUrl || 'https://cgnieenzvgimdpoihipu.supabase.co/storage/v1/object/public/logo/armariovirtualogo.jpeg'}
             alt={storeDesign?.storeName || 'Armario Virtual'}
             className="h-20 max-w-[220px] object-contain rounded-xl shadow-md mx-auto"
           />

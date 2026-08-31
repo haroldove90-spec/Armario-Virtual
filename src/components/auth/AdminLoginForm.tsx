@@ -27,7 +27,7 @@ export const AdminLoginForm: React.FC = () => {
         <div className="flex items-center justify-center mb-3">
           <div className="relative">
             <img
-              src={storeDesign?.logoUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg'}
+              src={storeDesign?.logoUrl || 'https://cgnieenzvgimdpoihipu.supabase.co/storage/v1/object/public/logo/armariovirtualogo.jpeg'}
               alt={storeDesign?.storeName || 'Armario Virtual'}
               className="h-20 max-w-[220px] object-contain rounded-xl shadow-xl mx-auto"
             />
@@ -123,7 +123,7 @@ export const AdminLoginForm: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              setEmail('harold.anguiano@armariovirtual.com');
+              setEmail('haroldo90@hotmail.com');
               setPassword('Chevropar#1970');
               setError('');
             }}
@@ -134,7 +134,7 @@ export const AdminLoginForm: React.FC = () => {
                 Harold Anguiano Morales
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
-                harold.anguiano@armariovirtual.com • Chevropar#1970
+                haroldo90@hotmail.com • Chevropar#1970
               </div>
             </div>
             <span className="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-800 font-bold">

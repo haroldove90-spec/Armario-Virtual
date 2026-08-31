@@ -102,7 +102,7 @@ export const SidebarNav: React.FC = () => {
               className="cursor-pointer flex items-center gap-2.5 group"
             >
               <img
-                src={storeDesign.logoUrl || 'https://aouvpbvjrsbtufhrmwaj.supabase.co/storage/v1/object/public/banner/armariovirtual.jpeg'}
+                src={storeDesign.logoUrl || 'https://cgnieenzvgimdpoihipu.supabase.co/storage/v1/object/public/logo/armariovirtualogo.jpeg'}
                 alt={storeDesign.storeName || 'Armario Virtual'}
                 className="h-9 w-auto object-contain rounded-md shadow-md"
               />
