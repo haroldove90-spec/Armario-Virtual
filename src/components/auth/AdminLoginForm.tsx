@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { ShieldCheck, Lock, Mail, ArrowRight, ShieldAlert, BarChart3, Package, Truck, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, ShieldAlert, BarChart3, Package, Truck, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export const AdminLoginForm: React.FC = () => {
   const { adminLogin, storeDesign } = useStore();
@@ -14,7 +14,7 @@ export const AdminLoginForm: React.FC = () => {
     const cleanU = userEmail.trim();
     const cleanP = userPass.trim();
     if (!cleanU || !cleanP) {
-      setError('Por favor ingresa tu correo y contraseña de administrador.');
+      setError('Por favor ingresa tu correo o usuario y contraseña de administrador.');
       return;
     }
     setError('');
@@ -22,7 +22,7 @@ export const AdminLoginForm: React.FC = () => {
     try {
       const success = await adminLogin(cleanU, cleanP);
       if (!success) {
-        setError('Credenciales incorrectas. Verifica que tu usuario o correo y contraseña sean los correctos.');
+        setError('Credenciales incorrectas. Verifica tu correo o usuario y contraseña.');
       }
     } catch (err: any) {
       setError(err?.message || 'Error al conectar con el servidor de autenticación.');
@@ -34,13 +34,6 @@ export const AdminLoginForm: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     performLogin(email, password);
-  };
-
-  const handleQuickLogin = (quickEmail: string, quickPass: string) => {
-    setEmail(quickEmail);
-    setPassword(quickPass);
-    setError('');
-    performLogin(quickEmail, quickPass);
   };
 
   return (
@@ -146,65 +139,7 @@ export const AdminLoginForm: React.FC = () => {
         </button>
       </form>
 
-      {/* Admin Modules Preview & 1-Click Fast Access */}
-      <div className="mt-6 pt-5 border-t border-slate-800">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Acceso Rápido Directo:</span>
-          <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-            <Sparkles className="w-3 h-3" />
-            1 Clic para entrar
-          </span>
-        </div>
-        
-        <div className="space-y-2">
-          {/* Harold Anguiano Morales */}
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleQuickLogin('haroldo90@hotmail.com', 'Chevropar#1970')}
-            className="w-full text-left p-3 bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
-          >
-            <div>
-              <div className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                <span>Harold Anguiano Morales</span>
-                <span className="text-[9px] bg-emerald-950/80 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-700 font-bold">
-                  AUTORIZADO
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                haroldo90@hotmail.com • Chevropar#1970
-              </div>
-            </div>
-            <span className="text-[10px] bg-[#9E0D0D] text-white px-2.5 py-1 rounded-lg border border-red-500/40 font-bold group-hover:scale-105 transition-transform shadow-xs">
-              Entrar ➔
-            </span>
-          </button>
-
-          {/* Armario Virtual Master */}
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleQuickLogin('armario_virtual@armariovirtual.com', 'ArmarioVirtual#2026!Key')}
-            className="w-full text-left p-3 bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
-          >
-            <div>
-              <div className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                <span>Armario Virtual Master</span>
-                <span className="text-[9px] bg-red-950 text-red-300 px-1.5 py-0.2 rounded border border-red-800 font-bold">
-                  MASTER
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                armario_virtual@armariovirtual.com • ArmarioVirtual#2026!Key
-              </div>
-            </div>
-            <span className="text-[10px] bg-[#9E0D0D] text-white px-2.5 py-1 rounded-lg border border-red-500/40 font-bold group-hover:scale-105 transition-transform shadow-xs">
-              Entrar ➔
-            </span>
-          </button>
-        </div>
-      </div>
-
+      {/* Admin Modules Footer Features */}
       <div className="mt-6 pt-4 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-[10px] text-slate-400">
         <div className="flex flex-col items-center">
           <BarChart3 className="w-4 h-4 text-[#E05A1B] mb-1" />
